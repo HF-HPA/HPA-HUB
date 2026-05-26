@@ -1,7 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8" />
+<!DOCTYPE html><!DOCTYPE html<meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>HPA Jungle Hub</title>
 
@@ -17,34 +14,36 @@
     --shadow:0 40px 120px rgba(0,0,0,.88);
     --radius:20px;
     --danger:#ff6b6b;
+
+    /* JS will set this to: url('...') when it finds your file */
+    --bg-img: none;
   }
 
   *{ box-sizing:border-box; font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial; }
   html,body{ height:100%; margin:0; overflow:hidden; background:#010806; color:var(--text); }
 
   /* =====================================================
-     ONE FIXED BACKGROUND FOR ENTIRE SITE (with fallbacks)
-     - If jungle-bg.jpg doesn't exist, it will try png/jpeg/webp
+     ONE FIXED CINEMATIC BACKGROUND ACROSS ENTIRE SITE
+     - if the image isn't found, it falls back to a leafy pattern
   ====================================================== */
   body::before{
     content:"";
     position:fixed;
     inset:0;
-    z-index:-3;
+    z-index:-5;
 
-    /* The LAST valid url() in the stack is used visually
-       BUT browsers will request them; keep to a few common options */
+    /* Fallback leafy pattern (always works even without your image) */
     background-image:
-      radial-gradient(1200px 800px at 60% 10%, rgba(255,255,255,.08), transparent 55%),
-      linear-gradient(rgba(0,0,0,.62), rgba(0,0,0,.86)),
-      url("jungle-bg.jpg"),
-      url("jungle-bg.jpeg"),
-      url("jungle-bg.png"),
-      url("jungle-bg.webp");
+      radial-gradient(1200px 800px at 62% 10%, rgba(255,255,255,.10), transparent 55%),
+      linear-gradient(rgba(0,0,0,.55), rgba(0,0,0,.86)),
+      var(--bg-img),
+      radial-gradient(120px 90px at 20% 35%, rgba(59,255,154,.12), transparent 60%),
+      radial-gradient(150px 110px at 70% 55%, rgba(59,255,154,.10), transparent 60%),
+      radial-gradient(140px 120px at 40% 78%, rgba(59,255,154,.08), transparent 60%);
 
     background-position: center, center, center, center, center, center;
     background-size: cover, cover, cover, cover, cover, cover;
-    background-repeat: no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, no-repeat;
+    background-repeat: no-repeat;
 
     transform: translateZ(0);
   }
@@ -54,8 +53,8 @@
     content:"";
     position:fixed;
     inset:0;
-    z-index:-2;
-    background: radial-gradient(circle at center, transparent 35%, rgba(0,0,0,.92));
+    z-index:-4;
+    background: radial-gradient(circle at center, transparent 32%, rgba(0,0,0,.92));
     pointer-events:none;
   }
 
@@ -63,9 +62,9 @@
   .grain{
     position:fixed;
     inset:0;
-    z-index:-1;
+    z-index:-3;
     pointer-events:none;
-    opacity:.16;
+    opacity:.18;
     background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='.55'/%3E%3C/svg%3E");
     mix-blend-mode: overlay;
   }
@@ -74,14 +73,14 @@
   .mist{
     position:fixed;
     inset:-30%;
-    z-index:-1;
+    z-index:-2;
     pointer-events:none;
     background:
-      radial-gradient(760px 260px at 20% 40%, rgba(255,255,255,.10), transparent 60%),
-      radial-gradient(980px 320px at 70% 55%, rgba(255,255,255,.08), transparent 65%);
+      radial-gradient(760px 260px at 20% 40%, rgba(255,255,255,.11), transparent 60%),
+      radial-gradient(980px 320px at 70% 55%, rgba(255,255,255,.09), transparent 65%);
     filter: blur(28px);
     animation: mistMove 22s ease-in-out infinite;
-    opacity:.9;
+    opacity:.85;
     mix-blend-mode: screen;
   }
   @keyframes mistMove{
@@ -94,7 +93,7 @@
   .rays{
     position:fixed;
     inset:-25%;
-    z-index:-1;
+    z-index:-2;
     pointer-events:none;
     background:
       repeating-linear-gradient(
@@ -104,15 +103,15 @@
       );
     mask-image: radial-gradient(900px 620px at 30% 15%, black, transparent 70%);
     -webkit-mask-image: radial-gradient(900px 620px at 30% 15%, black, transparent 70%);
-    opacity:.6;
+    opacity:.55;
     animation: raysMove 14s ease-in-out infinite;
     mix-blend-mode: screen;
     filter: blur(.2px);
   }
   @keyframes raysMove{
-    0%{ transform:translateX(-2%); opacity:.35; }
-    50%{ transform:translateX(2%); opacity:.75; }
-    100%{ transform:translateX(-2%); opacity:.35; }
+    0%{ transform:translateX(-2%); opacity:.28; }
+    50%{ transform:translateX(2%); opacity:.70; }
+    100%{ transform:translateX(-2%); opacity:.28; }
   }
 
   /* Screens */
@@ -148,6 +147,30 @@
     user-select:none;
   }
   .chip.subtle{ opacity:.86; }
+
+  /* Debug banner (only when bg missing) */
+  #bgDebug{
+    position:fixed;
+    left:14px;
+    right:14px;
+    bottom:14px;
+    z-index:30;
+    display:none;
+    gap:8px;
+    align-items:center;
+    justify-content:space-between;
+  }
+  #bgDebug code{
+    opacity:.9;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-size:12px;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    max-width: 62vw;
+    display:inline-block;
+    vertical-align:middle;
+  }
 
   /* Cards */
   .card{
@@ -279,16 +302,7 @@
   @media (max-width: 860px){
     .tile{ grid-column: span 12; }
     .dashHeader{ flex-direction:column; align-items:flex-start; }
-  }
-
-  /* Background debug (only shown if image fails) */
-  #bgDebug{
-    position:fixed;
-    left:14px;
-    bottom:14px;
-    z-index:30;
-    max-width: 92vw;
-    display:none;
+    #bgDebug code{ max-width: 56vw; }
   }
 </style>
 </head>
@@ -300,10 +314,13 @@
 
   <div class="topbar">
     <div id="status" class="chip subtle">Cinematic Jungle</div>
-    <div class="chip subtle">Auth: users.csv</div>
+    <div id="bgStatus" class="chip subtle">Background: detecting…</div>
   </div>
 
-  <div id="bgDebug" class="chip">⚠ Background not loading. Check file name: jungle-bg.jpg/.png/.jpeg/.webp in repo root.</div>
+  <div id="bgDebug" class="chip">
+    <span>⚠ Background image not found.</span>
+    <span>Looking for: <code id="bgList"></code></span>
+  </div>
 
   <!-- SPLASH -->
   <section id="splash" class="screen active" aria-label="Splash">
@@ -340,7 +357,7 @@
       <div class="dashHeader">
         <div>
           <h2>HPA Jungle Hub</h2>
-          <div class="sub">Same background everywhere ✅</div>
+          <div class="sub">Same cinematic background everywhere ✅</div>
         </div>
         <button id="logoutBtn" class="pill">Logout</button>
       </div>
@@ -355,6 +372,9 @@
   </section>
 
 <script>
+  /* ===========================
+     Screen flow
+  ============================ */
   const splash = document.getElementById("splash");
   const login  = document.getElementById("login");
   const dash   = document.getElementById("dash");
@@ -366,61 +386,93 @@
   const logoutBtn = document.getElementById("logoutBtn");
   const errorEl = document.getElementById("error");
   const statusEl = document.getElementById("status");
-  const bgDebug = document.getElementById("bgDebug");
 
   function show(screen){
     [splash, login, dash].forEach(s => s.classList.remove("active"));
     screen.classList.add("active");
   }
+  function enter(){
+    logo.classList.add("fade");
+    statusEl.textContent = "Entering…";
+    setTimeout(() => { show(login); statusEl.textContent = "Login"; }, 900);
+  }
+  logoCard.addEventListener("click", enter);
+  logoCard.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " "){ e.preventDefault(); enter(); }
+  });
 
-  // ---- Background sanity check: try to load one of the known files ----
-  const bgCandidates = ["jungle-bg.jpg","jungle-bg.jpeg","jungle-bg.png","jungle-bg.webp"];
+  /* ===========================
+     Background detector (FIXES "black only")
+     - tries common folders + filename variations
+     - sets CSS var --bg-img to the first file it finds
+  ============================ */
+  const bgStatus = document.getElementById("bgStatus");
+  const bgDebug  = document.getElementById("bgDebug");
+  const bgListEl = document.getElementById("bgList");
+
+  const folders = ["", "assets/", "images/", "img/"];
+  const names = [
+    "jungle-bg.jpg","jungle-bg.jpeg","jungle-bg.png","jungle-bg.webp",
+    "Jungle-bg.jpg","Jungle-bg.jpeg","Jungle-bg.png","Jungle-bg.webp",
+    "Jungle-BG.jpg","Jungle-BG.jpeg","Jungle-BG.png","Jungle-BG.webp",
+    "background.jpg","background.png","bg.jpg","bg.png"
+  ];
+
+  const candidates = [];
+  for (const f of folders){
+    for (const n of names) candidates.push(f + n);
+  }
+  bgListEl.textContent = candidates.slice(0, 10).join(", ") + " …";
+
+  function tryLoadImage(path){
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => resolve(true);
+      img.onerror = () => resolve(false);
+      img.src = path + "?v=" + Date.now();
+    });
+  }
+
   (async () => {
-    // Try HEAD requests; if blocked, fall back to Image() load
-    let ok = false;
-    for (const f of bgCandidates){
-      try{
-        const r = await fetch(f, { method:"HEAD", cache:"no-store" });
-        if (r.ok) { ok = true; break; }
-      } catch(e){
-        // fallback: image load
-        ok = await new Promise(res=>{
-          const img = new Image();
-          img.onload = () => res(true);
-          img.onerror = () => res(false);
-          img.src = f + "?v=" + Date.now();
-        });
-        if (ok) break;
-      }
+    let found = null;
+    for (const path of candidates){
+      const ok = await tryLoadImage(path);
+      if (ok){ found = path; break; }
     }
-    if (!ok) bgDebug.style.display = "inline-flex";
+
+    if (found){
+      document.documentElement.style.setProperty("--bg-img", `url("${found}")`);
+      bgStatus.textContent = "Background: " + found;
+      bgDebug.style.display = "none";
+    } else {
+      bgStatus.textContent = "Background: NOT FOUND";
+      bgDebug.style.display = "inline-flex";
+    }
   })();
 
-  // ---- CSV auth ----
+  /* ===========================
+     CSV Auth (demo)
+  ============================ */
   let usersPromise = null;
 
   function parseCSV(text){
     const rows = [];
     let row = [], cur = "", inQuotes = false;
-
     for (let i = 0; i < text.length; i++){
-      const ch = text[i];
-      const next = text[i+1];
-
+      const ch = text[i], next = text[i+1];
       if (ch === '"' && inQuotes && next === '"'){ cur += '"'; i++; continue; }
       if (ch === '"'){ inQuotes = !inQuotes; continue; }
-
-      if (!inQuotes && ch === ","){ row.push(cur.trim()); cur = ""; continue; }
+      if (!inQuotes && ch === ","){ row.push(cur.trim()); cur=""; continue; }
       if (!inQuotes && (ch === "\n" || ch === "\r")){
         if (cur.length || row.length){ row.push(cur.trim()); rows.push(row); }
-        row = []; cur = "";
+        row=[]; cur="";
         if (ch === "\r" && next === "\n") i++;
         continue;
       }
       cur += ch;
     }
     if (cur.length || row.length){ row.push(cur.trim()); rows.push(row); }
-    return rows.filter(r => r.some(cell => cell !== ""));
+    return rows.filter(r => r.some(c => c !== ""));
   }
   const normalizeHeader = (h) => (h||"").toLowerCase().replace(/\s+/g,"");
 
@@ -428,8 +480,7 @@
     if (usersPromise) return usersPromise;
     usersPromise = (async () => {
       const res = await fetch("users.csv", { cache: "no-store" });
-      if (!res.ok) throw new Error("Could not load users.csv (ensure it is in repo root).");
-
+      if (!res.ok) throw new Error("Could not load users.csv (must be in repo root).");
       const text = await res.text();
       const rows = parseCSV(text);
       if (!rows.length) throw new Error("users.csv is empty.");
@@ -440,7 +491,7 @@
       if (uIdx === -1 || pIdx === -1) throw new Error('users.csv must have headers: "username,password"');
 
       const map = new Map();
-      for (let i = 1; i < rows.length; i++){
+      for (let i=1; i<rows.length; i++){
         const u = (rows[i][uIdx] || "").trim();
         const p = (rows[i][pIdx] || "").trim();
         if (u) map.set(u.toLowerCase(), p);
@@ -458,22 +509,13 @@
     return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2,"0")).join("");
   }
 
-  function enter(){
-    logo.classList.add("fade");
-    statusEl.textContent = "Entering…";
-    setTimeout(() => { show(login); statusEl.textContent = "Login"; }, 900);
-  }
-  logoCard.addEventListener("click", enter);
-  logoCard.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" || e.key === " "){ e.preventDefault(); enter(); }
-  });
-
   loginBtn.addEventListener("click", async () => {
     errorEl.textContent = "";
     statusEl.textContent = "Checking users.csv…";
 
     const username = (document.getElementById("user").value || "").trim();
     const password = (document.getElementById("pass").value || "").trim();
+
     if (!username || !password){
       statusEl.textContent = "Login";
       errorEl.textContent = "Enter a username and password.";
@@ -491,10 +533,9 @@
 
       let ok = false;
       if (looksLikeSha256Hex(stored)){
-        const hashed = await sha256Hex(password);
-        ok = (hashed.toLowerCase() === stored.toLowerCase());
+        ok = (await sha256Hex(password)).toLowerCase() === stored.toLowerCase();
       } else {
-        ok = (password === stored);
+        ok = password === stored;
       }
 
       if (!ok){
@@ -517,9 +558,9 @@
     show(login);
     statusEl.textContent = "Login";
   });
-
-  // Preload CSV after first interaction
-  window.addEventListener("pointerdown", () => { loadUsers().catch(()=>{}); }, { once:true });
 </script>
 </body>
 </html>
+
+<html lang="en">
+<head>
