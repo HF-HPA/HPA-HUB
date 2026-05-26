@@ -6,9 +6,6 @@
 <title>HPA Jungle Hub</title>
 
 <style>
-  /* =====================================================
-     CINEMATIC JUNGLE • SINGLE BACKGROUND FOR ALL SCREENS
-  ====================================================== */
   :root{
     --text:#eef6f1;
     --muted:#a9d1bb;
@@ -23,22 +20,36 @@
   }
 
   *{ box-sizing:border-box; font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial; }
-  html,body{ height:100%; margin:0; overflow:hidden; color:var(--text); background:#010806; }
+  html,body{ height:100%; margin:0; overflow:hidden; background:#010806; color:var(--text); }
 
-  /* One fixed cinematic jungle background across entire site */
+  /* =====================================================
+     ONE FIXED BACKGROUND FOR ENTIRE SITE (with fallbacks)
+     - If jungle-bg.jpg doesn't exist, it will try png/jpeg/webp
+  ====================================================== */
   body::before{
     content:"";
     position:fixed;
     inset:0;
     z-index:-3;
-    background:
+
+    /* The LAST valid url() in the stack is used visually
+       BUT browsers will request them; keep to a few common options */
+    background-image:
       radial-gradient(1200px 800px at 60% 10%, rgba(255,255,255,.08), transparent 55%),
       linear-gradient(rgba(0,0,0,.62), rgba(0,0,0,.86)),
-      url("jungle-bg.jpg") center / cover no-repeat;
+      url("jungle-bg.jpg"),
+      url("jungle-bg.jpeg"),
+      url("jungle-bg.png"),
+      url("jungle-bg.webp");
+
+    background-position: center, center, center, center, center, center;
+    background-size: cover, cover, cover, cover, cover, cover;
+    background-repeat: no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, no-repeat;
+
     transform: translateZ(0);
   }
 
-  /* Vignette (also fixed) */
+  /* Vignette */
   body::after{
     content:"";
     position:fixed;
@@ -48,7 +59,7 @@
     pointer-events:none;
   }
 
-  /* Film grain overlay (fixed) */
+  /* Film grain overlay */
   .grain{
     position:fixed;
     inset:0;
@@ -59,7 +70,7 @@
     mix-blend-mode: overlay;
   }
 
-  /* Shared cinematic atmosphere layers */
+  /* Slow mist */
   .mist{
     position:fixed;
     inset:-30%;
@@ -79,6 +90,7 @@
     100%{ transform:translateX(-6%); }
   }
 
+  /* Light shafts */
   .rays{
     position:fixed;
     inset:-25%;
@@ -229,9 +241,7 @@
 
   /* Dashboard */
   #dash{ align-items:flex-start; }
-  .dashShell{
-    width:min(1100px, 96vw);
-  }
+  .dashShell{ width:min(1100px, 96vw); }
   .dashHeader{
     display:flex;
     justify-content:space-between;
@@ -270,11 +280,20 @@
     .tile{ grid-column: span 12; }
     .dashHeader{ flex-direction:column; align-items:flex-start; }
   }
+
+  /* Background debug (only shown if image fails) */
+  #bgDebug{
+    position:fixed;
+    left:14px;
+    bottom:14px;
+    z-index:30;
+    max-width: 92vw;
+    display:none;
+  }
 </style>
 </head>
 
 <body>
-  <!-- fixed cinematic overlays (apply to entire site) -->
   <div class="grain" aria-hidden="true"></div>
   <div class="mist" aria-hidden="true"></div>
   <div class="rays" aria-hidden="true"></div>
@@ -283,6 +302,8 @@
     <div id="status" class="chip subtle">Cinematic Jungle</div>
     <div class="chip subtle">Auth: users.csv</div>
   </div>
+
+  <div id="bgDebug" class="chip">⚠ Background not loading. Check file name: jungle-bg.jpg/.png/.jpeg/.webp in repo root.</div>
 
   <!-- SPLASH -->
   <section id="splash" class="screen active" aria-label="Splash">
@@ -319,38 +340,21 @@
       <div class="dashHeader">
         <div>
           <h2>HPA Jungle Hub</h2>
-          <div class="sub">Background stays cinematic across the entire site.</div>
+          <div class="sub">Same background everywhere ✅</div>
         </div>
         <button id="logoutBtn" class="pill">Logout</button>
       </div>
 
       <div class="grid">
-        <article class="tile">
-          <h3>🌴 Florida Hiring</h3>
-          <p>Role overview and application workflow (placeholder).</p>
-        </article>
-        <article class="tile">
-          <h3>📌 Promos</h3>
-          <p>Current hot buys and promos (placeholder).</p>
-        </article>
-        <article class="tile">
-          <h3>📞 Contacts</h3>
-          <p>Key internal contacts (placeholder).</p>
-        </article>
-        <article class="tile">
-          <h3>🧭 Updates</h3>
-          <p>Internal updates feed (placeholder).</p>
-        </article>
+        <article class="tile"><h3>🌴 Florida Hiring</h3><p>Role overview and application workflow (placeholder).</p></article>
+        <article class="tile"><h3>📌 Promos</h3><p>Current hot buys and promos (placeholder).</p></article>
+        <article class="tile"><h3>📞 Contacts</h3><p>Key internal contacts (placeholder).</p></article>
+        <article class="tile"><h3>🧭 Updates</h3><p>Internal updates feed (placeholder).</p></article>
       </div>
     </div>
   </section>
 
 <script>
-  /* =========================================================
-     CSV LOGIN (STATIC SITE DEMO)
-     NOTE: Not secure for real authentication on static hosting.
-  ========================================================== */
-
   const splash = document.getElementById("splash");
   const login  = document.getElementById("login");
   const dash   = document.getElementById("dash");
@@ -362,17 +366,40 @@
   const logoutBtn = document.getElementById("logoutBtn");
   const errorEl = document.getElementById("error");
   const statusEl = document.getElementById("status");
+  const bgDebug = document.getElementById("bgDebug");
 
   function show(screen){
     [splash, login, dash].forEach(s => s.classList.remove("active"));
     screen.classList.add("active");
   }
 
-  // ---- CSV loading (cached) ----
+  // ---- Background sanity check: try to load one of the known files ----
+  const bgCandidates = ["jungle-bg.jpg","jungle-bg.jpeg","jungle-bg.png","jungle-bg.webp"];
+  (async () => {
+    // Try HEAD requests; if blocked, fall back to Image() load
+    let ok = false;
+    for (const f of bgCandidates){
+      try{
+        const r = await fetch(f, { method:"HEAD", cache:"no-store" });
+        if (r.ok) { ok = true; break; }
+      } catch(e){
+        // fallback: image load
+        ok = await new Promise(res=>{
+          const img = new Image();
+          img.onload = () => res(true);
+          img.onerror = () => res(false);
+          img.src = f + "?v=" + Date.now();
+        });
+        if (ok) break;
+      }
+    }
+    if (!ok) bgDebug.style.display = "inline-flex";
+  })();
+
+  // ---- CSV auth ----
   let usersPromise = null;
 
   function parseCSV(text){
-    // Small CSV parser supporting commas + quotes
     const rows = [];
     let row = [], cur = "", inQuotes = false;
 
@@ -383,98 +410,70 @@
       if (ch === '"' && inQuotes && next === '"'){ cur += '"'; i++; continue; }
       if (ch === '"'){ inQuotes = !inQuotes; continue; }
 
-      if (!inQuotes && (ch === ",")){
-        row.push(cur.trim()); cur = ""; continue;
-      }
+      if (!inQuotes && ch === ","){ row.push(cur.trim()); cur = ""; continue; }
       if (!inQuotes && (ch === "\n" || ch === "\r")){
-        if (cur.length || row.length){
-          row.push(cur.trim());
-          rows.push(row);
-        }
+        if (cur.length || row.length){ row.push(cur.trim()); rows.push(row); }
         row = []; cur = "";
-        // swallow \r\n
         if (ch === "\r" && next === "\n") i++;
         continue;
       }
       cur += ch;
     }
-    if (cur.length || row.length){
-      row.push(cur.trim());
-      rows.push(row);
-    }
+    if (cur.length || row.length){ row.push(cur.trim()); rows.push(row); }
     return rows.filter(r => r.some(cell => cell !== ""));
   }
-
-  function normalizeHeader(h){ return (h||"").toLowerCase().replace(/\s+/g,""); }
+  const normalizeHeader = (h) => (h||"").toLowerCase().replace(/\s+/g,"");
 
   async function loadUsers(){
     if (usersPromise) return usersPromise;
-
     usersPromise = (async () => {
       const res = await fetch("users.csv", { cache: "no-store" });
-      if (!res.ok) throw new Error("Could not load users.csv (check file name + repo root).");
+      if (!res.ok) throw new Error("Could not load users.csv (ensure it is in repo root).");
 
       const text = await res.text();
       const rows = parseCSV(text);
-
       if (!rows.length) throw new Error("users.csv is empty.");
 
       const header = rows[0].map(normalizeHeader);
       const uIdx = header.indexOf("username");
       const pIdx = header.indexOf("password");
-
-      if (uIdx === -1 || pIdx === -1){
-        throw new Error('users.csv must have headers: "username,password"');
-      }
+      if (uIdx === -1 || pIdx === -1) throw new Error('users.csv must have headers: "username,password"');
 
       const map = new Map();
       for (let i = 1; i < rows.length; i++){
         const u = (rows[i][uIdx] || "").trim();
         const p = (rows[i][pIdx] || "").trim();
-        if (!u) continue;
-        map.set(u.toLowerCase(), p);
+        if (u) map.set(u.toLowerCase(), p);
       }
-
       if (map.size === 0) throw new Error("No users found in users.csv.");
       return map;
     })();
-
     return usersPromise;
   }
 
-  function looksLikeSha256Hex(s){
-    return /^[a-f0-9]{64}$/i.test((s||"").trim());
-  }
-
+  const looksLikeSha256Hex = (s) => /^[a-f0-9]{64}$/i.test((s||"").trim());
   async function sha256Hex(str){
     const enc = new TextEncoder().encode(str);
     const buf = await crypto.subtle.digest("SHA-256", enc);
     return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2,"0")).join("");
   }
 
-  // ---- Flow: splash -> login ----
   function enter(){
     logo.classList.add("fade");
     statusEl.textContent = "Entering…";
-    setTimeout(() => {
-      show(login);
-      statusEl.textContent = "Login";
-    }, 900);
+    setTimeout(() => { show(login); statusEl.textContent = "Login"; }, 900);
   }
-
   logoCard.addEventListener("click", enter);
   logoCard.addEventListener("keydown", (e) => {
     if (e.key === "Enter" || e.key === " "){ e.preventDefault(); enter(); }
   });
 
-  // ---- Login using users.csv ----
   loginBtn.addEventListener("click", async () => {
     errorEl.textContent = "";
     statusEl.textContent = "Checking users.csv…";
 
     const username = (document.getElementById("user").value || "").trim();
     const password = (document.getElementById("pass").value || "").trim();
-
     if (!username || !password){
       statusEl.textContent = "Login";
       errorEl.textContent = "Enter a username and password.";
@@ -484,14 +483,12 @@
     try{
       const users = await loadUsers();
       const stored = users.get(username.toLowerCase());
-
       if (!stored){
         statusEl.textContent = "Login";
         errorEl.textContent = "Invalid username or password.";
         return;
       }
 
-      // If stored password looks like sha256 hex, compare with hash(password)
       let ok = false;
       if (looksLikeSha256Hex(stored)){
         const hashed = await sha256Hex(password);
@@ -508,14 +505,12 @@
 
       statusEl.textContent = `Welcome, ${username}`;
       show(dash);
-
     } catch (err){
       statusEl.textContent = "Login";
       errorEl.textContent = err.message || "Login error (check users.csv).";
     }
   });
 
-  // ---- Logout ----
   logoutBtn.addEventListener("click", () => {
     document.getElementById("user").value = "";
     document.getElementById("pass").value = "";
@@ -523,9 +518,8 @@
     statusEl.textContent = "Login";
   });
 
-  // Preload CSV after first interaction for snappier login
+  // Preload CSV after first interaction
   window.addEventListener("pointerdown", () => { loadUsers().catch(()=>{}); }, { once:true });
 </script>
 </body>
 </html>
-``
