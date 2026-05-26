@@ -1,0 +1,113 @@
+/* Reset */
+* {
+  box-sizing: border-box;
+  font-family: 'Segoe UI', Tahoma, sans-serif;
+}
+
+body, html {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Screens */
+.screen {
+  position: absolute;
+  inset: 0;
+  display: none;
+  justify-content: center;
+  align-items: center;
+}
+
+.screen.active {
+  display: flex;
+}
+
+/* Jungle Background */
+#splash {
+  background: url("https://images.unsplash.com/photo-1501785888041-af3ef285b470")
+    center/cover no-repeat;
+}
+
+.jungle-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 40, 20, 0.55);
+}
+
+/* Logo */
+#logo-container {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  cursor: pointer;
+}
+
+#logo {
+  width: 240px;
+  animation: pulse 2.5s infinite;
+  transition: opacity 0.8s ease, transform 0.8s ease;
+}
+
+.hint {
+  color: #d6ffd6;
+  margin-top: 12px;
+  font-size: 14px;
+  opacity: 0.8;
+}
+
+/* Pulse Effect */
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+
+/* Fade Out */
+.fade-out {
+  opacity: 0;
+  transform: scale(0.9);
+}
+
+/* Login Screen */
+#login {
+  background: linear-gradient(135deg, #0f3d2e, #041f17);
+}
+
+.login-box {
+  background: rgba(0, 0, 0, 0.55);
+  padding: 40px;
+  border-radius: 12px;
+  width: 300px;
+  text-align: center;
+  box-shadow: 0 0 30px rgba(0,0,0,0.6);
+}
+
+.login-box h1 {
+  color: #d6ffd6;
+  margin-bottom: 20px;
+}
+
+.login-box input {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 12px;
+  border: none;
+  border-radius: 6px;
+}
+
+.login-box button {
+  width: 100%;
+  padding: 10px;
+  background: #1fa75c;
+  border: none;
+  border-radius: 6px;
+  color: #fff;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.login-box button:hover {
+  background: #17924e;
+}
