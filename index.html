@@ -1,566 +1,199 @@
-<!DOCTYPE html><!DOCTYPE html<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>HPA Jungle Hub</title>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>HPA Jungle Hub</title>
 
-<style>
-  :root{
-    --text:#eef6f1;
-    --muted:#a9d1bb;
-    --accent:#3bff9a;
-    --accent2:#16c873;
-    --glass:rgba(0,0,0,.62);
-    --glass2:rgba(0,0,0,.38);
-    --border:rgba(255,255,255,.12);
-    --shadow:0 40px 120px rgba(0,0,0,.88);
-    --radius:20px;
-    --danger:#ff6b6b;
+  <style>
+    :root{
+      --text:#eef6f1;
+      --muted:#a9d1bb;
+      --accent:#3bff9a;
+      --glass:rgba(0,0,0,.65);
+      --border:rgba(255,255,255,.12);
+      --shadow:0 40px 120px rgba(0,0,0,.9);
+      --radius:20px;
+    }
 
-    /* JS will set this to: url('...') when it finds your file */
-    --bg-img: none;
-  }
+    *{
+      box-sizing:border-box;
+      font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial;
+    }
 
-  *{ box-sizing:border-box; font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial; }
-  html,body{ height:100%; margin:0; overflow:hidden; background:#010806; color:var(--text); }
+    html, body{
+      height:100%;
+      margin:0;
+      color:var(--text);
+      overflow:hidden;
+    }
 
-  /* =====================================================
-     ONE FIXED CINEMATIC BACKGROUND ACROSS ENTIRE SITE
-     - if the image isn't found, it falls back to a leafy pattern
-  ====================================================== */
-  body::before{
-    content:"";
-    position:fixed;
-    inset:0;
-    z-index:-5;
+    /* ===============================
+       ONE CINEMATIC BACKGROUND
+       (THIS IS THE FIX)
+    =============================== */
+    body{
+      background:
+        linear-gradient(rgba(0,0,0,.65), rgba(0,0,0,.85)),
+        url("jungle-bg.jpg") center / cover no-repeat fixed;
+    }
 
-    /* Fallback leafy pattern (always works even without your image) */
-    background-image:
-      radial-gradient(1200px 800px at 62% 10%, rgba(255,255,255,.10), transparent 55%),
-      linear-gradient(rgba(0,0,0,.55), rgba(0,0,0,.86)),
-      var(--bg-img),
-      radial-gradient(120px 90px at 20% 35%, rgba(59,255,154,.12), transparent 60%),
-      radial-gradient(150px 110px at 70% 55%, rgba(59,255,154,.10), transparent 60%),
-      radial-gradient(140px 120px at 40% 78%, rgba(59,255,154,.08), transparent 60%);
+    /* vignette */
+    body::after{
+      content:"";
+      position:fixed;
+      inset:0;
+      background:radial-gradient(circle at center, transparent 40%, rgba(0,0,0,.92));
+      pointer-events:none;
+    }
 
-    background-position: center, center, center, center, center, center;
-    background-size: cover, cover, cover, cover, cover, cover;
-    background-repeat: no-repeat;
+    /* Screens */
+    .screen{
+      position:absolute;
+      inset:0;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:24px;
+    }
+    .screen.active{ display:flex; }
 
-    transform: translateZ(0);
-  }
+    /* Card */
+    .card{
+      background:var(--glass);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      padding:34px 30px;
+      box-shadow:var(--shadow);
+      backdrop-filter:blur(18px);
+      max-width:420px;
+      width:100%;
+      text-align:center;
+    }
 
-  /* Vignette */
-  body::after{
-    content:"";
-    position:fixed;
-    inset:0;
-    z-index:-4;
-    background: radial-gradient(circle at center, transparent 32%, rgba(0,0,0,.92));
-    pointer-events:none;
-  }
+    /* Logo */
+    .logo{
+      width:260px;
+      max-width:80%;
+      animation:pulse 2.5s ease-in-out infinite;
+      transition:opacity .8s ease, transform .8s ease;
+    }
 
-  /* Film grain overlay */
-  .grain{
-    position:fixed;
-    inset:0;
-    z-index:-3;
-    pointer-events:none;
-    opacity:.18;
-    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='.55'/%3E%3C/svg%3E");
-    mix-blend-mode: overlay;
-  }
+    @keyframes pulse{
+      0%{ transform:scale(1); }
+      50%{ transform:scale(1.08); }
+      100%{ transform:scale(1); }
+    }
 
-  /* Slow mist */
-  .mist{
-    position:fixed;
-    inset:-30%;
-    z-index:-2;
-    pointer-events:none;
-    background:
-      radial-gradient(760px 260px at 20% 40%, rgba(255,255,255,.11), transparent 60%),
-      radial-gradient(980px 320px at 70% 55%, rgba(255,255,255,.09), transparent 65%);
-    filter: blur(28px);
-    animation: mistMove 22s ease-in-out infinite;
-    opacity:.85;
-    mix-blend-mode: screen;
-  }
-  @keyframes mistMove{
-    0%{ transform:translateX(-6%); }
-    50%{ transform:translateX(6%); }
-    100%{ transform:translateX(-6%); }
-  }
+    .logo.fade{
+      opacity:0;
+      transform:scale(.9);
+    }
 
-  /* Light shafts */
-  .rays{
-    position:fixed;
-    inset:-25%;
-    z-index:-2;
-    pointer-events:none;
-    background:
-      repeating-linear-gradient(
-        115deg,
-        rgba(255,255,255,.06) 0 28px,
-        rgba(255,255,255,0) 28px 120px
-      );
-    mask-image: radial-gradient(900px 620px at 30% 15%, black, transparent 70%);
-    -webkit-mask-image: radial-gradient(900px 620px at 30% 15%, black, transparent 70%);
-    opacity:.55;
-    animation: raysMove 14s ease-in-out infinite;
-    mix-blend-mode: screen;
-    filter: blur(.2px);
-  }
-  @keyframes raysMove{
-    0%{ transform:translateX(-2%); opacity:.28; }
-    50%{ transform:translateX(2%); opacity:.70; }
-    100%{ transform:translateX(-2%); opacity:.28; }
-  }
+    .hint{
+      margin-top:16px;
+      color:var(--muted);
+      font-size:14px;
+      letter-spacing:.4px;
+    }
 
-  /* Screens */
-  .screen{
-    position:absolute;
-    inset:0;
-    display:none;
-    align-items:center;
-    justify-content:center;
-    padding:22px;
-  }
-  .screen.active{ display:flex; }
+    /* Inputs */
+    input{
+      width:100%;
+      padding:12px;
+      margin-bottom:12px;
+      border-radius:12px;
+      border:1px solid var(--border);
+      background:rgba(0,0,0,.45);
+      color:var(--text);
+    }
 
-  /* Top status */
-  .topbar{
-    position:fixed;
-    top:14px; left:14px; right:14px;
-    display:flex;
-    justify-content:space-between;
-    gap:10px;
-    z-index:20;
-    pointer-events:none;
-  }
-  .chip{
-    pointer-events:auto;
-    padding:10px 12px;
-    border-radius:999px;
-    border:1px solid var(--border);
-    background:rgba(0,0,0,.35);
-    backdrop-filter: blur(14px);
-    box-shadow: 0 10px 22px rgba(0,0,0,.25);
-    color:var(--text);
-    user-select:none;
-  }
-  .chip.subtle{ opacity:.86; }
+    button{
+      width:100%;
+      padding:12px;
+      border-radius:14px;
+      border:none;
+      background:var(--accent);
+      color:#042015;
+      font-weight:900;
+      cursor:pointer;
+    }
 
-  /* Debug banner (only when bg missing) */
-  #bgDebug{
-    position:fixed;
-    left:14px;
-    right:14px;
-    bottom:14px;
-    z-index:30;
-    display:none;
-    gap:8px;
-    align-items:center;
-    justify-content:space-between;
-  }
-  #bgDebug code{
-    opacity:.9;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-    font-size:12px;
-    white-space:nowrap;
-    overflow:hidden;
-    text-overflow:ellipsis;
-    max-width: 62vw;
-    display:inline-block;
-    vertical-align:middle;
-  }
+    /* Dashboard */
+    .dash{
+      width:100%;
+      max-width:1000px;
+    }
 
-  /* Cards */
-  .card{
-    position:relative;
-    z-index:10;
-    width:min(420px, 92vw);
-    padding:34px 30px;
-    border-radius:var(--radius);
-    background:var(--glass);
-    border:1px solid var(--border);
-    backdrop-filter: blur(18px);
-    box-shadow:var(--shadow);
-  }
-  .card::before{
-    content:"";
-    position:absolute;
-    inset:0;
-    border-radius:inherit;
-    background:linear-gradient(145deg, rgba(255,255,255,.09), transparent 45%);
-    pointer-events:none;
-  }
+    .tiles{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+      gap:16px;
+      margin-top:20px;
+    }
 
-  /* Splash logo */
-  .logoWrap{ text-align:center; cursor:pointer; }
-  .logo{
-    width:260px;
-    max-width:78vw;
-    display:block;
-    margin:0 auto;
-    animation:pulse 2.6s ease-in-out infinite;
-    transition:opacity .9s ease, transform .9s ease, filter .9s ease;
-    filter: drop-shadow(0 18px 36px rgba(0,0,0,.65));
-  }
-  @keyframes pulse{
-    0%{ transform:scale(1); }
-    50%{ transform:scale(1.09); }
-    100%{ transform:scale(1); }
-  }
-  .logo.fade{
-    opacity:0;
-    transform:scale(.88);
-    filter: blur(2px) drop-shadow(0 18px 36px rgba(0,0,0,.65));
-  }
-  .hint{
-    margin-top:16px;
-    font-size:14px;
-    color:var(--muted);
-    letter-spacing:.5px;
-  }
-
-  /* Login form */
-  h1,h2{ margin:0 0 10px; }
-  .sub{ margin:0 0 18px; color:var(--muted); font-size:14px; }
-
-  label{ display:block; margin-bottom:12px; }
-  .lbl{ display:block; font-size:12px; color:rgba(238,246,241,.72); margin:0 0 6px; }
-
-  input{
-    width:100%;
-    padding:12px 12px;
-    border-radius:12px;
-    border:1px solid var(--border);
-    background:rgba(0,0,0,.46);
-    color:var(--text);
-    outline:none;
-  }
-  input:focus{
-    border-color:rgba(59,255,154,.55);
-    box-shadow: 0 0 0 4px rgba(59,255,154,.12);
-  }
-
-  .btn{
-    width:100%;
-    padding:12px 14px;
-    border-radius:14px;
-    border:none;
-    background:linear-gradient(135deg,var(--accent),var(--accent2));
-    color:#041b12;
-    font-weight:950;
-    cursor:pointer;
-    box-shadow: 0 16px 34px rgba(59,255,154,.10);
-  }
-  .btn:active{ transform: translateY(1px); }
-
-  .error{
-    margin-top:12px;
-    min-height:18px;
-    color:var(--danger);
-    font-size:13px;
-  }
-
-  /* Dashboard */
-  #dash{ align-items:flex-start; }
-  .dashShell{ width:min(1100px, 96vw); }
-  .dashHeader{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    gap:12px;
-    margin-top: 60px;
-    margin-bottom: 18px;
-  }
-  .pill{
-    border:1px solid var(--border);
-    background:rgba(0,0,0,.35);
-    padding:10px 14px;
-    border-radius:999px;
-    color:var(--text);
-    cursor:pointer;
-    backdrop-filter: blur(14px);
-  }
-  .grid{
-    display:grid;
-    grid-template-columns:repeat(12,1fr);
-    gap:16px;
-  }
-  .tile{
-    grid-column: span 6;
-    background:var(--glass2);
-    border:1px solid var(--border);
-    border-radius:var(--radius);
-    padding:18px;
-    box-shadow: 0 22px 60px rgba(0,0,0,.55);
-    backdrop-filter: blur(16px);
-  }
-  .tile h3{ margin:0 0 8px; }
-  .tile p{ margin:0; color:var(--muted); font-size:14px; }
-
-  @media (max-width: 860px){
-    .tile{ grid-column: span 12; }
-    .dashHeader{ flex-direction:column; align-items:flex-start; }
-    #bgDebug code{ max-width: 56vw; }
-  }
-</style>
+    .tile{
+      background:var(--glass);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      padding:18px;
+      box-shadow:var(--shadow);
+    }
+  </style>
 </head>
 
 <body>
-  <div class="grain" aria-hidden="true"></div>
-  <div class="mist" aria-hidden="true"></div>
-  <div class="rays" aria-hidden="true"></div>
 
-  <div class="topbar">
-    <div id="status" class="chip subtle">Cinematic Jungle</div>
-    <div id="bgStatus" class="chip subtle">Background: detecting…</div>
+<!-- SPLASH -->
+<section id="splash" class="screen active">
+  <div class="card" id="enter">
+    <img src="hpa-logo.png" class="logo" id="logo" alt="HPA Team Logo">
+    <div class="hint">Click to enter</div>
   </div>
+</section>
 
-  <div id="bgDebug" class="chip">
-    <span>⚠ Background image not found.</span>
-    <span>Looking for: <code id="bgList"></code></span>
+<!-- LOGIN -->
+<section id="login" class="screen">
+  <div class="card">
+    <h2>HPA Team Login</h2>
+    <input id="user" placeholder="Username">
+    <input id="pass" type="password" placeholder="Password">
+    <button id="loginBtn">Login</button>
   </div>
+</section>
 
-  <!-- SPLASH -->
-  <section id="splash" class="screen active" aria-label="Splash">
-    <div class="card logoWrap" id="logoCard" role="button" tabindex="0" aria-label="Enter HPA Jungle Hub">
-      <img id="logo" class="logo" src="hpa-logo.png" alt="HPA Team Logo">
-      <div class="hint">Click the logo to enter</div>
+<!-- DASHBOARD -->
+<section id="dash" class="screen">
+  <div class="dash">
+    <h2>HPA Jungle Hub</h2>
+    <div class="tiles">
+      <div class="tile">🌴 Florida Hiring</div>
+      <div class="tile">📌 Promos</div>
+      <div class="tile">📞 Contacts</div>
+      <div class="tile">🧭 Updates</div>
     </div>
-  </section>
-
-  <!-- LOGIN -->
-  <section id="login" class="screen" aria-label="Login">
-    <div class="card">
-      <h1>HPA Team Login</h1>
-      <p class="sub">Credentials are validated against <strong>users.csv</strong>.</p>
-
-      <label>
-        <span class="lbl">Username</span>
-        <input id="user" autocomplete="username" placeholder="e.g., lucas">
-      </label>
-
-      <label>
-        <span class="lbl">Password</span>
-        <input id="pass" type="password" autocomplete="current-password" placeholder="••••••••">
-      </label>
-
-      <button id="loginBtn" class="btn">Login</button>
-      <div id="error" class="error" role="alert" aria-live="assertive"></div>
-    </div>
-  </section>
-
-  <!-- DASHBOARD -->
-  <section id="dash" class="screen" aria-label="Dashboard">
-    <div class="dashShell">
-      <div class="dashHeader">
-        <div>
-          <h2>HPA Jungle Hub</h2>
-          <div class="sub">Same cinematic background everywhere ✅</div>
-        </div>
-        <button id="logoutBtn" class="pill">Logout</button>
-      </div>
-
-      <div class="grid">
-        <article class="tile"><h3>🌴 Florida Hiring</h3><p>Role overview and application workflow (placeholder).</p></article>
-        <article class="tile"><h3>📌 Promos</h3><p>Current hot buys and promos (placeholder).</p></article>
-        <article class="tile"><h3>📞 Contacts</h3><p>Key internal contacts (placeholder).</p></article>
-        <article class="tile"><h3>🧭 Updates</h3><p>Internal updates feed (placeholder).</p></article>
-      </div>
-    </div>
-  </section>
+  </div>
+</section>
 
 <script>
-  /* ===========================
-     Screen flow
-  ============================ */
   const splash = document.getElementById("splash");
   const login  = document.getElementById("login");
   const dash   = document.getElementById("dash");
+  const logo   = document.getElementById("logo");
 
-  const logoCard = document.getElementById("logoCard");
-  const logo = document.getElementById("logo");
-
-  const loginBtn = document.getElementById("loginBtn");
-  const logoutBtn = document.getElementById("logoutBtn");
-  const errorEl = document.getElementById("error");
-  const statusEl = document.getElementById("status");
-
-  function show(screen){
-    [splash, login, dash].forEach(s => s.classList.remove("active"));
-    screen.classList.add("active");
-  }
-  function enter(){
+  document.getElementById("enter").onclick = () => {
     logo.classList.add("fade");
-    statusEl.textContent = "Entering…";
-    setTimeout(() => { show(login); statusEl.textContent = "Login"; }, 900);
-  }
-  logoCard.addEventListener("click", enter);
-  logoCard.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" || e.key === " "){ e.preventDefault(); enter(); }
-  });
+    setTimeout(() => {
+      splash.classList.remove("active");
+      login.classList.add("active");
+    }, 800);
+  };
 
-  /* ===========================
-     Background detector (FIXES "black only")
-     - tries common folders + filename variations
-     - sets CSS var --bg-img to the first file it finds
-  ============================ */
-  const bgStatus = document.getElementById("bgStatus");
-  const bgDebug  = document.getElementById("bgDebug");
-  const bgListEl = document.getElementById("bgList");
-
-  const folders = ["", "assets/", "images/", "img/"];
-  const names = [
-    "jungle-bg.jpg","jungle-bg.jpeg","jungle-bg.png","jungle-bg.webp",
-    "Jungle-bg.jpg","Jungle-bg.jpeg","Jungle-bg.png","Jungle-bg.webp",
-    "Jungle-BG.jpg","Jungle-BG.jpeg","Jungle-BG.png","Jungle-BG.webp",
-    "background.jpg","background.png","bg.jpg","bg.png"
-  ];
-
-  const candidates = [];
-  for (const f of folders){
-    for (const n of names) candidates.push(f + n);
-  }
-  bgListEl.textContent = candidates.slice(0, 10).join(", ") + " …";
-
-  function tryLoadImage(path){
-    return new Promise((resolve) => {
-      const img = new Image();
-      img.onload = () => resolve(true);
-      img.onerror = () => resolve(false);
-      img.src = path + "?v=" + Date.now();
-    });
-  }
-
-  (async () => {
-    let found = null;
-    for (const path of candidates){
-      const ok = await tryLoadImage(path);
-      if (ok){ found = path; break; }
-    }
-
-    if (found){
-      document.documentElement.style.setProperty("--bg-img", `url("${found}")`);
-      bgStatus.textContent = "Background: " + found;
-      bgDebug.style.display = "none";
-    } else {
-      bgStatus.textContent = "Background: NOT FOUND";
-      bgDebug.style.display = "inline-flex";
-    }
-  })();
-
-  /* ===========================
-     CSV Auth (demo)
-  ============================ */
-  let usersPromise = null;
-
-  function parseCSV(text){
-    const rows = [];
-    let row = [], cur = "", inQuotes = false;
-    for (let i = 0; i < text.length; i++){
-      const ch = text[i], next = text[i+1];
-      if (ch === '"' && inQuotes && next === '"'){ cur += '"'; i++; continue; }
-      if (ch === '"'){ inQuotes = !inQuotes; continue; }
-      if (!inQuotes && ch === ","){ row.push(cur.trim()); cur=""; continue; }
-      if (!inQuotes && (ch === "\n" || ch === "\r")){
-        if (cur.length || row.length){ row.push(cur.trim()); rows.push(row); }
-        row=[]; cur="";
-        if (ch === "\r" && next === "\n") i++;
-        continue;
-      }
-      cur += ch;
-    }
-    if (cur.length || row.length){ row.push(cur.trim()); rows.push(row); }
-    return rows.filter(r => r.some(c => c !== ""));
-  }
-  const normalizeHeader = (h) => (h||"").toLowerCase().replace(/\s+/g,"");
-
-  async function loadUsers(){
-    if (usersPromise) return usersPromise;
-    usersPromise = (async () => {
-      const res = await fetch("users.csv", { cache: "no-store" });
-      if (!res.ok) throw new Error("Could not load users.csv (must be in repo root).");
-      const text = await res.text();
-      const rows = parseCSV(text);
-      if (!rows.length) throw new Error("users.csv is empty.");
-
-      const header = rows[0].map(normalizeHeader);
-      const uIdx = header.indexOf("username");
-      const pIdx = header.indexOf("password");
-      if (uIdx === -1 || pIdx === -1) throw new Error('users.csv must have headers: "username,password"');
-
-      const map = new Map();
-      for (let i=1; i<rows.length; i++){
-        const u = (rows[i][uIdx] || "").trim();
-        const p = (rows[i][pIdx] || "").trim();
-        if (u) map.set(u.toLowerCase(), p);
-      }
-      if (map.size === 0) throw new Error("No users found in users.csv.");
-      return map;
-    })();
-    return usersPromise;
-  }
-
-  const looksLikeSha256Hex = (s) => /^[a-f0-9]{64}$/i.test((s||"").trim());
-  async function sha256Hex(str){
-    const enc = new TextEncoder().encode(str);
-    const buf = await crypto.subtle.digest("SHA-256", enc);
-    return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2,"0")).join("");
-  }
-
-  loginBtn.addEventListener("click", async () => {
-    errorEl.textContent = "";
-    statusEl.textContent = "Checking users.csv…";
-
-    const username = (document.getElementById("user").value || "").trim();
-    const password = (document.getElementById("pass").value || "").trim();
-
-    if (!username || !password){
-      statusEl.textContent = "Login";
-      errorEl.textContent = "Enter a username and password.";
-      return;
-    }
-
-    try{
-      const users = await loadUsers();
-      const stored = users.get(username.toLowerCase());
-      if (!stored){
-        statusEl.textContent = "Login";
-        errorEl.textContent = "Invalid username or password.";
-        return;
-      }
-
-      let ok = false;
-      if (looksLikeSha256Hex(stored)){
-        ok = (await sha256Hex(password)).toLowerCase() === stored.toLowerCase();
-      } else {
-        ok = password === stored;
-      }
-
-      if (!ok){
-        statusEl.textContent = "Login";
-        errorEl.textContent = "Invalid username or password.";
-        return;
-      }
-
-      statusEl.textContent = `Welcome, ${username}`;
-      show(dash);
-    } catch (err){
-      statusEl.textContent = "Login";
-      errorEl.textContent = err.message || "Login error (check users.csv).";
-    }
-  });
-
-  logoutBtn.addEventListener("click", () => {
-    document.getElementById("user").value = "";
-    document.getElementById("pass").value = "";
-    show(login);
-    statusEl.textContent = "Login";
-  });
+  document.getElementById("loginBtn").onclick = () => {
+    login.classList.remove("active");
+    dash.classList.add("active");
+  };
 </script>
+
 </body>
 </html>
-
-<html lang="en">
-<head>
