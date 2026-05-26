@@ -10,41 +10,70 @@
       --text:#eef6f1;
       --muted:#a9d1bb;
       --accent:#3bff9a;
-      --glass:rgba(0,0,0,.65);
+      --accent2:#16c873;
+      --glass:rgba(0,0,0,.64);
+      --glass2:rgba(0,0,0,.38);
       --border:rgba(255,255,255,.12);
-      --shadow:0 40px 120px rgba(0,0,0,.9);
-      --radius:20px;
+      --shadow:0 40px 120px rgba(0,0,0,.90);
+      --radius:18px;
+      --danger:#ff6b6b;
+      --warn:#ffd166;
+      --ok:#4ade80;
+      --chip:rgba(0,0,0,.35);
     }
 
-    *{
-      box-sizing:border-box;
-      font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial;
-    }
+    *{ box-sizing:border-box; font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial; }
+    html, body{ height:100%; margin:0; color:var(--text); overflow:hidden; }
 
-    html, body{
-      height:100%;
-      margin:0;
-      color:var(--text);
-      overflow:hidden;
-    }
-
-    /* ===============================
-       ONE CINEMATIC BACKGROUND
-       (THIS IS THE FIX)
-    =============================== */
+    /* ✅ One cinematic background across entire site */
     body{
       background:
-        linear-gradient(rgba(0,0,0,.65), rgba(0,0,0,.85)),
+        linear-gradient(rgba(0,0,0,.62), rgba(0,0,0,.86)),
         url("jungle-bg.jpg") center / cover no-repeat fixed;
     }
-
-    /* vignette */
     body::after{
       content:"";
       position:fixed;
       inset:0;
-      background:radial-gradient(circle at center, transparent 40%, rgba(0,0,0,.92));
+      background: radial-gradient(circle at center, transparent 38%, rgba(0,0,0,.93));
       pointer-events:none;
+    }
+
+    /* Cinematic overlays */
+    .grain{
+      position:fixed; inset:0; pointer-events:none; opacity:.16; z-index:0;
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)' opacity='.55'/%3E%3C/svg%3E");
+      mix-blend-mode: overlay;
+    }
+    .mist{
+      position:fixed; inset:-30%; pointer-events:none; z-index:0;
+      background:
+        radial-gradient(780px 260px at 22% 40%, rgba(255,255,255,.10), transparent 60%),
+        radial-gradient(980px 320px at 72% 55%, rgba(255,255,255,.08), transparent 65%);
+      filter: blur(28px);
+      opacity:.85;
+      mix-blend-mode: screen;
+      animation: mistMove 22s ease-in-out infinite;
+    }
+    @keyframes mistMove{
+      0%{ transform:translateX(-6%); }
+      50%{ transform:translateX(6%); }
+      100%{ transform:translateX(-6%); }
+    }
+    .rays{
+      position:fixed; inset:-25%; pointer-events:none; z-index:0;
+      background: repeating-linear-gradient(115deg, rgba(255,255,255,.06) 0 28px, rgba(255,255,255,0) 28px 120px);
+      mask-image: radial-gradient(900px 620px at 30% 15%, black, transparent 70%);
+      -webkit-mask-image: radial-gradient(900px 620px at 30% 15%, black, transparent 70%);
+      opacity:.50;
+      mix-blend-mode: screen;
+      filter: blur(.2px);
+      animation: raysMove 14s ease-in-out infinite;
+    }
+    @keyframes raysMove{
+      0%{ transform:translateX(-2%); opacity:.28; }
+      50%{ transform:translateX(2%); opacity:.70; }
+      100%{ transform:translateX(-2%); opacity:.28; }
     }
 
     /* Screens */
@@ -54,146 +83,1652 @@
       display:none;
       align-items:center;
       justify-content:center;
-      padding:24px;
+      padding:22px;
+      z-index:1;
     }
     .screen.active{ display:flex; }
 
-    /* Card */
+    /* Topbar */
+    .topbar{
+      position:fixed;
+      top:14px; left:14px; right:14px;
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      z-index:10;
+      pointer-events:none;
+    }
+    .chip{
+      pointer-events:auto;
+      padding:10px 12px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      background:var(--chip);
+      backdrop-filter: blur(14px);
+      box-shadow: 0 10px 22px rgba(0,0,0,.25);
+      color:var(--text);
+      user-select:none;
+      font-size:13px;
+    }
+    .chip.subtle{ opacity:.86; }
+
+    /* Cards */
     .card{
       background:var(--glass);
       border:1px solid var(--border);
       border-radius:var(--radius);
-      padding:34px 30px;
+      padding:30px;
       box-shadow:var(--shadow);
-      backdrop-filter:blur(18px);
-      max-width:420px;
-      width:100%;
-      text-align:center;
+      backdrop-filter: blur(18px);
+      width:min(440px, 92vw);
+      position:relative;
+    }
+    .card::before{
+      content:"";
+      position:absolute; inset:0;
+      border-radius:inherit;
+      background:linear-gradient(145deg, rgba(255,255,255,.09), transparent 45%);
+      pointer-events:none;
     }
 
-    /* Logo */
+    /* Splash */
+    .logoWrap{ text-align:center; cursor:pointer; user-select:none; }
     .logo{
       width:260px;
-      max-width:80%;
-      animation:pulse 2.5s ease-in-out infinite;
-      transition:opacity .8s ease, transform .8s ease;
+      max-width:78vw;
+      display:block;
+      margin:0 auto;
+      animation:pulse 2.6s ease-in-out infinite;
+      transition:opacity .85s ease, transform .85s ease, filter .85s ease;
+      filter: drop-shadow(0 18px 36px rgba(0,0,0,.65));
     }
-
     @keyframes pulse{
       0%{ transform:scale(1); }
-      50%{ transform:scale(1.08); }
+      50%{ transform:scale(1.09); }
       100%{ transform:scale(1); }
     }
-
-    .logo.fade{
-      opacity:0;
-      transform:scale(.9);
-    }
-
-    .hint{
-      margin-top:16px;
-      color:var(--muted);
-      font-size:14px;
-      letter-spacing:.4px;
-    }
+    .logo.fade{ opacity:0; transform:scale(.88); filter: blur(2px) drop-shadow(0 18px 36px rgba(0,0,0,.65)); }
+    .hint{ margin-top:16px; color:var(--muted); font-size:14px; letter-spacing:.5px; }
 
     /* Inputs */
-    input{
+    label{ display:block; margin:12px 0; }
+    .lbl{ display:block; margin:0 0 6px; font-size:12px; color:rgba(238,246,241,.72); }
+    input, textarea, select{
       width:100%;
       padding:12px;
-      margin-bottom:12px;
       border-radius:12px;
       border:1px solid var(--border);
-      background:rgba(0,0,0,.45);
+      background:rgba(0,0,0,.46);
       color:var(--text);
+      outline:none;
+    }
+    textarea{ min-height:90px; resize:vertical; }
+    input:focus, textarea:focus, select:focus{
+      border-color:rgba(59,255,154,.55);
+      box-shadow: 0 0 0 4px rgba(59,255,154,.12);
     }
 
-    button{
+    .btn{
       width:100%;
-      padding:12px;
+      padding:12px 14px;
       border-radius:14px;
       border:none;
-      background:var(--accent);
-      color:#042015;
-      font-weight:900;
+      background:linear-gradient(135deg,var(--accent),var(--accent2));
+      color:#041b12;
+      font-weight:950;
+      cursor:pointer;
+      box-shadow: 0 16px 34px rgba(59,255,154,.10);
+    }
+    .btn:active{ transform: translateY(1px); }
+
+    .btnGhost{
+      border:1px solid var(--border);
+      background:rgba(0,0,0,.35);
+      color:var(--text);
+      padding:10px 14px;
+      border-radius:14px;
+      cursor:pointer;
+    }
+    .row{
+      display:flex; gap:10px; align-items:center;
+    }
+    .row > *{ flex:1; }
+
+    .error{ color:var(--danger); font-size:13px; margin-top:10px; min-height:18px; }
+    .note{ color:var(--muted); font-size:13px; margin:8px 0 0; }
+
+    /* App shell */
+    .appShell{
+      width:min(1180px, 96vw);
+      height: calc(100vh - 92px);
+      margin-top: 64px;
+      display:grid;
+      grid-template-columns: 260px 1fr;
+      gap:16px;
+    }
+
+    .side{
+      background:rgba(0,0,0,.35);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      box-shadow: 0 22px 60px rgba(0,0,0,.45);
+      backdrop-filter: blur(16px);
+      padding:14px;
+      overflow:auto;
+    }
+
+    .main{
+      background:rgba(0,0,0,.30);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      box-shadow: 0 22px 60px rgba(0,0,0,.45);
+      backdrop-filter: blur(16px);
+      padding:16px;
+      overflow:auto;
+      position:relative;
+    }
+
+    .navTitle{ font-weight:900; letter-spacing:.4px; margin:6px 0 10px; }
+    .navBtn{
+      width:100%;
+      text-align:left;
+      padding:12px 12px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(0,0,0,.28);
+      color:var(--text);
+      cursor:pointer;
+      margin:8px 0;
+    }
+    .navBtn.active{
+      border-color: rgba(59,255,154,.35);
+      background: rgba(59,255,154,.10);
+    }
+
+    .toolbar{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom:12px;
+    }
+    .toolbar h2{ margin:0; }
+    .toolbar .tools{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+
+    /* ORDER TRACKER - calendar */
+    .weekHeader{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      justify-content:space-between;
+      margin-bottom:10px;
+      flex-wrap:wrap;
+    }
+    .weekHeader .left,
+    .weekHeader .right{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+
+    .weekGrid{
+      display:grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap:12px;
+      min-height: 420px;
+    }
+    .dayCol{
+      background:rgba(0,0,0,.35);
+      border:1px solid var(--border);
+      border-radius:14px;
+      padding:10px;
+      min-height: 360px;
+    }
+    .dayCol h4{
+      margin:0 0 8px;
+      font-size:13px;
+      color:var(--muted);
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:8px;
+    }
+    .dayDate{ opacity:.85; font-weight:700; color:rgba(238,246,241,.78); font-size:12px; }
+
+    .truckCard{
+      background:rgba(0,0,0,.55);
+      border:1px solid rgba(255,255,255,.10);
+      border-radius:12px;
+      padding:10px;
+      margin-bottom:8px;
+      font-size:12.5px;
+      cursor:pointer;
+    }
+    .truckCard:hover{ border-color: rgba(59,255,154,.25); }
+    .truckCard strong{ display:block; font-size:13px; }
+    .truckMeta{ color:rgba(238,246,241,.72); margin-top:4px; display:flex; gap:8px; flex-wrap:wrap; }
+    .pillMini{
+      padding:4px 8px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(0,0,0,.28);
+      font-size:11px;
+    }
+    .dangerMini{
+      border-color: rgba(255,107,107,.35);
+      background: rgba(255,107,107,.08);
+    }
+
+    /* Modal */
+    .modal{
+      position:fixed; inset:0;
+      background: rgba(0,0,0,.62);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:18px;
+      z-index:30;
+    }
+    .modal.active{ display:flex; }
+    .modalCard{
+      width:min(860px, 96vw);
+      max-height: 90vh;
+      overflow:auto;
+      padding:18px;
+      border-radius:var(--radius);
+      border:1px solid var(--border);
+      background: var(--glass);
+      backdrop-filter: blur(18px);
+      box-shadow: var(--shadow);
+      position:relative;
+    }
+    .modalHead{
+      display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;
+      margin-bottom:10px;
+    }
+    .closeX{
+      border:1px solid var(--border);
+      background:rgba(0,0,0,.35);
+      color:var(--text);
+      border-radius:999px;
+      padding:8px 12px;
       cursor:pointer;
     }
 
-    /* Dashboard */
-    .dash{
+    /* Items table in truck modal */
+    .itemsTable{
       width:100%;
-      max-width:1000px;
+      border-collapse:separate;
+      border-spacing:0;
+      margin-top:10px;
+      overflow:hidden;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.10);
+    }
+    .itemsTable th, .itemsTable td{
+      padding:10px;
+      border-bottom:1px solid rgba(255,255,255,.08);
+      vertical-align:top;
+      font-size:13px;
+    }
+    .itemsTable th{
+      text-align:left;
+      color:rgba(238,246,241,.72);
+      background:rgba(0,0,0,.30);
+      font-weight:800;
+    }
+    .itemsTable tr:last-child td{ border-bottom:none; }
+    .tinyBtn{
+      padding:8px 10px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(0,0,0,.30);
+      color:var(--text);
+      cursor:pointer;
+      white-space:nowrap;
+    }
+    .tinyBtn.danger{
+      border-color: rgba(255,107,107,.35);
+      background: rgba(255,107,107,.10);
     }
 
-    .tiles{
+    /* Photo library */
+    .photoGrid{
       display:grid;
-      grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
-      gap:16px;
-      margin-top:20px;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap:12px;
+      margin-top:12px;
+    }
+    .photoTile{
+      background:rgba(0,0,0,.40);
+      border:1px solid rgba(255,255,255,.10);
+      border-radius:14px;
+      padding:10px;
+      overflow:hidden;
+    }
+    .photoTile img{
+      width:100%; height:130px; object-fit:cover; border-radius:10px;
+      display:block;
+    }
+    .photoMeta{ margin-top:8px; color:rgba(238,246,241,.72); font-size:12px; display:flex; flex-wrap:wrap; gap:6px; }
+    .dropZone{
+      border:1px dashed rgba(255,255,255,.22);
+      background:rgba(0,0,0,.20);
+      border-radius:14px;
+      padding:14px;
+      color:rgba(238,246,241,.72);
+      text-align:center;
+    }
+    .dropZone strong{ color:var(--text); }
+    .lightbox{
+      position:fixed; inset:0;
+      background:rgba(0,0,0,.82);
+      display:none; align-items:center; justify-content:center;
+      z-index:40;
+      padding:16px;
+    }
+    .lightbox.active{ display:flex; }
+    .lightbox img{
+      max-width: 96vw; max-height: 92vh;
+      border-radius:16px;
+      box-shadow: var(--shadow);
     }
 
-    .tile{
-      background:var(--glass);
-      border:1px solid var(--border);
-      border-radius:var(--radius);
-      padding:18px;
-      box-shadow:var(--shadow);
+    /* Availability */
+    .table{
+      width:100%;
+      border-collapse:separate;
+      border-spacing:0;
+      border:1px solid rgba(255,255,255,.10);
+      border-radius:14px;
+      overflow:hidden;
+      margin-top:10px;
+    }
+    .table th,.table td{
+      padding:10px;
+      border-bottom:1px solid rgba(255,255,255,.08);
+      font-size:13px;
+      text-align:left;
+    }
+    .table th{ background:rgba(0,0,0,.30); color:rgba(238,246,241,.72); font-weight:900; }
+    .table tr:last-child td{ border-bottom:none; }
+
+    /* Issue tracker */
+    .statusChip{
+      padding:5px 10px;
+      border-radius:999px;
+      font-size:12px;
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(0,0,0,.28);
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      white-space:nowrap;
+    }
+    .statusOpen{ border-color: rgba(255,209,102,.35); background: rgba(255,209,102,.10); }
+    .statusSubmitted{ border-color: rgba(59,255,154,.25); background: rgba(59,255,154,.08); }
+    .statusResolved{ border-color: rgba(74,222,128,.28); background: rgba(74,222,128,.08); }
+
+    /* Responsive */
+    @media (max-width: 940px){
+      .appShell{ grid-template-columns: 1fr; height: calc(100vh - 86px); }
+      .side{ order:2; }
+      .main{ order:1; }
+      .weekGrid{ grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 520px){
+      .weekGrid{ grid-template-columns: 1fr; }
     }
   </style>
 </head>
 
 <body>
+  <div class="grain" aria-hidden="true"></div>
+  <div class="mist" aria-hidden="true"></div>
+  <div class="rays" aria-hidden="true"></div>
 
-<!-- SPLASH -->
-<section id="splash" class="screen active">
-  <div class="card" id="enter">
-    <img src="hpa-logo.png" class="logo" id="logo" alt="HPA Team Logo">
-    <div class="hint">Click to enter</div>
+  <div class="topbar">
+    <div id="statusChip" class="chip subtle">Cinematic Jungle</div>
+    <div id="userChip" class="chip subtle">Not signed in</div>
   </div>
-</section>
 
-<!-- LOGIN -->
-<section id="login" class="screen">
-  <div class="card">
-    <h2>HPA Team Login</h2>
-    <input id="user" placeholder="Username">
-    <input id="pass" type="password" placeholder="Password">
-    <button id="loginBtn">Login</button>
-  </div>
-</section>
+  <!-- SPLASH -->
+  <section id="splash" class="screen active" aria-label="Splash">
+    <div class="card logoWrap" id="logoCard" role="button" tabindex="0" aria-label="Enter HPA Jungle Hub">
+      <img id="logo" class="logo" src="hpa-logo.png" alt="HPA Team Logo">
+      <div class="hint">Click the logo to enter</div>
+      <div class="note">Background stays consistent across every page.</div>
+    </div>
+  </section>
 
-<!-- DASHBOARD -->
-<section id="dash" class="screen">
-  <div class="dash">
-    <h2>HPA Jungle Hub</h2>
-    <div class="tiles">
-      <div class="tile">🌴 Florida Hiring</div>
-      <div class="tile">📌 Promos</div>
-      <div class="tile">📞 Contacts</div>
-      <div class="tile">🧭 Updates</div>
+  <!-- LOGIN -->
+  <section id="login" class="screen" aria-label="Login">
+    <div class="card">
+      <h2>HPA Team Login</h2>
+      <div class="note">Demo login is enabled (any username + password). You can wire CSV later if desired.</div>
+
+      <label>
+        <span class="lbl">Username</span>
+        <input id="loginUser" autocomplete="username" placeholder="e.g., lucas">
+      </label>
+
+      <label>
+        <span class="lbl">Password</span>
+        <input id="loginPass" type="password" autocomplete="current-password" placeholder="••••••••">
+      </label>
+
+      <button id="loginBtn" class="btn">Login</button>
+      <div id="loginError" class="error" role="alert" aria-live="assertive"></div>
+    </div>
+  </section>
+
+  <!-- APP -->
+  <section id="app" class="screen" aria-label="App">
+    <div class="appShell">
+      <aside class="side">
+        <div class="navTitle">HPA Jungle Hub</div>
+
+        <button class="navBtn active" data-page="order">🚚 Order Tracker</button>
+        <button class="navBtn" data-page="photos">📷 Photo Library</button>
+        <button class="navBtn" data-page="avail">📦 Availability</button>
+        <button class="navBtn" data-page="issues">🧯 Issue Tracker</button>
+
+        <div style="height:10px"></div>
+        <button id="logoutBtn" class="navBtn" style="border-color: rgba(255,107,107,.25); background: rgba(255,107,107,.08);">Logout</button>
+
+        <div class="note" style="margin-top:10px">
+          Data saves in this browser (localStorage). For shared team use, you’d connect a backend later.
+        </div>
+      </aside>
+
+      <main class="main">
+        <!-- ORDER TRACKER PAGE -->
+        <div id="page-order" class="page">
+          <div class="toolbar">
+            <h2>Order Tracker</h2>
+            <div class="tools">
+              <button id="prevWeek" class="btnGhost">← Prev</button>
+              <button id="todayWeek" class="btnGhost">This Week</button>
+              <button id="nextWeek" class="btnGhost">Next →</button>
+              <button id="newTruckBtn" class="btnGhost">＋ New Truck</button>
+              <button id="deleteWeekBtn" class="btnGhost" style="border-color: rgba(255,107,107,.25); background: rgba(255,107,107,.08);">Delete Week</button>
+            </div>
+          </div>
+
+          <div class="weekHeader">
+            <div class="left">
+              <div class="chip subtle" id="weekLabel">Week</div>
+              <div class="chip subtle" id="truckCountLabel">0 trucks</div>
+            </div>
+            <div class="right">
+              <div class="chip subtle">Calendar view (weekly)</div>
+            </div>
+          </div>
+
+          <div class="weekGrid" id="weekGrid"></div>
+
+          <div class="note" style="margin-top:10px">
+            Tip: Each truck card contains vendor(s), PO, trucking company, price, and totals.
+            Click a truck to view/edit details.
+          </div>
+        </div>
+
+        <!-- PHOTO LIBRARY PAGE -->
+        <div id="page-photos" class="page" style="display:none;">
+          <div class="toolbar">
+            <h2>Photo Library</h2>
+            <div class="tools">
+              <button id="photoAddBtn" class="btnGhost">＋ Add Photos</button>
+              <select id="photoWeekFilter"></select>
+              <input id="photoVendorFilter" placeholder="Filter vendor (optional)" />
+              <input id="photoItemFilter" placeholder="Filter item (optional)" />
+            </div>
+          </div>
+
+          <div class="dropZone" id="dropZone">
+            <strong>Drag & drop</strong> images here or click “Add Photos”.
+            <div class="note">Photos are stored in this browser. Very large uploads may hit localStorage limits.</div>
+          </div>
+
+          <div class="photoGrid" id="photoGrid"></div>
+        </div>
+
+        <!-- AVAILABILITY PAGE -->
+        <div id="page-avail" class="page" style="display:none;">
+          <div class="toolbar">
+            <h2>Availability</h2>
+            <div class="tools">
+              <select id="availWeekSelect"></select>
+              <input id="availVendorFilter" placeholder="Vendor filter (optional)" />
+              <input id="availItemFilter" placeholder="Item filter (optional)" />
+              <button id="availExportBtn" class="btnGhost">Export CSV</button>
+            </div>
+          </div>
+
+          <div class="note">Auto-generated from Order Tracker item lines for the selected week.</div>
+          <table class="table" id="availTable">
+            <thead>
+              <tr>
+                <th>Vendor</th>
+                <th>Item</th>
+                <th>Total CC Racks</th>
+                <th>Total Plant Qty</th>
+                <th>Trucks</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <!-- ISSUE TRACKER PAGE -->
+        <div id="page-issues" class="page" style="display:none;">
+          <div class="toolbar">
+            <h2>Issue Tracker</h2>
+            <div class="tools">
+              <button id="newIssueBtn" class="btnGhost">＋ New Issue</button>
+              <select id="issueStatusFilter">
+                <option value="">All statuses</option>
+                <option value="Open">Open</option>
+                <option value="Submitted">Submitted</option>
+                <option value="Resolved">Resolved</option>
+              </select>
+              <button id="issueExportBtn" class="btnGhost">Export CSV</button>
+            </div>
+          </div>
+
+          <table class="table" id="issueTable">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Status</th>
+                <th>Vendor</th>
+                <th>Truck / PO</th>
+                <th>Item</th>
+                <th>Type</th>
+                <th>Notes</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </main>
+    </div>
+  </section>
+
+  <!-- TRUCK MODAL -->
+  <div id="truckModal" class="modal" aria-hidden="true">
+    <div class="modalCard">
+      <div class="modalHead">
+        <div>
+          <h3 id="truckModalTitle" style="margin:0;">New Truck</h3>
+          <div class="note" id="truckModalSub">Add a truckload and its item lines. Totals auto-calc.</div>
+        </div>
+        <div class="row" style="max-width: 360px; justify-content:flex-end;">
+          <button id="truckDeleteBtn" class="tinyBtn danger" style="display:none;">Delete Truck</button>
+          <button id="truckCloseBtn" class="closeX">Close ✕</button>
+        </div>
+      </div>
+
+      <div class="row">
+        <label>
+          <span class="lbl">Pickup Date</span>
+          <input id="t_pickup" type="date"/>
+        </label>
+        <label>
+          <span class="lbl">PO</span>
+          <input id="t_po" placeholder="PO #"/>
+        </label>
+      </div>
+
+      <div class="row">
+        <label>
+          <span class="lbl">Vendor / Vendors</span>
+          <input id="t_vendors" placeholder="e.g., Homestead - CC / Anchor, Omega"/>
+        </label>
+        <label>
+          <span class="lbl">Trucking Company</span>
+          <input id="t_trucking" placeholder="e.g., Scotlynn"/>
+        </label>
+        <label>
+          <span class="lbl">Truck Price</span>
+          <input id="t_price" type="number" step="0.01" placeholder="4650"/>
+        </label>
+      </div>
+
+      <label>
+        <span class="lbl">Notes</span>
+        <textarea id="t_notes" placeholder="General notes for this truck..."></textarea>
+      </label>
+
+      <div class="row" style="margin-top:6px;">
+        <div class="chip subtle" id="t_totals">Totals: 0 racks • 0 plants</div>
+        <button id="addItemRowBtn" class="tinyBtn">＋ Add Item</button>
+      </div>
+
+      <table class="itemsTable" id="itemsTable">
+        <thead>
+          <tr>
+            <th style="width:40%;">Item</th>
+            <th style="width:15%;">CC Rack Count</th>
+            <th style="width:15%;">Plant Qty</th>
+            <th>Notes</th>
+            <th style="width:1%;"></th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+
+      <div class="row" style="margin-top:12px;">
+        <button id="saveTruckBtn" class="btn">Save Truck</button>
+      </div>
     </div>
   </div>
-</section>
 
-<script>
-  const splash = document.getElementById("splash");
-  const login  = document.getElementById("login");
-  const dash   = document.getElementById("dash");
-  const logo   = document.getElementById("logo");
+  <!-- PHOTO UPLOAD MODAL -->
+  <div id="photoModal" class="modal" aria-hidden="true">
+    <div class="modalCard">
+      <div class="modalHead">
+        <div>
+          <h3 style="margin:0;">Add Photos</h3>
+          <div class="note">Tag photos so you can find them fast (week/vendor/truck/item).</div>
+        </div>
+        <button id="photoCloseBtn" class="closeX">Close ✕</button>
+      </div>
 
-  document.getElementById("enter").onclick = () => {
-    logo.classList.add("fade");
-    setTimeout(() => {
-      splash.classList.remove("active");
-      login.classList.add("active");
-    }, 800);
-  };
+      <div class="row">
+        <label>
+          <span class="lbl">Week</span>
+          <select id="p_week"></select>
+        </label>
+        <label>
+          <span class="lbl">Vendor</span>
+          <input id="p_vendor" placeholder="Vendor"/>
+        </label>
+        <label>
+          <span class="lbl">Truck (optional)</span>
+          <select id="p_truck"></select>
+        </label>
+      </div>
 
-  document.getElementById("loginBtn").onclick = () => {
-    login.classList.remove("active");
-    dash.classList.add("active");
-  };
-</script>
+      <label>
+        <span class="lbl">Item (optional)</span>
+        <input id="p_item" placeholder='e.g., 6" Monstera'/>
+      </label>
 
+      <label>
+        <span class="lbl">Select Images</span>
+        <input id="p_files" type="file" accept="image/*" multiple />
+      </label>
+
+      <button id="photoSaveBtn" class="btn">Save Photos</button>
+      <div class="note">If uploads fail due to browser storage limits, reduce image size or quantity.</div>
+    </div>
+  </div>
+
+  <!-- ISSUE MODAL -->
+  <div id="issueModal" class="modal" aria-hidden="true">
+    <div class="modalCard">
+      <div class="modalHead">
+        <div>
+          <h3 id="issueTitle" style="margin:0;">New Issue</h3>
+          <div class="note">Track shortages, damages, delivery issues, etc.</div>
+        </div>
+        <button id="issueCloseBtn" class="closeX">Close ✕</button>
+      </div>
+
+      <div class="row">
+        <label>
+          <span class="lbl">Date</span>
+          <input id="i_date" type="date"/>
+        </label>
+        <label>
+          <span class="lbl">Status</span>
+          <select id="i_status">
+            <option>Open</option>
+            <option>Submitted</option>
+            <option>Resolved</option>
+          </select>
+        </label>
+        <label>
+          <span class="lbl">Type</span>
+          <select id="i_type">
+            <option>Shortage</option>
+            <option>Damage</option>
+            <option>Delivery</option>
+            <option>Other</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="row">
+        <label>
+          <span class="lbl">Vendor</span>
+          <input id="i_vendor" placeholder="Vendor"/>
+        </label>
+        <label>
+          <span class="lbl">Truck (optional)</span>
+          <select id="i_truck"></select>
+        </label>
+        <label>
+          <span class="lbl">Item</span>
+          <input id="i_item" placeholder="Item"/>
+        </label>
+      </div>
+
+      <label>
+        <span class="lbl">Notes</span>
+        <textarea id="i_notes" placeholder="What happened? What do we need?"></textarea>
+      </label>
+
+      <label>
+        <span class="lbl">Attach Photo (optional)</span>
+        <select id="i_photo"></select>
+      </label>
+
+      <button id="issueSaveBtn" class="btn">Save Issue</button>
+    </div>
+  </div>
+
+  <!-- LIGHTBOX -->
+  <div id="lightbox" class="lightbox" aria-hidden="true">
+    <img id="lightboxImg" alt="Photo preview" />
+  </div>
+
+  <script>
+    /*********************************************************
+     * Storage
+     *********************************************************/
+    const LS = {
+      trucksKey: "hpa_trucks_v1",
+      photosKey: "hpa_photos_v1",
+      issuesKey: "hpa_issues_v1",
+      userKey:   "hpa_user_v1",
+      get(key, fallback){
+        try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; }
+      },
+      set(key, value){
+        localStorage.setItem(key, JSON.stringify(value));
+      }
+    };
+
+    /*********************************************************
+     * Utilities: Dates & Week handling
+     *********************************************************/
+    const pad2 = n => String(n).padStart(2,"0");
+    const fmtDate = (d) => `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
+    const parseDate = (s) => {
+      const [y,m,dd] = (s||"").split("-").map(Number);
+      if(!y||!m||!dd) return null;
+      return new Date(y, m-1, dd);
+    };
+
+    // Monday as start of week
+    function startOfWeek(date){
+      const d = new Date(date);
+      const day = (d.getDay()+6)%7; // Mon=0..Sun=6
+      d.setDate(d.getDate() - day);
+      d.setHours(0,0,0,0);
+      return d;
+    }
+    function addDays(date, days){
+      const d = new Date(date);
+      d.setDate(d.getDate() + days);
+      return d;
+    }
+    function weekKeyFromDate(date){
+      // ISO-ish key: YYYY-WW based on Monday start
+      const d = startOfWeek(date);
+      const year = d.getFullYear();
+      // week number approx:
+      const jan4 = new Date(year,0,4);
+      const week1 = startOfWeek(jan4);
+      const diff = Math.round((d - week1) / (7*24*60*60*1000));
+      const week = diff + 1;
+      return `${year}-W${pad2(week)}`;
+    }
+    function weekLabel(date){
+      const s = startOfWeek(date);
+      const e = addDays(s,6);
+      return `${weekKeyFromDate(date)} • ${s.toLocaleDateString()} – ${e.toLocaleDateString()}`;
+    }
+
+    /*********************************************************
+     * App Navigation / Screens
+     *********************************************************/
+    const splash = document.getElementById("splash");
+    const login  = document.getElementById("login");
+    const app    = document.getElementById("app");
+    const logoCard = document.getElementById("logoCard");
+    const logo = document.getElementById("logo");
+    const statusChip = document.getElementById("statusChip");
+    const userChip = document.getElementById("userChip");
+
+    function showScreen(which){
+      [splash, login, app].forEach(s => s.classList.remove("active"));
+      which.classList.add("active");
+    }
+
+    function setUser(name){
+      LS.set(LS.userKey, { name });
+      userChip.textContent = `Signed in: ${name}`;
+    }
+    function getUser(){
+      return LS.get(LS.userKey, null);
+    }
+
+    logoCard.addEventListener("click", () => {
+      logo.classList.add("fade");
+      statusChip.textContent = "Entering…";
+      setTimeout(() => {
+        showScreen(login);
+        statusChip.textContent = "Login";
+      }, 850);
+    });
+
+    // Demo login
+    document.getElementById("loginBtn").addEventListener("click", () => {
+      const u = document.getElementById("loginUser").value.trim();
+      const p = document.getElementById("loginPass").value.trim();
+      const err = document.getElementById("loginError");
+      err.textContent = "";
+      if(!u || !p){
+        err.textContent = "Enter a username and password.";
+        return;
+      }
+      setUser(u);
+      statusChip.textContent = "Ready";
+      showScreen(app);
+      renderAll();
+    });
+
+    document.getElementById("logoutBtn").addEventListener("click", () => {
+      localStorage.removeItem(LS.userKey);
+      document.getElementById("loginUser").value = "";
+      document.getElementById("loginPass").value = "";
+      userChip.textContent = "Not signed in";
+      logo.classList.remove("fade");
+      showScreen(login);
+      statusChip.textContent = "Login";
+    });
+
+    // Pages
+    const navBtns = Array.from(document.querySelectorAll(".navBtn[data-page]"));
+    const pages = {
+      order:  document.getElementById("page-order"),
+      photos: document.getElementById("page-photos"),
+      avail:  document.getElementById("page-avail"),
+      issues: document.getElementById("page-issues")
+    };
+    function showPage(key){
+      Object.values(pages).forEach(p => p.style.display = "none");
+      pages[key].style.display = "block";
+      navBtns.forEach(b => b.classList.toggle("active", b.dataset.page === key));
+      // page-specific refresh
+      if(key === "order") renderOrder();
+      if(key === "photos") renderPhotos();
+      if(key === "avail") renderAvailability();
+      if(key === "issues") renderIssues();
+    }
+    navBtns.forEach(b => b.addEventListener("click", () => showPage(b.dataset.page)));
+
+    /*********************************************************
+     * Order Tracker Data Model
+     *********************************************************/
+    // truck = { id, pickupDate, weekKey, vendors, po, trucking, price, notes, items:[{item, racks, qty, notes}], totals:{racks, qty} }
+    function loadTrucks(){ return LS.get(LS.trucksKey, []); }
+    function saveTrucks(list){ LS.set(LS.trucksKey, list); }
+
+    // Current week anchor
+    let weekAnchor = new Date();
+    weekAnchor = startOfWeek(weekAnchor);
+
+    const weekGrid = document.getElementById("weekGrid");
+    const weekLabelEl = document.getElementById("weekLabel");
+    const truckCountLabel = document.getElementById("truckCountLabel");
+
+    document.getElementById("prevWeek").addEventListener("click", () => { weekAnchor = addDays(weekAnchor, -7); renderOrder(); });
+    document.getElementById("nextWeek").addEventListener("click", () => { weekAnchor = addDays(weekAnchor,  7); renderOrder(); });
+    document.getElementById("todayWeek").addEventListener("click", () => { weekAnchor = startOfWeek(new Date()); renderOrder(); });
+
+    document.getElementById("deleteWeekBtn").addEventListener("click", () => {
+      const wk = weekKeyFromDate(weekAnchor);
+      const trucks = loadTrucks();
+      const keep = trucks.filter(t => t.weekKey !== wk);
+      if(keep.length === trucks.length){
+        alert("No trucks to delete for this week.");
+        return;
+      }
+      const ok = confirm(`Delete ALL trucks for ${wk}? This cannot be undone.`);
+      if(!ok) return;
+      saveTrucks(keep);
+      renderAll();
+    });
+
+    /*********************************************************
+     * Truck Modal (Add/Edit)
+     *********************************************************/
+    const truckModal = document.getElementById("truckModal");
+    const truckCloseBtn = document.getElementById("truckCloseBtn");
+    const truckDeleteBtn = document.getElementById("truckDeleteBtn");
+    const truckModalTitle = document.getElementById("truckModalTitle");
+    const truckTotalsEl = document.getElementById("t_totals");
+    const itemsTbody = document.querySelector("#itemsTable tbody");
+
+    let editingTruckId = null;
+
+    document.getElementById("newTruckBtn").addEventListener("click", () => openTruckModal(null));
+    truckCloseBtn.addEventListener("click", () => closeTruckModal());
+    truckModal.addEventListener("click", (e) => { if(e.target === truckModal) closeTruckModal(); });
+
+    function openTruckModal(truck){
+      editingTruckId = truck?.id ?? null;
+      truckModalTitle.textContent = editingTruckId ? "Edit Truck" : "New Truck";
+      truckDeleteBtn.style.display = editingTruckId ? "inline-block" : "none";
+
+      // defaults
+      const defaultDate = fmtDate(addDays(weekAnchor, 1)); // Tuesday-ish default
+      document.getElementById("t_pickup").value = truck?.pickupDate ?? defaultDate;
+      document.getElementById("t_po").value = truck?.po ?? "";
+      document.getElementById("t_vendors").value = truck?.vendors ?? "";
+      document.getElementById("t_trucking").value = truck?.trucking ?? "";
+      document.getElementById("t_price").value = truck?.price ?? "";
+      document.getElementById("t_notes").value = truck?.notes ?? "";
+
+      // items
+      itemsTbody.innerHTML = "";
+      const items = truck?.items?.length ? truck.items : [{ item:"", racks:"", qty:"", notes:"" }];
+      items.forEach(addItemRow);
+      recalcTotals();
+
+      truckModal.classList.add("active");
+      truckModal.setAttribute("aria-hidden","false");
+    }
+
+    function closeTruckModal(){
+      truckModal.classList.remove("active");
+      truckModal.setAttribute("aria-hidden","true");
+      editingTruckId = null;
+    }
+
+    function addItemRow(itemObj = { item:"", racks:"", qty:"", notes:"" }){
+      const tr = document.createElement("tr");
+
+      tr.innerHTML = `
+        <td><input class="it_item" placeholder='e.g., 6" Monstera' value="${escapeHtml(itemObj.item)}"></td>
+        <td><input class="it_racks" type="number" step="1" placeholder="0" value="${escapeHtml(itemObj.racks)}"></td>
+        <td><input class="it_qty" type="number" step="1" placeholder="0" value="${escapeHtml(itemObj.qty)}"></td>
+        <td><input class="it_notes" placeholder="Line notes (optional)" value="${escapeHtml(itemObj.notes)}"></td>
+        <td><button class="tinyBtn danger" title="Remove item">✕</button></td>
+      `;
+
+      tr.querySelector("button").addEventListener("click", () => {
+        tr.remove();
+        if(itemsTbody.children.length === 0) addItemRow();
+        recalcTotals();
+      });
+
+      ["input","change"].forEach(evt => {
+        tr.querySelectorAll("input").forEach(inp => inp.addEventListener(evt, recalcTotals));
+      });
+
+      itemsTbody.appendChild(tr);
+    }
+
+    document.getElementById("addItemRowBtn").addEventListener("click", () => addItemRow());
+
+    function recalcTotals(){
+      let racks = 0, qty = 0;
+      itemsTbody.querySelectorAll("tr").forEach(tr => {
+        racks += Number(tr.querySelector(".it_racks").value || 0);
+        qty   += Number(tr.querySelector(".it_qty").value || 0);
+      });
+      truckTotalsEl.textContent = `Totals: ${racks.toLocaleString()} racks • ${qty.toLocaleString()} plants`;
+    }
+
+    document.getElementById("saveTruckBtn").addEventListener("click", () => {
+      const pickupDate = document.getElementById("t_pickup").value;
+      const po = document.getElementById("t_po").value.trim();
+      const vendors = document.getElementById("t_vendors").value.trim();
+      const trucking = document.getElementById("t_trucking").value.trim();
+      const price = document.getElementById("t_price").value.trim();
+      const notes = document.getElementById("t_notes").value.trim();
+
+      if(!pickupDate){
+        alert("Pickup date is required.");
+        return;
+      }
+
+      // collect items
+      const items = [];
+      itemsTbody.querySelectorAll("tr").forEach(tr => {
+        const item = tr.querySelector(".it_item").value.trim();
+        const racks = tr.querySelector(".it_racks").value.trim();
+        const qty = tr.querySelector(".it_qty").value.trim();
+        const lineNotes = tr.querySelector(".it_notes").value.trim();
+        // keep even if item empty? We'll skip fully empty rows
+        if(item || racks || qty || lineNotes){
+          items.push({ item, racks:Number(racks||0), qty:Number(qty||0), notes:lineNotes });
+        }
+      });
+
+      // totals
+      const totals = items.reduce((a, it) => ({ racks:a.racks+Number(it.racks||0), qty:a.qty+Number(it.qty||0) }), { racks:0, qty:0 });
+
+      const wk = weekKeyFromDate(parseDate(pickupDate));
+
+      const trucks = loadTrucks();
+      if(editingTruckId){
+        const idx = trucks.findIndex(t => t.id === editingTruckId);
+        if(idx >= 0){
+          trucks[idx] = {
+            ...trucks[idx],
+            pickupDate, weekKey:wk, po, vendors, trucking, price:Number(price||0), notes,
+            items, totals
+          };
+        }
+      } else {
+        trucks.push({
+          id: cryptoRandomId(),
+          pickupDate,
+          weekKey:wk,
+          po, vendors, trucking, price:Number(price||0), notes,
+          items,
+          totals
+        });
+      }
+      saveTrucks(trucks);
+      closeTruckModal();
+      renderAll();
+    });
+
+    truckDeleteBtn.addEventListener("click", () => {
+      if(!editingTruckId) return;
+      const ok = confirm("Delete this truck?");
+      if(!ok) return;
+      const trucks = loadTrucks().filter(t => t.id !== editingTruckId);
+      saveTrucks(trucks);
+      closeTruckModal();
+      renderAll();
+    });
+
+    function openTruckDetail(id){
+      const trucks = loadTrucks();
+      const truck = trucks.find(t => t.id === id);
+      if(!truck) return;
+      openTruckModal(truck);
+    }
+
+    /*********************************************************
+     * Render Order Tracker
+     *********************************************************/
+    function renderOrder(){
+      showPage("order"); // ensures visible if called from elsewhere
+      const wk = weekKeyFromDate(weekAnchor);
+      weekLabelEl.textContent = weekLabel(weekAnchor);
+
+      const trucks = loadTrucks().filter(t => t.weekKey === wk);
+      truckCountLabel.textContent = `${trucks.length} truck${trucks.length===1?"":"s"}`;
+
+      weekGrid.innerHTML = "";
+      const start = startOfWeek(weekAnchor);
+      const dayNames = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+
+      for(let i=0;i<7;i++){
+        const date = addDays(start, i);
+        const col = document.createElement("div");
+        col.className = "dayCol";
+        col.dataset.date = fmtDate(date);
+
+        col.innerHTML = `<h4>${dayNames[i]} <span class="dayDate">${date.toLocaleDateString()}</span></h4>`;
+        // trucks matching date
+        const dayTrucks = trucks
+          .filter(t => t.pickupDate === fmtDate(date))
+          .sort((a,b) => (a.vendors||"").localeCompare(b.vendors||""));
+
+        dayTrucks.forEach(t => {
+          const card = document.createElement("div");
+          card.className = "truckCard";
+          const price = Number(t.price||0);
+          card.innerHTML = `
+            <strong>${escapeHtml(t.vendors || "Truck")}</strong>
+            <div class="truckMeta">
+              <span class="pillMini">PO ${escapeHtml(t.po || "—")}</span>
+              <span class="pillMini">${escapeHtml(t.trucking || "Trucking —")}</span>
+              <span class="pillMini">$${price.toLocaleString()}</span>
+              <span class="pillMini">${Number(t.totals?.racks||0).toLocaleString()} racks</span>
+              <span class="pillMini">${Number(t.totals?.qty||0).toLocaleString()} plants</span>
+            </div>
+            <div class="truckMeta" style="margin-top:6px;">
+              <span class="pillMini">${(t.items?.length||0)} item lines</span>
+              <span class="pillMini dangerMini">Click to edit</span>
+            </div>
+          `;
+          card.addEventListener("click", () => openTruckDetail(t.id));
+          col.appendChild(card);
+        });
+
+        weekGrid.appendChild(col);
+      }
+
+      // refresh dependent pages dropdowns
+      refreshWeekSelectors();
+    }
+
+    /*********************************************************
+     * Photo Library
+     *********************************************************/
+    function loadPhotos(){ return LS.get(LS.photosKey, []); }
+    function savePhotos(list){ LS.set(LS.photosKey, list); }
+
+    const photoGrid = document.getElementById("photoGrid");
+    const dropZone = document.getElementById("dropZone");
+    const photoModal = document.getElementById("photoModal");
+    const lightbox = document.getElementById("lightbox");
+    const lightboxImg = document.getElementById("lightboxImg");
+
+    document.getElementById("photoAddBtn").addEventListener("click", openPhotoModal);
+    document.getElementById("photoCloseBtn").addEventListener("click", closePhotoModal);
+    photoModal.addEventListener("click", (e) => { if(e.target === photoModal) closePhotoModal(); });
+
+    lightbox.addEventListener("click", () => {
+      lightbox.classList.remove("active");
+      lightbox.setAttribute("aria-hidden","true");
+    });
+
+    // Drag & drop
+    ["dragenter","dragover"].forEach(ev => dropZone.addEventListener(ev, (e) => {
+      e.preventDefault(); e.stopPropagation();
+      dropZone.style.borderColor = "rgba(59,255,154,.45)";
+    }));
+    ["dragleave","drop"].forEach(ev => dropZone.addEventListener(ev, (e) => {
+      e.preventDefault(); e.stopPropagation();
+      dropZone.style.borderColor = "rgba(255,255,255,.22)";
+    }));
+    dropZone.addEventListener("drop", (e) => {
+      const files = Array.from(e.dataTransfer.files || []).filter(f => f.type.startsWith("image/"));
+      if(files.length) {
+        openPhotoModal();
+        document.getElementById("p_files").files = fileListFromArray(files);
+      }
+    });
+
+    function openPhotoModal(){
+      refreshWeekSelectors();
+      populatePhotoTruckOptions();
+      photoModal.classList.add("active");
+      photoModal.setAttribute("aria-hidden","false");
+      // default week to current week
+      document.getElementById("p_week").value = weekKeyFromDate(weekAnchor);
+    }
+    function closePhotoModal(){
+      photoModal.classList.remove("active");
+      photoModal.setAttribute("aria-hidden","true");
+      document.getElementById("p_files").value = "";
+    }
+
+    document.getElementById("photoSaveBtn").addEventListener("click", async () => {
+      const week = document.getElementById("p_week").value;
+      const vendor = document.getElementById("p_vendor").value.trim();
+      const truckId = document.getElementById("p_truck").value;
+      const item = document.getElementById("p_item").value.trim();
+      const files = Array.from(document.getElementById("p_files").files || []);
+
+      if(files.length === 0){
+        alert("Select at least one image.");
+        return;
+      }
+
+      const photos = loadPhotos();
+      for(const f of files){
+        const dataUrl = await fileToDataURL(f);
+        photos.push({
+          id: cryptoRandomId(),
+          week,
+          vendor,
+          truckId: truckId || "",
+          item,
+          createdAt: new Date().toISOString(),
+          name: f.name,
+          dataUrl
+        });
+      }
+      savePhotos(photos);
+      closePhotoModal();
+      renderPhotos();
+      // also update issue photo picker
+      populateIssuePhotoOptions();
+    });
+
+    // Filters
+    document.getElementById("photoWeekFilter").addEventListener("change", renderPhotos);
+    document.getElementById("photoVendorFilter").addEventListener("input", renderPhotos);
+    document.getElementById("photoItemFilter").addEventListener("input", renderPhotos);
+
+    function renderPhotos(){
+      refreshWeekSelectors();
+      showPage("photos");
+      const week = document.getElementById("photoWeekFilter").value;
+      const vFilter = document.getElementById("photoVendorFilter").value.trim().toLowerCase();
+      const iFilter = document.getElementById("photoItemFilter").value.trim().toLowerCase();
+
+      const trucks = loadTrucks();
+      const photos = loadPhotos()
+        .filter(p => !week || p.week === week)
+        .filter(p => !vFilter || (p.vendor||"").toLowerCase().includes(vFilter))
+        .filter(p => !iFilter || (p.item||"").toLowerCase().includes(iFilter))
+        .sort((a,b) => (b.createdAt||"").localeCompare(a.createdAt||""));
+
+      photoGrid.innerHTML = "";
+
+      if(photos.length === 0){
+        photoGrid.innerHTML = `<div class="note">No photos yet. Add photos and tag them by week/vendor/truck/item.</div>`;
+        return;
+      }
+
+      for(const p of photos){
+        const t = trucks.find(x => x.id === p.truckId);
+        const tile = document.createElement("div");
+        tile.className = "photoTile";
+        tile.innerHTML = `
+          <img src="${p.dataUrl}" alt="Photo"/>
+          <div class="photoMeta">
+            <span class="pillMini">${escapeHtml(p.week || "—")}</span>
+            <span class="pillMini">${escapeHtml(p.vendor || "Vendor —")}</span>
+            <span class="pillMini">${escapeHtml(p.item || "Item —")}</span>
+            <span class="pillMini">${escapeHtml(t?.po ? ("PO "+t.po) : "Truck —")}</span>
+          </div>
+          <div class="row" style="margin-top:10px;">
+            <button class="tinyBtn">View</button>
+            <button class="tinyBtn danger">Delete</button>
+          </div>
+        `;
+        const [viewBtn, delBtn] = tile.querySelectorAll("button");
+        viewBtn.addEventListener("click", () => {
+          lightboxImg.src = p.dataUrl;
+          lightbox.classList.add("active");
+          lightbox.setAttribute("aria-hidden","false");
+        });
+        delBtn.addEventListener("click", () => {
+          const ok = confirm("Delete this photo?");
+          if(!ok) return;
+          savePhotos(loadPhotos().filter(x => x.id !== p.id));
+          renderPhotos();
+          populateIssuePhotoOptions();
+        });
+
+        photoGrid.appendChild(tile);
+      }
+
+      populatePhotoTruckOptions();
+    }
+
+    function populatePhotoTruckOptions(){
+      const sel = document.getElementById("p_truck");
+      const trucks = loadTrucks().slice().sort((a,b) => (a.pickupDate||"").localeCompare(b.pickupDate||""));
+      sel.innerHTML = `<option value="">No truck</option>` + trucks.map(t =>
+        `<option value="${t.id}">${escapeHtml(t.pickupDate)} • PO ${escapeHtml(t.po||"—")} • ${escapeHtml(t.vendors||"Truck")}</option>`
+      ).join("");
+    }
+
+    /*********************************************************
+     * Availability (derived from trucks)
+     *********************************************************/
+    document.getElementById("availWeekSelect").addEventListener("change", renderAvailability);
+    document.getElementById("availVendorFilter").addEventListener("input", renderAvailability);
+    document.getElementById("availItemFilter").addEventListener("input", renderAvailability);
+
+    document.getElementById("availExportBtn").addEventListener("click", () => {
+      const rows = buildAvailabilityRows();
+      downloadCSV("availability.csv", rows, ["Vendor","Item","Total CC Racks","Total Plant Qty","Trucks"]);
+    });
+
+    function buildAvailabilityRows(){
+      const week = document.getElementById("availWeekSelect").value;
+      const vFilter = document.getElementById("availVendorFilter").value.trim().toLowerCase();
+      const iFilter = document.getElementById("availItemFilter").value.trim().toLowerCase();
+
+      const trucks = loadTrucks().filter(t => !week || t.weekKey === week);
+
+      // aggregate by vendor+item
+      const map = new Map();
+      for(const t of trucks){
+        const vendor = (t.vendors || "").trim() || "—";
+        const truckLabel = `PO ${t.po||"—"} (${t.pickupDate||"—"})`;
+        for(const it of (t.items || [])){
+          const itemName = (it.item || "").trim() || "—";
+          if(vFilter && !vendor.toLowerCase().includes(vFilter)) continue;
+          if(iFilter && !itemName.toLowerCase().includes(iFilter)) continue;
+
+          const key = vendor + "||" + itemName;
+          const cur = map.get(key) || { Vendor:vendor, Item:itemName, racks:0, qty:0, trucks:new Set() };
+          cur.racks += Number(it.racks||0);
+          cur.qty   += Number(it.qty||0);
+          cur.trucks.add(truckLabel);
+          map.set(key, cur);
+        }
+      }
+
+      const rows = Array.from(map.values())
+        .sort((a,b) => (a.Vendor+a.Item).localeCompare(b.Vendor+b.Item))
+        .map(x => ({
+          Vendor: x.Vendor,
+          Item: x.Item,
+          "Total CC Racks": x.racks,
+          "Total Plant Qty": x.qty,
+          Trucks: x.trucks.size
+        }));
+
+      return rows;
+    }
+
+    function renderAvailability(){
+      refreshWeekSelectors();
+      showPage("avail");
+
+      const tbody = document.querySelector("#availTable tbody");
+      const rows = buildAvailabilityRows();
+
+      tbody.innerHTML = "";
+      if(rows.length === 0){
+        tbody.innerHTML = `<tr><td colspan="5" style="color: rgba(238,246,241,.72);">No availability data for this week yet. Add trucks + items in Order Tracker.</td></tr>`;
+        return;
+      }
+
+      for(const r of rows){
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${escapeHtml(r.Vendor)}</td>
+          <td>${escapeHtml(r.Item)}</td>
+          <td>${Number(r["Total CC Racks"]).toLocaleString()}</td>
+          <td>${Number(r["Total Plant Qty"]).toLocaleString()}</td>
+          <td>${Number(r.Trucks).toLocaleString()}</td>
+        `;
+        tbody.appendChild(tr);
+      }
+    }
+
+    /*********************************************************
+     * Issue Tracker
+     *********************************************************/
+    function loadIssues(){ return LS.get(LS.issuesKey, []); }
+    function saveIssues(list){ LS.set(LS.issuesKey, list); }
+
+    const issueModal = document.getElementById("issueModal");
+    document.getElementById("newIssueBtn").addEventListener("click", () => openIssueModal());
+    document.getElementById("issueCloseBtn").addEventListener("click", () => closeIssueModal());
+    issueModal.addEventListener("click", (e) => { if(e.target === issueModal) closeIssueModal(); });
+
+    document.getElementById("issueStatusFilter").addEventListener("change", renderIssues);
+    document.getElementById("issueExportBtn").addEventListener("click", () => {
+      const issues = filteredIssues();
+      downloadCSV("issues.csv", issues.map(i => ({
+        Date: i.date,
+        Status: i.status,
+        Vendor: i.vendor,
+        Truck: i.truckLabel,
+        Item: i.item,
+        Type: i.type,
+        Notes: i.notes
+      })), ["Date","Status","Vendor","Truck","Item","Type","Notes"]);
+    });
+
+    function openIssueModal(){
+      refreshWeekSelectors();
+      populateIssueTruckOptions();
+      populateIssuePhotoOptions();
+
+      document.getElementById("i_date").value = fmtDate(new Date());
+      document.getElementById("i_status").value = "Open";
+      document.getElementById("i_type").value = "Shortage";
+      document.getElementById("i_vendor").value = "";
+      document.getElementById("i_truck").value = "";
+      document.getElementById("i_item").value = "";
+      document.getElementById("i_notes").value = "";
+      document.getElementById("i_photo").value = "";
+
+      issueModal.classList.add("active");
+      issueModal.setAttribute("aria-hidden","false");
+    }
+    function closeIssueModal(){
+      issueModal.classList.remove("active");
+      issueModal.setAttribute("aria-hidden","true");
+    }
+
+    document.getElementById("issueSaveBtn").addEventListener("click", () => {
+      const date = document.getElementById("i_date").value;
+      const status = document.getElementById("i_status").value;
+      const type = document.getElementById("i_type").value;
+      const vendor = document.getElementById("i_vendor").value.trim();
+      const truckId = document.getElementById("i_truck").value;
+      const item = document.getElementById("i_item").value.trim();
+      const notes = document.getElementById("i_notes").value.trim();
+      const photoId = document.getElementById("i_photo").value;
+
+      const trucks = loadTrucks();
+      const t = trucks.find(x => x.id === truckId);
+      const truckLabel = t ? `${t.pickupDate} • PO ${t.po||"—"} • ${t.vendors||"Truck"}` : "";
+
+      if(!date || !vendor || !item){
+        alert("Date, Vendor, and Item are required.");
+        return;
+      }
+
+      const issues = loadIssues();
+      issues.push({
+        id: cryptoRandomId(),
+        date, status, type, vendor,
+        truckId: truckId || "",
+        truckLabel,
+        item, notes,
+        photoId: photoId || "",
+        createdAt: new Date().toISOString()
+      });
+      saveIssues(issues);
+      closeIssueModal();
+      renderIssues();
+    });
+
+    function statusClass(status){
+      if(status === "Open") return "statusChip statusOpen";
+      if(status === "Submitted") return "statusChip statusSubmitted";
+      if(status === "Resolved") return "statusChip statusResolved";
+      return "statusChip";
+    }
+
+    function filteredIssues(){
+      const filter = document.getElementById("issueStatusFilter").value;
+      const issues = loadIssues().slice().sort((a,b) => (b.createdAt||"").localeCompare(a.createdAt||""));
+      return issues.filter(i => !filter || i.status === filter);
+    }
+
+    function renderIssues(){
+      showPage("issues");
+      const tbody = document.querySelector("#issueTable tbody");
+      const issues = filteredIssues();
+
+      tbody.innerHTML = "";
+      if(issues.length === 0){
+        tbody.innerHTML = `<tr><td colspan="8" style="color: rgba(238,246,241,.72);">No issues yet. Click “New Issue” to log one.</td></tr>`;
+        return;
+      }
+
+      for(const i of issues){
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${escapeHtml(i.date)}</td>
+          <td><span class="${statusClass(i.status)}">${escapeHtml(i.status)}</span></td>
+          <td>${escapeHtml(i.vendor)}</td>
+          <td>${escapeHtml(i.truckLabel || "—")}</td>
+          <td>${escapeHtml(i.item)}</td>
+          <td>${escapeHtml(i.type)}</td>
+          <td>${escapeHtml(i.notes || "—")}</td>
+          <td style="white-space:nowrap;">
+            <button class="tinyBtn">Toggle Status</button>
+            <button class="tinyBtn danger">Delete</button>
+          </td>
+        `;
+
+        const [toggleBtn, delBtn] = tr.querySelectorAll("button");
+
+        toggleBtn.addEventListener("click", () => {
+          const issuesAll = loadIssues();
+          const idx = issuesAll.findIndex(x => x.id === i.id);
+          if(idx < 0) return;
+          const cur = issuesAll[idx].status;
+          const next = cur === "Open" ? "Submitted" : (cur === "Submitted" ? "Resolved" : "Open");
+          issuesAll[idx].status = next;
+          saveIssues(issuesAll);
+          renderIssues();
+        });
+
+        delBtn.addEventListener("click", () => {
+          const ok = confirm("Delete this issue?");
+          if(!ok) return;
+          saveIssues(loadIssues().filter(x => x.id !== i.id));
+          renderIssues();
+        });
+
+        tbody.appendChild(tr);
+      }
+    }
+
+    function populateIssueTruckOptions(){
+      const sel = document.getElementById("i_truck");
+      const trucks = loadTrucks().slice().sort((a,b) => (a.pickupDate||"").localeCompare(b.pickupDate||""));
+      sel.innerHTML = `<option value="">No truck</option>` + trucks.map(t =>
+        `<option value="${t.id}">${escapeHtml(t.pickupDate)} • PO ${escapeHtml(t.po||"—")} • ${escapeHtml(t.vendors||"Truck")}</option>`
+      ).join("");
+    }
+
+    function populateIssuePhotoOptions(){
+      const sel = document.getElementById("i_photo");
+      const photos = loadPhotos().slice().sort((a,b) => (b.createdAt||"").localeCompare(a.createdAt||""));
+      sel.innerHTML = `<option value="">No photo</option>` + photos.slice(0,80).map(p => // cap for dropdown sanity
+        `<option value="${p.id}">${escapeHtml(p.week||"—")} • ${escapeHtml(p.vendor||"Vendor")} • ${escapeHtml(p.item||"Item")} • ${escapeHtml(p.name||"photo")}</option>`
+      ).join("");
+    }
+
+    /*********************************************************
+     * Week selectors (Photos & Availability)
+     *********************************************************/
+    function getAllWeeks(){
+      const trucks = loadTrucks();
+      const photos = loadPhotos();
+      const issues = loadIssues();
+
+      const set = new Set();
+      // from trucks
+      trucks.forEach(t => set.add(t.weekKey));
+      // from photos
+      photos.forEach(p => set.add(p.week));
+      // from current week
+      set.add(weekKeyFromDate(new Date()));
+
+      return Array.from(set).filter(Boolean).sort().reverse();
+    }
+
+    function refreshWeekSelectors(){
+      const weeks = getAllWeeks();
+      const currentWk = weekKeyFromDate(weekAnchor);
+
+      // Photo week filter
+      const photoWeekFilter = document.getElementById("photoWeekFilter");
+      const prev1 = photoWeekFilter.value;
+      photoWeekFilter.innerHTML = `<option value="">All weeks</option>` + weeks.map(w => `<option value="${w}">${w}</option>`).join("");
+      photoWeekFilter.value = prev1 || currentWk;
+
+      // Photo modal week
+      const pWeek = document.getElementById("p_week");
+      pWeek.innerHTML = weeks.map(w => `<option value="${w}">${w}</option>`).join("");
+      pWeek.value = currentWk;
+
+      // Availability week select
+      const availWeekSelect = document.getElementById("availWeekSelect");
+      const prev2 = availWeekSelect.value;
+      availWeekSelect.innerHTML = weeks.map(w => `<option value="${w}">${w}</option>`).join("");
+      availWeekSelect.value = prev2 || currentWk;
+    }
+
+    /*********************************************************
+     * Render All
+     *********************************************************/
+    function renderAll(){
+      refreshWeekSelectors();
+      renderOrder();
+      // keep other pages in sync silently
+      // (they will re-render when opened)
+      populatePhotoTruckOptions();
+      populateIssueTruckOptions();
+      populateIssuePhotoOptions();
+    }
+
+    /*********************************************************
+     * Helpers
+     *********************************************************/
+    function cryptoRandomId(){
+      // short id
+      return (crypto?.getRandomValues)
+        ? Array.from(crypto.getRandomValues(new Uint8Array(8))).map(b=>b.toString(16).padStart(2,"0")).join("")
+        : String(Math.random()).slice(2) + String(Date.now());
+    }
+
+    function escapeHtml(str){
+      return String(str ?? "")
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+    }
+
+    function fileToDataURL(file){
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function fileListFromArray(files){
+      const dt = new DataTransfer();
+      files.forEach(f => dt.items.add(f));
+      return dt.files;
+    }
+
+    function downloadCSV(filename, rows, headers){
+      const csv = [
+        headers.join(","),
+        ...rows.map(r => headers.map(h => {
+          const val = (r[h] ?? "").toString().replaceAll('"','""');
+          return `"${val}"`;
+        }).join(","))
+      ].join("\n");
+
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    /*********************************************************
+     * Boot
+     *********************************************************/
+    const user = getUser();
+    if(user?.name){
+      userChip.textContent = `Signed in: ${user.name}`;
+      showScreen(app);
+      statusChip.textContent = "Ready";
+      renderAll();
+    } else {
+      showScreen(splash);
+      statusChip.textContent = "Cinematic Jungle";
+    }
+
+    // default render page order once in app
+    showPage("order");
+  </script>
 </body>
 </html>
