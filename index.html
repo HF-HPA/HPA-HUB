@@ -3,51 +3,445 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>HPA Team Portal</title>
-  <link rel="stylesheet" href="style.css" />
+  <title>HPA Jungle Hub</title>
+  <style>
+    /* =========================
+       THEME + BASE
+    ========================== */
+    :root{
+      --bg0:#03120d;
+      --bg1:#062519;
+      --bg2:#0a3b26;
+      --text:#eaffea;
+      --muted:rgba(234,255,234,.75);
+      --glass:rgba(0,0,0,.45);
+      --glass2:rgba(0,0,0,.30);
+      --accent:#22c96b;
+      --accent2:#0fb15a;
+      --danger:#ff6b6b;
+      --shadow:0 18px 45px rgba(0,0,0,.60);
+      --radius:16px;
+    }
+
+    *{ box-sizing:border-box; font-family: ui-sans-serif, system-ui, "Segoe UI", Roboto, Arial; }
+    html,body{ height:100%; margin:0; overflow:hidden; background:var(--bg0); color:var(--text); }
+
+    .screen{
+      position:absolute;
+      inset:0;
+      display:none;
+      align-items:center;
+      justify-content:center;
+    }
+    .screen.active{ display:flex; }
+
+    .top-controls{
+      position:fixed;
+      top:14px; left:14px; right:14px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      z-index:100;
+      pointer-events:none;
+    }
+    .chip{
+      pointer-events:auto;
+      padding:10px 12px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(0,0,0,.35);
+      color:var(--text);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 10px 22px rgba(0,0,0,.22);
+      cursor:pointer;
+      user-select:none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .chip.subtle{ opacity:.86; cursor:default; }
+    .chip:active{ transform:translateY(1px); }
+
+    button{ border:0; }
+    a{ color:inherit; }
+
+    /* =========================
+       SPLASH: "JUNGLE LOOK" BACKGROUND
+       No external images:
+       - deep jungle gradients
+       - inline SVG canopy silhouettes
+       - fog/mist layers
+       - vines + glow
+    ========================== */
+    #splash{
+      background:
+        radial-gradient(1100px 700px at 65% 18%, rgba(34,201,107,.16), transparent 60%),
+        radial-gradient(900px 540px at 25% 85%, rgba(20,120,70,.20), transparent 62%),
+        linear-gradient(135deg, var(--bg2), var(--bg0));
+    }
+
+    .parallax{
+      position:absolute;
+      inset:0;
+      overflow:hidden;
+      z-index:0;
+    }
+    .layer{
+      position:absolute;
+      inset:-10%;
+      will-change: transform;
+      transform: translate3d(0,0,0) scale(1.07);
+      filter:saturate(1.08);
+    }
+
+    /* Canopy silhouette using embedded SVG (data URI) */
+    .layer.canopy{
+      opacity:.95;
+      background: center/cover no-repeat;
+      background-image:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 800'%3E%3Cdefs%3E%3CradialGradient id='g' cx='50%25' cy='20%25' r='80%25'%3E%3Cstop offset='0' stop-color='%230f6b3f' stop-opacity='.30'/%3E%3Cstop offset='.55' stop-color='%23021610' stop-opacity='0'/%3E%3C/radialGradient%3E%3C/defs%3E%3Crect width='1200' height='800' fill='%23021510'/%3E%3Cpath d='M0 160 C130 40 260 210 390 120 C520 30 640 210 770 120 C910 25 1030 210 1200 130 L1200 0 L0 0 Z' fill='%23010e09'/%3E%3Cpath d='M0 220 C150 90 260 260 420 160 C580 60 690 270 860 160 C1010 95 1120 240 1200 180 L1200 0 L0 0 Z' fill='%2300150c' opacity='.90'/%3E%3Cpath d='M0 320 C170 220 310 360 470 280 C630 200 740 360 910 280 C1050 230 1140 340 1200 300 L1200 0 L0 0 Z' fill='%2300180e' opacity='.70'/%3E%3Crect width='1200' height='800' fill='url(%23g)'/%3E%3C/svg%3E");
+    }
+
+    /* Vines/shadows overlay */
+    .layer.vines{
+      opacity:.92;
+      background:
+        radial-gradient(700px 320px at 10% 10%, rgba(0,0,0,.70), transparent 60%),
+        radial-gradient(640px 300px at 95% 12%, rgba(0,0,0,.60), transparent 60%),
+        radial-gradient(860px 520px at 25% 92%, rgba(0,0,0,.55), transparent 60%),
+        radial-gradient(900px 540px at 75% 92%, rgba(0,0,0,.45), transparent 60%),
+        repeating-linear-gradient(120deg, rgba(0,0,0,.12) 0 8px, rgba(0,0,0,0) 8px 28px);
+      mix-blend-mode: multiply;
+      filter: blur(.2px);
+    }
+
+    /* Fog layer */
+    .layer.fog{
+      opacity:.85;
+      background:
+        radial-gradient(800px 380px at 25% 65%, rgba(255,255,255,.10), transparent 60%),
+        radial-gradient(900px 420px at 78% 48%, rgba(255,255,255,.09), transparent 62%),
+        linear-gradient(to bottom, rgba(255,255,255,.04), transparent 60%);
+      filter: blur(1.5px);
+    }
+
+    /* Subtle green glow (firefly vibe) */
+    .layer.glow{
+      opacity:.95;
+      background:
+        radial-gradient(520px 320px at 68% 26%, rgba(34,201,107,.18), transparent 62%),
+        radial-gradient(700px 520px at 30% 78%, rgba(34,201,107,.10), transparent 62%),
+        radial-gradient(260px 180px at 18% 42%, rgba(34,201,107,.08), transparent 62%),
+        radial-gradient(240px 160px at 86% 55%, rgba(34,201,107,.07), transparent 62%);
+      mix-blend-mode: screen;
+    }
+
+    /* Effects containers */
+    #mistWrap, #leafWrap{
+      position:absolute;
+      inset:0;
+      z-index:2;
+      pointer-events:none;
+    }
+
+    /* Splash card */
+    .logo-container{
+      position:relative;
+      z-index:3;
+      text-align:center;
+      padding:28px 24px;
+      border-radius: var(--radius);
+      background: rgba(0,0,0,.18);
+      border:1px solid rgba(255,255,255,.10);
+      backdrop-filter: blur(10px);
+      box-shadow: var(--shadow);
+      cursor:pointer;
+      user-select:none;
+      max-width: 560px;
+      margin: 0 18px;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* Logo style */
+    .logo{
+      width: 260px;
+      max-width: 72vw;
+      border-radius: 26px;
+      box-shadow: 0 22px 50px rgba(0,0,0,.55);
+      transition: opacity .85s ease, transform .85s ease, filter .85s ease;
+      transform-origin:center;
+      background: rgba(0,0,0,.25);
+    }
+    .pulse{ animation: pulse 2.4s ease-in-out infinite; }
+    @keyframes pulse{
+      0%   { transform: scale(1); }
+      50%  { transform: scale(1.08); }
+      100% { transform: scale(1); }
+    }
+    .fade-out{
+      opacity:0;
+      transform: scale(.92);
+      filter: blur(2px);
+    }
+
+    .hint{
+      margin: 14px 0 6px;
+      color: var(--muted);
+      letter-spacing: .2px;
+    }
+    .micro{
+      margin:0;
+      font-size: 12px;
+      color: rgba(234,255,234,.62);
+    }
+
+    /* Mist bands */
+    .mist{
+      position:absolute;
+      left:-20%;
+      width:140%;
+      height: 120px;
+      top: var(--top, 20%);
+      background: radial-gradient(closest-side, rgba(255,255,255,.14), transparent 70%);
+      filter: blur(12px);
+      opacity: .65;
+      animation: mistDrift var(--mdur, 16s) ease-in-out infinite;
+    }
+    @keyframes mistDrift{
+      0%   { transform: translate3d(-4%, 0, 0); opacity: .22; }
+      45%  { transform: translate3d(3%, 0, 0);  opacity: .75; }
+      100% { transform: translate3d(-4%, 0, 0); opacity: .22; }
+    }
+
+    /* Leaves */
+    .leaf{
+      position:absolute;
+      top:-12vh;
+      width: 22px;
+      height: 14px;
+      opacity: .9;
+      background:
+        radial-gradient(circle at 30% 40%, rgba(255,255,255,.18), transparent 45%),
+        radial-gradient(circle at 70% 60%, rgba(0,0,0,.12), transparent 55%),
+        linear-gradient(135deg, rgba(34,201,107,.95), rgba(11,106,57,.95));
+      border-radius: 80% 20% 70% 30% / 70% 30% 70% 30%;
+      box-shadow: 0 10px 18px rgba(0,0,0,.18);
+      transform: rotate(10deg);
+      animation: leafFall var(--dur, 10s) linear infinite;
+    }
+    .leaf::after{
+      content:"";
+      position:absolute;
+      left: 45%;
+      top: 12%;
+      width: 2px;
+      height: 76%;
+      background: rgba(0,0,0,.18);
+      border-radius:999px;
+      opacity:.6;
+    }
+    @keyframes leafFall{
+      0%   { transform: translate3d(0,-12vh,0) rotate(0deg); opacity:0; }
+      8%   { opacity:.95; }
+      100% { transform: translate3d(var(--drift, 80px), 120vh, 0) rotate(380deg); opacity:.18; }
+    }
+
+    /* =========================
+       LOGIN
+    ========================== */
+    #login{
+      background:
+        radial-gradient(900px 560px at 60% 20%, rgba(34,201,107,.10), transparent 60%),
+        linear-gradient(135deg, #062a1f, #03140f);
+    }
+    .login-card{
+      width:min(420px, 92vw);
+      padding: 26px 22px;
+      border-radius: var(--radius);
+      background: var(--glass);
+      border:1px solid rgba(255,255,255,.10);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(12px);
+    }
+    .login-card h1{ margin:0 0 6px; }
+    .sub{ margin:0 0 18px; color:var(--muted); font-size: 14px; }
+
+    .field{ display:block; margin-bottom: 12px; }
+    .field span{ display:block; font-size: 12px; color: rgba(234,255,234,.72); margin: 0 0 6px; }
+    input{
+      width:100%;
+      padding: 12px 12px;
+      border-radius: 12px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.25);
+      color: var(--text);
+      outline:none;
+    }
+    input:focus{
+      border-color: rgba(34,201,107,.55);
+      box-shadow: 0 0 0 4px rgba(34,201,107,.12);
+    }
+    .primary{
+      width:100%;
+      padding: 12px 14px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color:#062012;
+      font-weight: 900;
+      letter-spacing:.3px;
+      cursor:pointer;
+      box-shadow: 0 10px 22px rgba(34,201,107,.20);
+    }
+    .primary:hover{ filter: brightness(1.05); }
+    .primary:active{ transform: translateY(1px); }
+    .mini-hint{
+      margin: 10px 0 0;
+      font-size: 12px;
+      color: rgba(234,255,234,.62);
+      text-align:center;
+    }
+    .error{
+      margin-top: 12px;
+      color: var(--danger);
+      font-size: 13px;
+      min-height: 18px;
+    }
+
+    /* =========================
+       DASHBOARD
+    ========================== */
+    #dash{
+      background:
+        radial-gradient(1100px 700px at 50% 10%, rgba(34,201,107,.12), transparent 60%),
+        linear-gradient(135deg, #05261b, #03130f);
+      padding: 22px;
+      align-items:flex-start;
+      justify-content:flex-start;
+    }
+    .dash-header{
+      width:100%;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap: 14px;
+      margin-top: 52px;
+      margin-bottom: 16px;
+    }
+    .dash-title{
+      display:flex;
+      align-items:center;
+      gap: 12px;
+    }
+    .badge{
+      width:44px; height:44px;
+      border-radius: 14px;
+      display:grid; place-items:center;
+      font-weight: 1000;
+      color:#062012;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      box-shadow: 0 10px 20px rgba(34,201,107,.18);
+    }
+    .dash-title h2{ margin:0; }
+    .dash-title p{ margin:3px 0 0; font-size: 13px; }
+
+    .dash-grid{
+      width:100%;
+      display:grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 14px;
+    }
+    .tile{
+      grid-column: span 6;
+      background: var(--glass2);
+      border: 1px solid rgba(255,255,255,.10);
+      border-radius: var(--radius);
+      padding: 16px;
+      box-shadow: 0 14px 26px rgba(0,0,0,.35);
+      backdrop-filter: blur(12px);
+      min-height: 140px;
+    }
+    .tile h3{ margin:0 0 8px; }
+    .tile p{ margin:0 0 12px; color:var(--muted); }
+    .secondary{
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: rgba(255,255,255,.10);
+      border: 1px solid rgba(255,255,255,.12);
+      color: var(--text);
+      cursor:pointer;
+    }
+    .secondary:hover{ background: rgba(255,255,255,.14); }
+
+    .toast{
+      position: fixed;
+      left: 50%;
+      bottom: 18px;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,.55);
+      border: 1px solid rgba(255,255,255,.12);
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 999px;
+      backdrop-filter: blur(12px);
+      opacity: 0;
+      pointer-events:none;
+      transition: opacity .25s ease, transform .25s ease;
+      z-index: 120;
+      max-width: 92vw;
+      text-align:center;
+    }
+    .toast.show{
+      opacity: 1;
+      transform: translateX(-50%) translateY(-6px);
+    }
+
+    /* Responsive */
+    @media (max-width: 860px){
+      .tile{ grid-column: span 12; }
+      .dash-header{ flex-direction:column; align-items:flex-start; }
+    }
+
+    /* Reduced motion */
+    @media (prefers-reduced-motion: reduce){
+      .pulse, .leaf, .mist{ animation: none !important; }
+      .logo{ transition:none !important; }
+      .layer{ transition:none !important; }
+    }
+  </style>
 </head>
+
 <body>
-
-  <!-- Ambient audio (autoplay blocked until interaction; JS handles start) -->
-  <audio id="ambience" loop preload="auto">
-    <!-- Best practice: put your own file at /assets/jungle-ambience.mp3 -->
-    <source src="assets/jungle-ambience.mp3" type="audio/mpeg">
-  </audio>
-
-  <!-- Top controls -->
+  <!-- Controls -->
   <div class="top-controls">
-    <button id="muteBtn" class="chip" aria-pressed="false" title="Toggle sound">
-      🔊 Sound
-    </button>
+    <button id="muteBtn" class="chip" aria-pressed="false" title="Toggle sound">🔊 Sound</button>
     <div id="statusChip" class="chip subtle" aria-live="polite">Jungle Mode</div>
   </div>
 
-  <!-- ===== SPLASH SCREEN ===== -->
+  <!-- ===== SPLASH ===== -->
   <main id="splash" class="screen active" aria-label="Splash">
-    <div class="parallax">
-      <div class="layer bg"    data-depth="0.08"></div>
-      <div class="layer fog"   data-depth="0.14"></div>
+    <div class="parallax" aria-hidden="true">
+      <div class="layer canopy" data-depth="0.08"></div>
+      <div class="layer fog" data-depth="0.14"></div>
       <div class="layer vines" data-depth="0.20"></div>
-      <div class="layer glow"  data-depth="0.26"></div>
+      <div class="layer glow" data-depth="0.28"></div>
     </div>
 
-    <!-- Effects -->
     <div id="mistWrap" aria-hidden="true"></div>
     <div id="leafWrap" aria-hidden="true"></div>
 
     <section id="logoContainer" class="logo-container" role="button" tabindex="0" aria-label="Enter HPA Portal">
-      <!-- Replace src with your real logo, e.g. assets/hpa-logo.png -->
-      <img id="logo" class="logo pulse" src="https://via.placeholder.com/320x320.png?text=HPA+TEAM" alt="HPA Team Logo" />
+      <!-- Replace with your logo anytime (still single file if you paste base64 later) -->
+      <img id="logo" class="logo pulse" alt="HPA Team Logo"
+        src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='520' height='520' viewBox='0 0 520 520'%3E%3Cdefs%3E%3CradialGradient id='a' cx='50%25' cy='35%25' r='70%25'%3E%3Cstop offset='0' stop-color='%2322c96b'/%3E%3Cstop offset='1' stop-color='%230b3b24'/%3E%3C/radialGradient%3E%3C/defs%3E%3Crect rx='56' ry='56' x='30' y='30' width='460' height='460' fill='url(%23a)'/%3E%3Cpath d='M95 330 C155 220 220 230 260 260 C295 282 340 292 400 210' stroke='rgba(255,255,255,.38)' stroke-width='18' fill='none' stroke-linecap='round'/%3E%3Ctext x='260' y='255' font-size='64' text-anchor='middle' font-family='Segoe UI, Arial' font-weight='900' fill='%23020f0a'%3EHPA%3C/text%3E%3Ctext x='260' y='310' font-size='34' text-anchor='middle' font-family='Segoe UI, Arial' font-weight='800' fill='rgba(2,15,10,.85)'%3ETeam%3C/text%3E%3C/svg%3E" />
       <p class="hint">Tap the logo or swipe up to enter</p>
       <p class="micro">Florida Hiring Hub • Internal Portal</p>
     </section>
   </main>
 
-  <!-- ===== LOGIN SCREEN ===== -->
+  <!-- ===== LOGIN ===== -->
   <section id="login" class="screen" aria-label="Login">
     <div class="login-card">
       <h1>HPA Team Login</h1>
-      <p class="sub">Enter any credentials (demo) to continue.</p>
+      <p class="sub">Demo login: enter anything to continue.</p>
 
       <label class="field">
         <span>Username</span>
@@ -61,12 +455,11 @@
 
       <button id="loginBtn" class="primary">Login</button>
       <p class="mini-hint">Tip: Swipe right to go back</p>
-
       <div id="loginError" class="error" role="alert" aria-live="assertive"></div>
     </div>
   </section>
 
-  <!-- ===== DASHBOARD SCREEN ===== -->
+  <!-- ===== DASHBOARD ===== -->
   <section id="dash" class="screen" aria-label="Dashboard">
     <header class="dash-header">
       <div class="dash-title">
@@ -76,7 +469,6 @@
           <p class="subtle">Florida Position • Hiring Portal</p>
         </div>
       </div>
-
       <div class="dash-actions">
         <button id="logoutBtn" class="chip">Logout</button>
       </div>
@@ -85,19 +477,19 @@
     <div class="dash-grid">
       <article class="tile">
         <h3>🌴 Florida Hiring Page</h3>
-        <p>Link to role description, location details, and application CTA.</p>
+        <p>Role overview, requirements, and quick apply link (placeholder action).</p>
         <button class="secondary" data-toast="Open: Florida Hiring Page">Open</button>
       </article>
 
       <article class="tile">
         <h3>🦜 Post an Update</h3>
-        <p>Drop a quick internal note for the team (demo UI).</p>
+        <p>Quick internal note for the team (demo UI).</p>
         <button class="secondary" data-toast="Open: Post an Update">Open</button>
       </article>
 
       <article class="tile">
         <h3>📌 Hot Buys / Promos</h3>
-        <p>Quick links for promos and availability (placeholder).</p>
+        <p>Shortcuts for promos and availability (placeholder).</p>
         <button class="secondary" data-toast="Open: Promos">Open</button>
       </article>
 
@@ -111,6 +503,378 @@
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
   </section>
 
-  <script src="script.js"></script>
+  <script>
+    /* =========================================================
+       Single-file App Logic
+       - Screen transitions
+       - Swipe gestures
+       - Parallax
+       - Leaves + mist
+       - Fake auth + dashboard
+       - In-browser generated jungle ambience (WebAudio)
+    ========================================================== */
+
+    const $ = (id) => document.getElementById(id);
+
+    const splash = $("splash");
+    const login  = $("login");
+    const dash   = $("dash");
+
+    const logoContainer = $("logoContainer");
+    const logo = $("logo");
+
+    const muteBtn = $("muteBtn");
+    const statusChip = $("statusChip");
+
+    const loginBtn = $("loginBtn");
+    const logoutBtn = $("logoutBtn");
+    const loginError = $("loginError");
+
+    const mistWrap = $("mistWrap");
+    const leafWrap = $("leafWrap");
+    const toast = $("toast");
+
+    const layers = Array.from(document.querySelectorAll(".layer"));
+
+    /* ---------- Screen switching ---------- */
+    function showScreen(screen){
+      [splash, login, dash].forEach(s => s.classList.remove("active"));
+      screen.classList.add("active");
+    }
+
+    function fadeLogoAndGoLogin(){
+      startAudioSafe();
+      logo.classList.add("fade-out");
+      statusChip.textContent = "Entering…";
+      setTimeout(() => {
+        showScreen(login);
+        statusChip.textContent = "Login";
+      }, 850);
+    }
+
+    /* ---------- Toast ---------- */
+    function toastMsg(msg){
+      if (!toast) return;
+      toast.textContent = msg;
+      toast.classList.add("show");
+      clearTimeout(toast._t);
+      toast._t = setTimeout(() => toast.classList.remove("show"), 1400);
+    }
+
+    document.addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-toast]");
+      if (!btn) return;
+      toastMsg(btn.getAttribute("data-toast"));
+    });
+
+    /* =========================================================
+       Jungle Ambience (No MP3): WebAudio synth
+       - Wind-ish filtered noise
+       - Insect bed (soft high noise)
+       - Random bird chirps (sine sweeps)
+       Starts on first user interaction (required by browsers)
+    ========================================================== */
+    let audioCtx = null;
+    let master = null;
+    let noiseSrc = null;
+    let insectSrc = null;
+    let chirpTimer = null;
+    let muted = false;
+    let audioReady = false;
+
+    function createNoiseBuffer(ctx, seconds = 2, color = "pink"){
+      const rate = ctx.sampleRate;
+      const len = rate * seconds;
+      const buffer = ctx.createBuffer(1, len, rate);
+      const data = buffer.getChannelData(0);
+
+      // Simple colored noise approximations
+      if (color === "white"){
+        for (let i=0;i<len;i++) data[i] = (Math.random()*2-1) * 0.6;
+      } else if (color === "pink"){
+        // Voss-McCartney-ish
+        let b0=0,b1=0,b2=0,b3=0,b4=0,b5=0,b6=0;
+        for (let i=0;i<len;i++){
+          const white = Math.random()*2-1;
+          b0 = 0.99886*b0 + white*0.0555179;
+          b1 = 0.99332*b1 + white*0.0750759;
+          b2 = 0.96900*b2 + white*0.1538520;
+          b3 = 0.86650*b3 + white*0.3104856;
+          b4 = 0.55000*b4 + white*0.5329522;
+          b5 = -0.7616*b5 - white*0.0168980;
+          const pink = b0+b1+b2+b3+b4+b5+b6 + white*0.5362;
+          b6 = white*0.115926;
+          data[i] = (pink * 0.12);
+        }
+      } else { // brown
+        let last = 0;
+        for (let i=0;i<len;i++){
+          const white = Math.random()*2-1;
+          last = (last + (0.02*white)) / 1.02;
+          data[i] = last * 2.5;
+        }
+      }
+      return buffer;
+    }
+
+    function startAudioSafe(){
+      if (audioReady) return;
+
+      try{
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        master = audioCtx.createGain();
+        master.gain.value = 0.65;
+        master.connect(audioCtx.destination);
+
+        // Wind / jungle air: pink noise through lowpass
+        const windGain = audioCtx.createGain();
+        windGain.gain.value = 0.20;
+
+        const windFilter = audioCtx.createBiquadFilter();
+        windFilter.type = "lowpass";
+        windFilter.frequency.value = 600;
+        windFilter.Q.value = 0.7;
+
+        const windBuf = createNoiseBuffer(audioCtx, 2, "pink");
+        noiseSrc = audioCtx.createBufferSource();
+        noiseSrc.buffer = windBuf;
+        noiseSrc.loop = true;
+
+        noiseSrc.connect(windFilter);
+        windFilter.connect(windGain);
+        windGain.connect(master);
+
+        // Insects: softer high band noise
+        const insectGain = audioCtx.createGain();
+        insectGain.gain.value = 0.05;
+
+        const insectFilter = audioCtx.createBiquadFilter();
+        insectFilter.type = "highpass";
+        insectFilter.frequency.value = 2500;
+
+        const insectBuf = createNoiseBuffer(audioCtx, 2, "white");
+        insectSrc = audioCtx.createBufferSource();
+        insectSrc.buffer = insectBuf;
+        insectSrc.loop = true;
+
+        insectSrc.connect(insectFilter);
+        insectFilter.connect(insectGain);
+        insectGain.connect(master);
+
+        // Gentle movement in wind filter to feel alive
+        const lfo = audioCtx.createOscillator();
+        const lfoGain = audioCtx.createGain();
+        lfo.type = "sine";
+        lfo.frequency.value = 0.06;
+        lfoGain.gain.value = 240;
+        lfo.connect(lfoGain);
+        lfoGain.connect(windFilter.frequency);
+
+        // Start layers
+        noiseSrc.start();
+        insectSrc.start();
+        lfo.start();
+
+        // Random chirps
+        chirpTimer = setInterval(() => {
+          if (!audioCtx || muted) return;
+          if (Math.random() < 0.55) birdChirp(audioCtx, master);
+        }, 2200);
+
+        audioReady = true;
+        statusChip.textContent = "Sound On";
+        muteBtn.textContent = "🔊 Sound";
+        muteBtn.setAttribute("aria-pressed","false");
+      } catch (e){
+        statusChip.textContent = "Sound Unavailable";
+      }
+    }
+
+    function birdChirp(ctx, out){
+      const now = ctx.currentTime;
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      const f = ctx.createBiquadFilter();
+
+      o.type = "sine";
+      f.type = "bandpass";
+      f.frequency.value = 2200 + Math.random()*1200;
+      f.Q.value = 6;
+
+      // frequency sweep (chirp)
+      const startF = 900 + Math.random()*900;
+      const endF = 2400 + Math.random()*1000;
+      o.frequency.setValueAtTime(startF, now);
+      o.frequency.exponentialRampToValueAtTime(endF, now + 0.12 + Math.random()*0.10);
+
+      // envelope
+      g.gain.setValueAtTime(0.0001, now);
+      g.gain.exponentialRampToValueAtTime(0.09 + Math.random()*0.07, now + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + 0.20 + Math.random()*0.10);
+
+      o.connect(f);
+      f.connect(g);
+      g.connect(out);
+
+      o.start(now);
+      o.stop(now + 0.35);
+    }
+
+    muteBtn.addEventListener("click", () => {
+      startAudioSafe();
+      muted = !muted;
+
+      if (master){
+        master.gain.value = muted ? 0 : 0.65;
+      }
+      muteBtn.textContent = muted ? "🔇 Muted" : "🔊 Sound";
+      muteBtn.setAttribute("aria-pressed", muted ? "true" : "false");
+      statusChip.textContent = muted ? "Muted" : "Sound On";
+    });
+
+    /* ---------- Enter interactions ---------- */
+    logoContainer.addEventListener("click", fadeLogoAndGoLogin);
+    logoContainer.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        fadeLogoAndGoLogin();
+      }
+    });
+
+    // Start sound on first interaction even if they don't click the logo
+    ["click", "keydown", "touchstart"].forEach(evt => {
+      window.addEventListener(evt, () => startAudioSafe(), { once:true, passive:true });
+    });
+
+    /* ---------- Fake auth: Login -> Dashboard ---------- */
+    loginBtn.addEventListener("click", () => {
+      const u = $("user").value.trim();
+      const p = $("pass").value.trim();
+
+      if (!u || !p) {
+        loginError.textContent = "Please enter a username and password (demo accepts anything).";
+        return;
+      }
+      loginError.textContent = "";
+      statusChip.textContent = "Authenticating…";
+
+      setTimeout(() => {
+        showScreen(dash);
+        statusChip.textContent = `Welcome, ${u}`;
+        toastMsg("Logged in ✔");
+      }, 420);
+    });
+
+    logoutBtn.addEventListener("click", () => {
+      statusChip.textContent = "Logged out";
+      $("user").value = "";
+      $("pass").value = "";
+      showScreen(login);
+      toastMsg("Logged out");
+    });
+
+    /* ---------- Mist + Leaves ---------- */
+    function makeMist(){
+      const tops = [18, 36, 55, 74];
+      tops.forEach((t, i) => {
+        const m = document.createElement("div");
+        m.className = "mist";
+        m.style.setProperty("--top", `${t}%`);
+        m.style.setProperty("--mdur", `${14 + i*4}s`);
+        m.style.animationDelay = `${i * -3}s`;
+        mistWrap.appendChild(m);
+      });
+    }
+
+    function makeLeaves(count = 14){
+      for (let i = 0; i < count; i++){
+        const leaf = document.createElement("div");
+        leaf.className = "leaf";
+        const x = Math.random() * 100;
+        const s = 0.75 + Math.random() * 1.15;
+        const dur = 8 + Math.random() * 9;
+        const drift = (Math.random() * 200 - 100).toFixed(0);
+        const delay = (Math.random() * -dur).toFixed(2);
+
+        leaf.style.left = `${x}vw`;
+        leaf.style.transform = `scale(${s}) rotate(${Math.random()*40-20}deg)`;
+        leaf.style.setProperty("--dur", `${dur}s`);
+        leaf.style.setProperty("--drift", `${drift}px`);
+        leaf.style.animationDelay = `${delay}s`;
+
+        leafWrap.appendChild(leaf);
+      }
+    }
+
+    makeMist();
+    makeLeaves(16);
+
+    /* ---------- Parallax (mouse + touch + device tilt) ---------- */
+    function applyParallax(nx, ny){
+      layers.forEach(layer => {
+        const depth = parseFloat(layer.dataset.depth || "0.1");
+        const tx = nx * 34 * depth;
+        const ty = ny * 24 * depth;
+        layer.style.transform = `translate3d(${tx}px, ${ty}px, 0) scale(1.07)`;
+      });
+    }
+
+    window.addEventListener("mousemove", (e) => {
+      const nx = (e.clientX / window.innerWidth) * 2 - 1;
+      const ny = (e.clientY / window.innerHeight) * 2 - 1;
+      applyParallax(nx, ny);
+    }, { passive:true });
+
+    window.addEventListener("touchmove", (e) => {
+      if (!e.touches || !e.touches[0]) return;
+      const t = e.touches[0];
+      const nx = (t.clientX / window.innerWidth) * 2 - 1;
+      const ny = (t.clientY / window.innerHeight) * 2 - 1;
+      applyParallax(nx, ny);
+    }, { passive:true });
+
+    window.addEventListener("deviceorientation", (e) => {
+      if (typeof e.gamma !== "number" || typeof e.beta !== "number") return;
+      const nx = Math.max(-1, Math.min(1, e.gamma / 35));
+      const ny = Math.max(-1, Math.min(1, e.beta / 55));
+      applyParallax(nx, ny);
+    }, { passive:true });
+
+    /* ---------- Swipe navigation ---------- */
+    let touchStartX = 0, touchStartY = 0, touchStartTime = 0;
+
+    window.addEventListener("touchstart", (e) => {
+      if (!e.touches || !e.touches[0]) return;
+      const t = e.touches[0];
+      touchStartX = t.clientX;
+      touchStartY = t.clientY;
+      touchStartTime = Date.now();
+    }, { passive:true });
+
+    window.addEventListener("touchend", (e) => {
+      const dx = (e.changedTouches?.[0]?.clientX ?? touchStartX) - touchStartX;
+      const dy = (e.changedTouches?.[0]?.clientY ?? touchStartY) - touchStartY;
+      const dt = Date.now() - touchStartTime;
+
+      if (dt > 900) return;
+
+      const ax = Math.abs(dx);
+      const ay = Math.abs(dy);
+
+      // Swipe Up on Splash -> Login
+      if (splash.classList.contains("active") && ay > 55 && dy < -35 && ay > ax){
+        fadeLogoAndGoLogin();
+        return;
+      }
+
+      // Swipe Right on Login -> Splash
+      if (login.classList.contains("active") && ax > 70 && dx > 40 && ax > ay){
+        statusChip.textContent = "Back";
+        showScreen(splash);
+        logo.classList.remove("fade-out");
+        return;
+      }
+    }, { passive:true });
+  </script>
 </body>
 </html>
