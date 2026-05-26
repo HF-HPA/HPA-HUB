@@ -4,37 +4,113 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>HPA Team Portal</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
-  <!-- Jungle Splash Screen -->
-  <div id="splash" class="screen active">
-    <div class="jungle-overlay"></div>
+  <!-- Ambient audio (autoplay blocked until interaction; JS handles start) -->
+  <audio id="ambience" loop preload="auto">
+    <!-- Best practice: put your own file at /assets/jungle-ambience.mp3 -->
+    <source src="assets/jungle-ambience.mp3" type="audio/mpeg">
+  </audio>
 
-    <div id="logo-container">
-      <img
-        src="https://via.placeholder.com/300x300.png?text=HPA+TEAM"
-        alt="HPA Team Logo"
-        id="logo"
-      />
-      <p class="hint">Click to Enter</p>
-    </div>
+  <!-- Top controls -->
+  <div class="top-controls">
+    <button id="muteBtn" class="chip" aria-pressed="false" title="Toggle sound">
+      🔊 Sound
+    </button>
+    <div id="statusChip" class="chip subtle" aria-live="polite">Jungle Mode</div>
   </div>
 
-  <!-- Login Screen -->
-  <div id="login" class="screen">
-    <div class="login-box">
+  <!-- ===== SPLASH SCREEN ===== -->
+  <main id="splash" class="screen active" aria-label="Splash">
+    <div class="parallax">
+      <div class="layer bg"    data-depth="0.08"></div>
+      <div class="layer fog"   data-depth="0.14"></div>
+      <div class="layer vines" data-depth="0.20"></div>
+      <div class="layer glow"  data-depth="0.26"></div>
+    </div>
+
+    <!-- Effects -->
+    <div id="mistWrap" aria-hidden="true"></div>
+    <div id="leafWrap" aria-hidden="true"></div>
+
+    <section id="logoContainer" class="logo-container" role="button" tabindex="0" aria-label="Enter HPA Portal">
+      <!-- Replace src with your real logo, e.g. assets/hpa-logo.png -->
+      <img id="logo" class="logo pulse" src="https://via.placeholder.com/320x320.png?text=HPA+TEAM" alt="HPA Team Logo" />
+      <p class="hint">Tap the logo or swipe up to enter</p>
+      <p class="micro">Florida Hiring Hub • Internal Portal</p>
+    </section>
+  </main>
+
+  <!-- ===== LOGIN SCREEN ===== -->
+  <section id="login" class="screen" aria-label="Login">
+    <div class="login-card">
       <h1>HPA Team Login</h1>
+      <p class="sub">Enter any credentials (demo) to continue.</p>
 
-      <input type="text" placeholder="Username" />
-      <input type="password" placeholder="Password" />
+      <label class="field">
+        <span>Username</span>
+        <input id="user" type="text" placeholder="e.g., lucas.ellis" autocomplete="username" />
+      </label>
 
-      <button>Login</button>
+      <label class="field">
+        <span>Password</span>
+        <input id="pass" type="password" placeholder="••••••••" autocomplete="current-password" />
+      </label>
+
+      <button id="loginBtn" class="primary">Login</button>
+      <p class="mini-hint">Tip: Swipe right to go back</p>
+
+      <div id="loginError" class="error" role="alert" aria-live="assertive"></div>
     </div>
-  </div>
+  </section>
+
+  <!-- ===== DASHBOARD SCREEN ===== -->
+  <section id="dash" class="screen" aria-label="Dashboard">
+    <header class="dash-header">
+      <div class="dash-title">
+        <div class="badge">HPA</div>
+        <div>
+          <h2>HPA Jungle Hub</h2>
+          <p class="subtle">Florida Position • Hiring Portal</p>
+        </div>
+      </div>
+
+      <div class="dash-actions">
+        <button id="logoutBtn" class="chip">Logout</button>
+      </div>
+    </header>
+
+    <div class="dash-grid">
+      <article class="tile">
+        <h3>🌴 Florida Hiring Page</h3>
+        <p>Link to role description, location details, and application CTA.</p>
+        <button class="secondary" data-toast="Open: Florida Hiring Page">Open</button>
+      </article>
+
+      <article class="tile">
+        <h3>🦜 Post an Update</h3>
+        <p>Drop a quick internal note for the team (demo UI).</p>
+        <button class="secondary" data-toast="Open: Post an Update">Open</button>
+      </article>
+
+      <article class="tile">
+        <h3>📌 Hot Buys / Promos</h3>
+        <p>Quick links for promos and availability (placeholder).</p>
+        <button class="secondary" data-toast="Open: Promos">Open</button>
+      </article>
+
+      <article class="tile">
+        <h3>📞 Contacts</h3>
+        <p>Manager + key collaborators list (placeholder).</p>
+        <button class="secondary" data-toast="Open: Contacts">Open</button>
+      </article>
+    </div>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  </section>
 
   <script src="script.js"></script>
 </body>
 </html>
-``
