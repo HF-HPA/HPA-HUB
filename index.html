@@ -1,340 +1,531 @@
-<!DOCTYPE html><!DOCTYPE htmlen">
+<!DOCTYPE html>
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>HPA Jungle Hub</title>
 
 <style>
-/* =====================================================
-   CINEMATIC JUNGLE THEME
-   Dark • Moody • Premium
-===================================================== */
-:root{
-  --text:#eef6f1;
-  --muted:#a7cdb7;
-  --accent:#3bff9a;
-  --glass:rgba(0,0,0,.62);
-  --border:rgba(255,255,255,.12);
-  --shadow:0 40px 120px rgba(0,0,0,.9);
-  --radius:20px;
-}
+  /* =====================================================
+     CINEMATIC JUNGLE • SINGLE BACKGROUND FOR ALL SCREENS
+  ====================================================== */
+  :root{
+    --text:#eef6f1;
+    --muted:#a9d1bb;
+    --accent:#3bff9a;
+    --accent2:#16c873;
+    --glass:rgba(0,0,0,.62);
+    --glass2:rgba(0,0,0,.38);
+    --border:rgba(255,255,255,.12);
+    --shadow:0 40px 120px rgba(0,0,0,.88);
+    --radius:20px;
+    --danger:#ff6b6b;
+  }
 
-*{
-  box-sizing:border-box;
-  font-family: system-ui,-apple-system,Segoe UI,Roboto,Arial;
-}
+  *{ box-sizing:border-box; font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial; }
+  html,body{ height:100%; margin:0; overflow:hidden; color:var(--text); background:#010806; }
 
-html,body{
-  margin:0;
-  height:100%;
-  overflow:hidden;
-  background:#010806;
-  color:var(--text);
-}
+  /* One fixed cinematic jungle background across entire site */
+  body::before{
+    content:"";
+    position:fixed;
+    inset:0;
+    z-index:-3;
+    background:
+      radial-gradient(1200px 800px at 60% 10%, rgba(255,255,255,.08), transparent 55%),
+      linear-gradient(rgba(0,0,0,.62), rgba(0,0,0,.86)),
+      url("jungle-bg.jpg") center / cover no-repeat;
+    transform: translateZ(0);
+  }
 
-/* Screens */
-.screen{
-  position:absolute;
-  inset:0;
-  display:none;
-  align-items:center;
-  justify-content:center;
-}
-.screen.active{ display:flex; }
+  /* Vignette (also fixed) */
+  body::after{
+    content:"";
+    position:fixed;
+    inset:0;
+    z-index:-2;
+    background: radial-gradient(circle at center, transparent 35%, rgba(0,0,0,.92));
+    pointer-events:none;
+  }
 
-/* =====================================================
-   CINEMATIC JUNGLE BACKGROUND
-===================================================== */
-.bg{
-  position:absolute;
-  inset:0;
-  background:
-    radial-gradient(1200px 800px at 60% 10%, rgba(255,255,255,.08), transparent 55%),
-    linear-gradient(rgba(0,0,0,.65), rgba(0,0,0,.85)),
-    url("jungle-bg.jpg") center / cover no-repeat;
-  z-index:0;
-}
+  /* Film grain overlay (fixed) */
+  .grain{
+    position:fixed;
+    inset:0;
+    z-index:-1;
+    pointer-events:none;
+    opacity:.16;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='.55'/%3E%3C/svg%3E");
+    mix-blend-mode: overlay;
+  }
 
-/* Vignette */
-.bg::after{
-  content:"";
-  position:absolute;
-  inset:0;
-  background:radial-gradient(circle at center, transparent 35%, rgba(0,0,0,.92));
-}
+  /* Shared cinematic atmosphere layers */
+  .mist{
+    position:fixed;
+    inset:-30%;
+    z-index:-1;
+    pointer-events:none;
+    background:
+      radial-gradient(760px 260px at 20% 40%, rgba(255,255,255,.10), transparent 60%),
+      radial-gradient(980px 320px at 70% 55%, rgba(255,255,255,.08), transparent 65%);
+    filter: blur(28px);
+    animation: mistMove 22s ease-in-out infinite;
+    opacity:.9;
+    mix-blend-mode: screen;
+  }
+  @keyframes mistMove{
+    0%{ transform:translateX(-6%); }
+    50%{ transform:translateX(6%); }
+    100%{ transform:translateX(-6%); }
+  }
 
-/* Slow mist */
-.mist{
-  position:absolute;
-  inset:-30%;
-  background:
-    radial-gradient(700px 260px at 20% 40%, rgba(255,255,255,.10), transparent 60%),
-    radial-gradient(900px 320px at 70% 55%, rgba(255,255,255,.08), transparent 65%);
-  filter: blur(26px);
-  animation: mistMove 22s ease-in-out infinite;
-  z-index:1;
-}
+  .rays{
+    position:fixed;
+    inset:-25%;
+    z-index:-1;
+    pointer-events:none;
+    background:
+      repeating-linear-gradient(
+        115deg,
+        rgba(255,255,255,.06) 0 28px,
+        rgba(255,255,255,0) 28px 120px
+      );
+    mask-image: radial-gradient(900px 620px at 30% 15%, black, transparent 70%);
+    -webkit-mask-image: radial-gradient(900px 620px at 30% 15%, black, transparent 70%);
+    opacity:.6;
+    animation: raysMove 14s ease-in-out infinite;
+    mix-blend-mode: screen;
+    filter: blur(.2px);
+  }
+  @keyframes raysMove{
+    0%{ transform:translateX(-2%); opacity:.35; }
+    50%{ transform:translateX(2%); opacity:.75; }
+    100%{ transform:translateX(-2%); opacity:.35; }
+  }
 
-@keyframes mistMove{
-  0%{ transform:translateX(-6%); }
-  50%{ transform:translateX(6%); }
-  100%{ transform:translateX(-6%); }
-}
+  /* Screens */
+  .screen{
+    position:absolute;
+    inset:0;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding:22px;
+  }
+  .screen.active{ display:flex; }
 
-/* Light shafts (sun breaking through leaves) */
-.light-rays{
-  position:absolute;
-  inset:-20%;
-  background:
-    repeating-linear-gradient(
-      115deg,
-      rgba(255,255,255,.06) 0 30px,
-      rgba(255,255,255,0) 30px 120px
-    );
-  mask-image: radial-gradient(900px 600px at 30% 15%, black, transparent 70%);
-  -webkit-mask-image: radial-gradient(900px 600px at 30% 15%, black, transparent 70%);
-  opacity:.6;
-  animation: rays 14s ease-in-out infinite;
-  z-index:1;
-}
+  /* Top status */
+  .topbar{
+    position:fixed;
+    top:14px; left:14px; right:14px;
+    display:flex;
+    justify-content:space-between;
+    gap:10px;
+    z-index:20;
+    pointer-events:none;
+  }
+  .chip{
+    pointer-events:auto;
+    padding:10px 12px;
+    border-radius:999px;
+    border:1px solid var(--border);
+    background:rgba(0,0,0,.35);
+    backdrop-filter: blur(14px);
+    box-shadow: 0 10px 22px rgba(0,0,0,.25);
+    color:var(--text);
+    user-select:none;
+  }
+  .chip.subtle{ opacity:.86; }
 
-@keyframes rays{
-  0%{ transform:translateX(-2%); opacity:.4; }
-  50%{ transform:translateX(2%); opacity:.75; }
-  100%{ transform:translateX(-2%); opacity:.4; }
-}
+  /* Cards */
+  .card{
+    position:relative;
+    z-index:10;
+    width:min(420px, 92vw);
+    padding:34px 30px;
+    border-radius:var(--radius);
+    background:var(--glass);
+    border:1px solid var(--border);
+    backdrop-filter: blur(18px);
+    box-shadow:var(--shadow);
+  }
+  .card::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    border-radius:inherit;
+    background:linear-gradient(145deg, rgba(255,255,255,.09), transparent 45%);
+    pointer-events:none;
+  }
 
-/* =====================================================
-   SPLASH — LOGO INTRO
-===================================================== */
-.logo-card{
-  position:relative;
-  z-index:2;
-  padding:38px 34px;
-  background:var(--glass);
-  border:1px solid var(--border);
-  border-radius:var(--radius);
-  backdrop-filter: blur(18px);
-  box-shadow:var(--shadow);
-  text-align:center;
-  cursor:pointer;
-}
+  /* Splash logo */
+  .logoWrap{ text-align:center; cursor:pointer; }
+  .logo{
+    width:260px;
+    max-width:78vw;
+    display:block;
+    margin:0 auto;
+    animation:pulse 2.6s ease-in-out infinite;
+    transition:opacity .9s ease, transform .9s ease, filter .9s ease;
+    filter: drop-shadow(0 18px 36px rgba(0,0,0,.65));
+  }
+  @keyframes pulse{
+    0%{ transform:scale(1); }
+    50%{ transform:scale(1.09); }
+    100%{ transform:scale(1); }
+  }
+  .logo.fade{
+    opacity:0;
+    transform:scale(.88);
+    filter: blur(2px) drop-shadow(0 18px 36px rgba(0,0,0,.65));
+  }
+  .hint{
+    margin-top:16px;
+    font-size:14px;
+    color:var(--muted);
+    letter-spacing:.5px;
+  }
 
-.logo-card::before{
-  content:"";
-  position:absolute;
-  inset:0;
-  border-radius:inherit;
-  background:linear-gradient(145deg, rgba(255,255,255,.08), transparent 40%);
-  pointer-events:none;
-}
+  /* Login form */
+  h1,h2{ margin:0 0 10px; }
+  .sub{ margin:0 0 18px; color:var(--muted); font-size:14px; }
 
-.logo{
-  width:260px;
-  max-width:80vw;
-  animation:pulse 2.6s ease-in-out infinite;
-  transition:opacity .9s ease, transform .9s ease;
-}
+  label{ display:block; margin-bottom:12px; }
+  .lbl{ display:block; font-size:12px; color:rgba(238,246,241,.72); margin:0 0 6px; }
 
-@keyframes pulse{
-  0%{ transform:scale(1); }
-  50%{ transform:scale(1.09); }
-  100%{ transform:scale(1); }
-}
+  input{
+    width:100%;
+    padding:12px 12px;
+    border-radius:12px;
+    border:1px solid var(--border);
+    background:rgba(0,0,0,.46);
+    color:var(--text);
+    outline:none;
+  }
+  input:focus{
+    border-color:rgba(59,255,154,.55);
+    box-shadow: 0 0 0 4px rgba(59,255,154,.12);
+  }
 
-.logo.fade{
-  opacity:0;
-  transform:scale(.88);
-}
+  .btn{
+    width:100%;
+    padding:12px 14px;
+    border-radius:14px;
+    border:none;
+    background:linear-gradient(135deg,var(--accent),var(--accent2));
+    color:#041b12;
+    font-weight:950;
+    cursor:pointer;
+    box-shadow: 0 16px 34px rgba(59,255,154,.10);
+  }
+  .btn:active{ transform: translateY(1px); }
 
-.hint{
-  margin-top:16px;
-  font-size:14px;
-  color:var(--muted);
-  letter-spacing:.4px;
-}
+  .error{
+    margin-top:12px;
+    min-height:18px;
+    color:var(--danger);
+    font-size:13px;
+  }
 
-/* =====================================================
-   LOGIN
-===================================================== */
-.login-box{
-  position:relative;
-  z-index:2;
-  width:360px;
-  max-width:90%;
-  background:var(--glass);
-  border:1px solid var(--border);
-  border-radius:var(--radius);
-  padding:30px;
-  box-shadow:var(--shadow);
-  backdrop-filter: blur(18px);
-}
+  /* Dashboard */
+  #dash{ align-items:flex-start; }
+  .dashShell{
+    width:min(1100px, 96vw);
+  }
+  .dashHeader{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:12px;
+    margin-top: 60px;
+    margin-bottom: 18px;
+  }
+  .pill{
+    border:1px solid var(--border);
+    background:rgba(0,0,0,.35);
+    padding:10px 14px;
+    border-radius:999px;
+    color:var(--text);
+    cursor:pointer;
+    backdrop-filter: blur(14px);
+  }
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(12,1fr);
+    gap:16px;
+  }
+  .tile{
+    grid-column: span 6;
+    background:var(--glass2);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:18px;
+    box-shadow: 0 22px 60px rgba(0,0,0,.55);
+    backdrop-filter: blur(16px);
+  }
+  .tile h3{ margin:0 0 8px; }
+  .tile p{ margin:0; color:var(--muted); font-size:14px; }
 
-.login-box h1{
-  margin:0 0 10px;
-}
-
-.login-box input{
-  width:100%;
-  padding:12px;
-  margin-bottom:14px;
-  border-radius:12px;
-  border:1px solid var(--border);
-  background:rgba(0,0,0,.45);
-  color:var(--text);
-}
-
-.login-box button{
-  width:100%;
-  padding:12px;
-  border-radius:14px;
-  border:none;
-  background:linear-gradient(135deg,#3bff9a,#14b86a);
-  color:#042015;
-  font-weight:900;
-  cursor:pointer;
-}
-
-.error{
-  margin-top:10px;
-  font-size:13px;
-  color:#ff6b6b;
-  min-height:16px;
-}
-
-/* =====================================================
-   DASHBOARD
-===================================================== */
-#dash{
-  align-items:flex-start;
-  padding:28px;
-}
-
-.dash-header{
-  width:100%;
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  margin-bottom:24px;
-}
-
-.logout{
-  background:rgba(255,255,255,.1);
-  border:1px solid var(--border);
-  color:var(--text);
-  padding:8px 16px;
-  border-radius:999px;
-  cursor:pointer;
-}
-
-.tiles{
-  width:100%;
-  display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
-  gap:18px;
-}
-
-.tile{
-  background:var(--glass);
-  border:1px solid var(--border);
-  border-radius:var(--radius);
-  padding:20px;
-  box-shadow:var(--shadow);
-}
-
-.tile h3{ margin-top:0; }
-.tile p{ color:var(--muted); font-size:14px; }
+  @media (max-width: 860px){
+    .tile{ grid-column: span 12; }
+    .dashHeader{ flex-direction:column; align-items:flex-start; }
+  }
 </style>
 </head>
 
 <body>
+  <!-- fixed cinematic overlays (apply to entire site) -->
+  <div class="grain" aria-hidden="true"></div>
+  <div class="mist" aria-hidden="true"></div>
+  <div class="rays" aria-hidden="true"></div>
 
-<!-- SPLASH -->
-<section id="splash" class="screen active">
-  <div class="bg"></div>
-  <div class="mist"></div>
-  <div class="light-rays"></div>
-
-  <div id="logoCard" class="logo-card">
-    <img id="logo" src="hpa-logo.png" class="logo" alt="HPA Team Logo">
-    <div class="hint">Enter the Jungle</div>
-  </div>
-</section>
-
-<!-- LOGIN -->
-<section id="login" class="screen">
-  <div class="bg"></div>
-  <div class="mist"></div>
-
-  <div class="login-box">
-    <h1>HPA Team Login</h1>
-    <input id="user" placeholder="Username">
-    <input id="pass" type="password" placeholder="Password">
-    <button id="loginBtn">Login</button>
-    <div id="error" class="error"></div>
-  </div>
-</section>
-
-<!-- DASHBOARD -->
-<section id="dash" class="screen">
-  <div class="bg"></div>
-
-  <div class="dash-header">
-    <h2>HPA Jungle Hub</h2>
-    <button id="logoutBtn" class="logout">Logout</button>
+  <div class="topbar">
+    <div id="status" class="chip subtle">Cinematic Jungle</div>
+    <div class="chip subtle">Auth: users.csv</div>
   </div>
 
-  <div class="tiles">
-    <div class="tile">
-      <h3>🌴 Florida Hiring</h3>
-      <p>Role overview and application info.</p>
+  <!-- SPLASH -->
+  <section id="splash" class="screen active" aria-label="Splash">
+    <div class="card logoWrap" id="logoCard" role="button" tabindex="0" aria-label="Enter HPA Jungle Hub">
+      <img id="logo" class="logo" src="hpa-logo.png" alt="HPA Team Logo">
+      <div class="hint">Click the logo to enter</div>
     </div>
-    <div class="tile">
-      <h3>📌 Promos</h3>
-      <p>Current hot buys and promos.</p>
+  </section>
+
+  <!-- LOGIN -->
+  <section id="login" class="screen" aria-label="Login">
+    <div class="card">
+      <h1>HPA Team Login</h1>
+      <p class="sub">Credentials are validated against <strong>users.csv</strong>.</p>
+
+      <label>
+        <span class="lbl">Username</span>
+        <input id="user" autocomplete="username" placeholder="e.g., lucas">
+      </label>
+
+      <label>
+        <span class="lbl">Password</span>
+        <input id="pass" type="password" autocomplete="current-password" placeholder="••••••••">
+      </label>
+
+      <button id="loginBtn" class="btn">Login</button>
+      <div id="error" class="error" role="alert" aria-live="assertive"></div>
     </div>
-    <div class="tile">
-      <h3>📞 Contacts</h3>
-      <p>Key internal contacts.</p>
+  </section>
+
+  <!-- DASHBOARD -->
+  <section id="dash" class="screen" aria-label="Dashboard">
+    <div class="dashShell">
+      <div class="dashHeader">
+        <div>
+          <h2>HPA Jungle Hub</h2>
+          <div class="sub">Background stays cinematic across the entire site.</div>
+        </div>
+        <button id="logoutBtn" class="pill">Logout</button>
+      </div>
+
+      <div class="grid">
+        <article class="tile">
+          <h3>🌴 Florida Hiring</h3>
+          <p>Role overview and application workflow (placeholder).</p>
+        </article>
+        <article class="tile">
+          <h3>📌 Promos</h3>
+          <p>Current hot buys and promos (placeholder).</p>
+        </article>
+        <article class="tile">
+          <h3>📞 Contacts</h3>
+          <p>Key internal contacts (placeholder).</p>
+        </article>
+        <article class="tile">
+          <h3>🧭 Updates</h3>
+          <p>Internal updates feed (placeholder).</p>
+        </article>
+      </div>
     </div>
-  </div>
-</section>
+  </section>
 
 <script>
-const splash=document.getElementById("splash");
-const login=document.getElementById("login");
-const dash=document.getElementById("dash");
-const logo=document.getElementById("logo");
-const logoCard=document.getElementById("logoCard");
-const loginBtn=document.getElementById("loginBtn");
-const logoutBtn=document.getElementById("logoutBtn");
-const error=document.getElementById("error");
+  /* =========================================================
+     CSV LOGIN (STATIC SITE DEMO)
+     NOTE: Not secure for real authentication on static hosting.
+  ========================================================== */
 
-function show(s){
-  [splash,login,dash].forEach(x=>x.classList.remove("active"));
-  s.classList.add("active");
-}
+  const splash = document.getElementById("splash");
+  const login  = document.getElementById("login");
+  const dash   = document.getElementById("dash");
 
-logoCard.onclick=()=>{
-  logo.classList.add("fade");
-  setTimeout(()=>show(login),900);
-};
+  const logoCard = document.getElementById("logoCard");
+  const logo = document.getElementById("logo");
 
-loginBtn.onclick=()=>{
-  if(!user.value||!pass.value){
-    error.textContent="Enter any credentials (demo).";
-    return;
+  const loginBtn = document.getElementById("loginBtn");
+  const logoutBtn = document.getElementById("logoutBtn");
+  const errorEl = document.getElementById("error");
+  const statusEl = document.getElementById("status");
+
+  function show(screen){
+    [splash, login, dash].forEach(s => s.classList.remove("active"));
+    screen.classList.add("active");
   }
-  error.textContent="";
-  show(dash);
-};
 
-logoutBtn.onclick=()=>{
-  user.value="";
-  pass.value="";
-  show(login);
-};
+  // ---- CSV loading (cached) ----
+  let usersPromise = null;
+
+  function parseCSV(text){
+    // Small CSV parser supporting commas + quotes
+    const rows = [];
+    let row = [], cur = "", inQuotes = false;
+
+    for (let i = 0; i < text.length; i++){
+      const ch = text[i];
+      const next = text[i+1];
+
+      if (ch === '"' && inQuotes && next === '"'){ cur += '"'; i++; continue; }
+      if (ch === '"'){ inQuotes = !inQuotes; continue; }
+
+      if (!inQuotes && (ch === ",")){
+        row.push(cur.trim()); cur = ""; continue;
+      }
+      if (!inQuotes && (ch === "\n" || ch === "\r")){
+        if (cur.length || row.length){
+          row.push(cur.trim());
+          rows.push(row);
+        }
+        row = []; cur = "";
+        // swallow \r\n
+        if (ch === "\r" && next === "\n") i++;
+        continue;
+      }
+      cur += ch;
+    }
+    if (cur.length || row.length){
+      row.push(cur.trim());
+      rows.push(row);
+    }
+    return rows.filter(r => r.some(cell => cell !== ""));
+  }
+
+  function normalizeHeader(h){ return (h||"").toLowerCase().replace(/\s+/g,""); }
+
+  async function loadUsers(){
+    if (usersPromise) return usersPromise;
+
+    usersPromise = (async () => {
+      const res = await fetch("users.csv", { cache: "no-store" });
+      if (!res.ok) throw new Error("Could not load users.csv (check file name + repo root).");
+
+      const text = await res.text();
+      const rows = parseCSV(text);
+
+      if (!rows.length) throw new Error("users.csv is empty.");
+
+      const header = rows[0].map(normalizeHeader);
+      const uIdx = header.indexOf("username");
+      const pIdx = header.indexOf("password");
+
+      if (uIdx === -1 || pIdx === -1){
+        throw new Error('users.csv must have headers: "username,password"');
+      }
+
+      const map = new Map();
+      for (let i = 1; i < rows.length; i++){
+        const u = (rows[i][uIdx] || "").trim();
+        const p = (rows[i][pIdx] || "").trim();
+        if (!u) continue;
+        map.set(u.toLowerCase(), p);
+      }
+
+      if (map.size === 0) throw new Error("No users found in users.csv.");
+      return map;
+    })();
+
+    return usersPromise;
+  }
+
+  function looksLikeSha256Hex(s){
+    return /^[a-f0-9]{64}$/i.test((s||"").trim());
+  }
+
+  async function sha256Hex(str){
+    const enc = new TextEncoder().encode(str);
+    const buf = await crypto.subtle.digest("SHA-256", enc);
+    return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2,"0")).join("");
+  }
+
+  // ---- Flow: splash -> login ----
+  function enter(){
+    logo.classList.add("fade");
+    statusEl.textContent = "Entering…";
+    setTimeout(() => {
+      show(login);
+      statusEl.textContent = "Login";
+    }, 900);
+  }
+
+  logoCard.addEventListener("click", enter);
+  logoCard.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " "){ e.preventDefault(); enter(); }
+  });
+
+  // ---- Login using users.csv ----
+  loginBtn.addEventListener("click", async () => {
+    errorEl.textContent = "";
+    statusEl.textContent = "Checking users.csv…";
+
+    const username = (document.getElementById("user").value || "").trim();
+    const password = (document.getElementById("pass").value || "").trim();
+
+    if (!username || !password){
+      statusEl.textContent = "Login";
+      errorEl.textContent = "Enter a username and password.";
+      return;
+    }
+
+    try{
+      const users = await loadUsers();
+      const stored = users.get(username.toLowerCase());
+
+      if (!stored){
+        statusEl.textContent = "Login";
+        errorEl.textContent = "Invalid username or password.";
+        return;
+      }
+
+      // If stored password looks like sha256 hex, compare with hash(password)
+      let ok = false;
+      if (looksLikeSha256Hex(stored)){
+        const hashed = await sha256Hex(password);
+        ok = (hashed.toLowerCase() === stored.toLowerCase());
+      } else {
+        ok = (password === stored);
+      }
+
+      if (!ok){
+        statusEl.textContent = "Login";
+        errorEl.textContent = "Invalid username or password.";
+        return;
+      }
+
+      statusEl.textContent = `Welcome, ${username}`;
+      show(dash);
+
+    } catch (err){
+      statusEl.textContent = "Login";
+      errorEl.textContent = err.message || "Login error (check users.csv).";
+    }
+  });
+
+  // ---- Logout ----
+  logoutBtn.addEventListener("click", () => {
+    document.getElementById("user").value = "";
+    document.getElementById("pass").value = "";
+    show(login);
+    statusEl.textContent = "Login";
+  });
+
+  // Preload CSV after first interaction for snappier login
+  window.addEventListener("pointerdown", () => { loadUsers().catch(()=>{}); }, { once:true });
 </script>
-
 </body>
 </html>
+``
