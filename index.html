@@ -1,311 +1,340 @@
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html><!DOCTYPE htmlen">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>HPA Jungle Hub</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HPA Jungle Hub</title>
 
-  <style>
-    /* =========================
-       BASE THEME (Dark Jungle)
-    ========================== */
-    :root{
-      --text:#e9f5ec;
-      --muted:#b9d7c3;
-      --glass:rgba(0,0,0,.55);
-      --border:rgba(255,255,255,.12);
-      --accent:#2fdc88;
-      --danger:#ff6b6b;
-      --shadow:0 30px 80px rgba(0,0,0,.75);
-      --radius:18px;
-    }
+<style>
+/* =====================================================
+   CINEMATIC JUNGLE THEME
+   Dark • Moody • Premium
+===================================================== */
+:root{
+  --text:#eef6f1;
+  --muted:#a7cdb7;
+  --accent:#3bff9a;
+  --glass:rgba(0,0,0,.62);
+  --border:rgba(255,255,255,.12);
+  --shadow:0 40px 120px rgba(0,0,0,.9);
+  --radius:20px;
+}
 
-    *{ box-sizing:border-box; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; }
-    html,body{ margin:0; height:100%; overflow:hidden; background:#020b07; color:var(--text); }
+*{
+  box-sizing:border-box;
+  font-family: system-ui,-apple-system,Segoe UI,Roboto,Arial;
+}
 
-    .screen{
-      position:absolute;
-      inset:0;
-      display:none;
-      align-items:center;
-      justify-content:center;
-    }
-    .screen.active{ display:flex; }
+html,body{
+  margin:0;
+  height:100%;
+  overflow:hidden;
+  background:#010806;
+  color:var(--text);
+}
 
-    /* =========================
-       SPLASH — LEAF JUNGLE BG
-    ========================== */
-    #splash{
-      background:
-        linear-gradient(
-          rgba(0,0,0,.55),
-          rgba(0,0,0,.65)
-        ),
-        url("jungle-bg.jpg") center / cover no-repeat;
-    }
+/* Screens */
+.screen{
+  position:absolute;
+  inset:0;
+  display:none;
+  align-items:center;
+  justify-content:center;
+}
+.screen.active{ display:flex; }
 
-    /* Soft vignette */
-    #splash::after{
-      content:"";
-      position:absolute;
-      inset:0;
-      background: radial-gradient(circle at center, transparent 45%, rgba(0,0,0,.85));
-      z-index:0;
-    }
+/* =====================================================
+   CINEMATIC JUNGLE BACKGROUND
+===================================================== */
+.bg{
+  position:absolute;
+  inset:0;
+  background:
+    radial-gradient(1200px 800px at 60% 10%, rgba(255,255,255,.08), transparent 55%),
+    linear-gradient(rgba(0,0,0,.65), rgba(0,0,0,.85)),
+    url("jungle-bg.jpg") center / cover no-repeat;
+  z-index:0;
+}
 
-    /* Floating mist */
-    .mist{
-      position:absolute;
-      inset:-20%;
-      background:
-        radial-gradient(600px 200px at 20% 40%, rgba(255,255,255,.10), transparent 60%),
-        radial-gradient(700px 240px at 70% 55%, rgba(255,255,255,.08), transparent 65%);
-      filter: blur(20px);
-      animation: mistMove 18s ease-in-out infinite;
-      z-index:1;
-    }
-    @keyframes mistMove{
-      0%{ transform:translateX(-4%); }
-      50%{ transform:translateX(4%); }
-      100%{ transform:translateX(-4%); }
-    }
+/* Vignette */
+.bg::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:radial-gradient(circle at center, transparent 35%, rgba(0,0,0,.92));
+}
 
-    /* =========================
-       LOGO CARD
-    ========================== */
-    .logo-card{
-      position:relative;
-      z-index:2;
-      padding:34px 28px;
-      border-radius:var(--radius);
-      background:var(--glass);
-      border:1px solid var(--border);
-      backdrop-filter: blur(14px);
-      box-shadow: var(--shadow);
-      text-align:center;
-      cursor:pointer;
-      max-width:420px;
-      width:90%;
-      transition: transform .2s ease;
-    }
-    .logo-card:hover{ transform:translateY(-2px); }
+/* Slow mist */
+.mist{
+  position:absolute;
+  inset:-30%;
+  background:
+    radial-gradient(700px 260px at 20% 40%, rgba(255,255,255,.10), transparent 60%),
+    radial-gradient(900px 320px at 70% 55%, rgba(255,255,255,.08), transparent 65%);
+  filter: blur(26px);
+  animation: mistMove 22s ease-in-out infinite;
+  z-index:1;
+}
 
-    .logo{
-      width:260px;
-      max-width:80%;
-      animation: pulse 2.4s ease-in-out infinite;
-      transition: opacity .8s ease, transform .8s ease;
-    }
+@keyframes mistMove{
+  0%{ transform:translateX(-6%); }
+  50%{ transform:translateX(6%); }
+  100%{ transform:translateX(-6%); }
+}
 
-    @keyframes pulse{
-      0%{ transform:scale(1); }
-      50%{ transform:scale(1.08); }
-      100%{ transform:scale(1); }
-    }
+/* Light shafts (sun breaking through leaves) */
+.light-rays{
+  position:absolute;
+  inset:-20%;
+  background:
+    repeating-linear-gradient(
+      115deg,
+      rgba(255,255,255,.06) 0 30px,
+      rgba(255,255,255,0) 30px 120px
+    );
+  mask-image: radial-gradient(900px 600px at 30% 15%, black, transparent 70%);
+  -webkit-mask-image: radial-gradient(900px 600px at 30% 15%, black, transparent 70%);
+  opacity:.6;
+  animation: rays 14s ease-in-out infinite;
+  z-index:1;
+}
 
-    .logo.fade{
-      opacity:0;
-      transform:scale(.9);
-    }
+@keyframes rays{
+  0%{ transform:translateX(-2%); opacity:.4; }
+  50%{ transform:translateX(2%); opacity:.75; }
+  100%{ transform:translateX(-2%); opacity:.4; }
+}
 
-    .hint{
-      margin-top:14px;
-      color:var(--muted);
-      font-size:14px;
-    }
+/* =====================================================
+   SPLASH — LOGO INTRO
+===================================================== */
+.logo-card{
+  position:relative;
+  z-index:2;
+  padding:38px 34px;
+  background:var(--glass);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  backdrop-filter: blur(18px);
+  box-shadow:var(--shadow);
+  text-align:center;
+  cursor:pointer;
+}
 
-    /* =========================
-       LOGIN SCREEN
-    ========================== */
-    #login{
-      background:
-        linear-gradient(
-          rgba(0,0,0,.75),
-          rgba(0,0,0,.85)
-        ),
-        url("jungle-bg.jpg") center / cover no-repeat;
-    }
+.logo-card::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  border-radius:inherit;
+  background:linear-gradient(145deg, rgba(255,255,255,.08), transparent 40%);
+  pointer-events:none;
+}
 
-    .login-box{
-      background:var(--glass);
-      border:1px solid var(--border);
-      border-radius:var(--radius);
-      padding:28px;
-      width:360px;
-      max-width:90%;
-      box-shadow: var(--shadow);
-      backdrop-filter: blur(16px);
-    }
+.logo{
+  width:260px;
+  max-width:80vw;
+  animation:pulse 2.6s ease-in-out infinite;
+  transition:opacity .9s ease, transform .9s ease;
+}
 
-    .login-box h1{
-      margin:0 0 10px;
-    }
+@keyframes pulse{
+  0%{ transform:scale(1); }
+  50%{ transform:scale(1.09); }
+  100%{ transform:scale(1); }
+}
 
-    .login-box input{
-      width:100%;
-      padding:12px;
-      margin-bottom:12px;
-      border-radius:10px;
-      border:1px solid var(--border);
-      background:rgba(0,0,0,.35);
-      color:var(--text);
-      outline:none;
-    }
+.logo.fade{
+  opacity:0;
+  transform:scale(.88);
+}
 
-    .login-box input:focus{
-      border-color:var(--accent);
-    }
+.hint{
+  margin-top:16px;
+  font-size:14px;
+  color:var(--muted);
+  letter-spacing:.4px;
+}
 
-    .login-box button{
-      width:100%;
-      padding:12px;
-      border-radius:12px;
-      border:none;
-      background:var(--accent);
-      color:#042015;
-      font-weight:800;
-      cursor:pointer;
-    }
+/* =====================================================
+   LOGIN
+===================================================== */
+.login-box{
+  position:relative;
+  z-index:2;
+  width:360px;
+  max-width:90%;
+  background:var(--glass);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:30px;
+  box-shadow:var(--shadow);
+  backdrop-filter: blur(18px);
+}
 
-    .error{
-      margin-top:10px;
-      color:var(--danger);
-      font-size:13px;
-      min-height:18px;
-    }
+.login-box h1{
+  margin:0 0 10px;
+}
 
-    /* =========================
-       DASHBOARD
-    ========================== */
-    #dash{
-      background:#020b07;
-      padding:28px;
-      align-items:flex-start;
-    }
+.login-box input{
+  width:100%;
+  padding:12px;
+  margin-bottom:14px;
+  border-radius:12px;
+  border:1px solid var(--border);
+  background:rgba(0,0,0,.45);
+  color:var(--text);
+}
 
-    .dash-header{
-      width:100%;
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      margin-bottom:20px;
-    }
+.login-box button{
+  width:100%;
+  padding:12px;
+  border-radius:14px;
+  border:none;
+  background:linear-gradient(135deg,#3bff9a,#14b86a);
+  color:#042015;
+  font-weight:900;
+  cursor:pointer;
+}
 
-    .logout{
-      background:rgba(255,255,255,.1);
-      border:1px solid var(--border);
-      padding:8px 14px;
-      border-radius:999px;
-      color:var(--text);
-      cursor:pointer;
-    }
+.error{
+  margin-top:10px;
+  font-size:13px;
+  color:#ff6b6b;
+  min-height:16px;
+}
 
-    .tiles{
-      width:100%;
-      display:grid;
-      grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
-      gap:16px;
-    }
+/* =====================================================
+   DASHBOARD
+===================================================== */
+#dash{
+  align-items:flex-start;
+  padding:28px;
+}
 
-    .tile{
-      background:var(--glass);
-      border:1px solid var(--border);
-      border-radius:var(--radius);
-      padding:18px;
-      box-shadow: var(--shadow);
-    }
+.dash-header{
+  width:100%;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:24px;
+}
 
-    .tile h3{ margin-top:0; }
-    .tile p{ color:var(--muted); font-size:14px; }
-  </style>
+.logout{
+  background:rgba(255,255,255,.1);
+  border:1px solid var(--border);
+  color:var(--text);
+  padding:8px 16px;
+  border-radius:999px;
+  cursor:pointer;
+}
+
+.tiles{
+  width:100%;
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+  gap:18px;
+}
+
+.tile{
+  background:var(--glass);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:20px;
+  box-shadow:var(--shadow);
+}
+
+.tile h3{ margin-top:0; }
+.tile p{ color:var(--muted); font-size:14px; }
+</style>
 </head>
 
 <body>
 
-  <!-- SPLASH -->
-  <section id="splash" class="screen active">
-    <div class="mist"></div>
+<!-- SPLASH -->
+<section id="splash" class="screen active">
+  <div class="bg"></div>
+  <div class="mist"></div>
+  <div class="light-rays"></div>
 
-    <div id="logoCard" class="logo-card">
-      <img id="logo" src="hpa-logo.png" alt="HPA Team Logo" class="logo">
-      <div class="hint">Click to enter</div>
+  <div id="logoCard" class="logo-card">
+    <img id="logo" src="hpa-logo.png" class="logo" alt="HPA Team Logo">
+    <div class="hint">Enter the Jungle</div>
+  </div>
+</section>
+
+<!-- LOGIN -->
+<section id="login" class="screen">
+  <div class="bg"></div>
+  <div class="mist"></div>
+
+  <div class="login-box">
+    <h1>HPA Team Login</h1>
+    <input id="user" placeholder="Username">
+    <input id="pass" type="password" placeholder="Password">
+    <button id="loginBtn">Login</button>
+    <div id="error" class="error"></div>
+  </div>
+</section>
+
+<!-- DASHBOARD -->
+<section id="dash" class="screen">
+  <div class="bg"></div>
+
+  <div class="dash-header">
+    <h2>HPA Jungle Hub</h2>
+    <button id="logoutBtn" class="logout">Logout</button>
+  </div>
+
+  <div class="tiles">
+    <div class="tile">
+      <h3>🌴 Florida Hiring</h3>
+      <p>Role overview and application info.</p>
     </div>
-  </section>
-
-  <!-- LOGIN -->
-  <section id="login" class="screen">
-    <div class="login-box">
-      <h1>HPA Team Login</h1>
-
-      <input id="user" placeholder="Username">
-      <input id="pass" type="password" placeholder="Password">
-
-      <button id="loginBtn">Login</button>
-      <div id="error" class="error"></div>
+    <div class="tile">
+      <h3>📌 Promos</h3>
+      <p>Current hot buys and promos.</p>
     </div>
-  </section>
-
-  <!-- DASHBOARD -->
-  <section id="dash" class="screen">
-    <div class="dash-header">
-      <h2>HPA Jungle Hub</h2>
-      <button id="logoutBtn" class="logout">Logout</button>
+    <div class="tile">
+      <h3>📞 Contacts</h3>
+      <p>Key internal contacts.</p>
     </div>
+  </div>
+</section>
 
-    <div class="tiles">
-      <div class="tile">
-        <h3>🌴 Florida Hiring</h3>
-        <p>View the open position and application info.</p>
-      </div>
-      <div class="tile">
-        <h3>📌 Promos</h3>
-        <p>Current hot buys and promotions.</p>
-      </div>
-      <div class="tile">
-        <h3>📞 Contacts</h3>
-        <p>Key team and regional contacts.</p>
-      </div>
-    </div>
-  </section>
+<script>
+const splash=document.getElementById("splash");
+const login=document.getElementById("login");
+const dash=document.getElementById("dash");
+const logo=document.getElementById("logo");
+const logoCard=document.getElementById("logoCard");
+const loginBtn=document.getElementById("loginBtn");
+const logoutBtn=document.getElementById("logoutBtn");
+const error=document.getElementById("error");
 
-  <script>
-    const splash = document.getElementById("splash");
-    const login  = document.getElementById("login");
-    const dash   = document.getElementById("dash");
+function show(s){
+  [splash,login,dash].forEach(x=>x.classList.remove("active"));
+  s.classList.add("active");
+}
 
-    const logoCard = document.getElementById("logoCard");
-    const logo = document.getElementById("logo");
+logoCard.onclick=()=>{
+  logo.classList.add("fade");
+  setTimeout(()=>show(login),900);
+};
 
-    const loginBtn = document.getElementById("loginBtn");
-    const logoutBtn = document.getElementById("logoutBtn");
-    const error = document.getElementById("error");
+loginBtn.onclick=()=>{
+  if(!user.value||!pass.value){
+    error.textContent="Enter any credentials (demo).";
+    return;
+  }
+  error.textContent="";
+  show(dash);
+};
 
-    function show(screen){
-      [splash,login,dash].forEach(s=>s.classList.remove("active"));
-      screen.classList.add("active");
-    }
-
-    logoCard.addEventListener("click",()=>{
-      logo.classList.add("fade");
-      setTimeout(()=>show(login),800);
-    });
-
-    loginBtn.addEventListener("click",()=>{
-      if(!user.value || !pass.value){
-        error.textContent="Enter any credentials (demo).";
-        return;
-      }
-      error.textContent="";
-      show(dash);
-    });
-
-    logoutBtn.addEventListener("click",()=>{
-      user.value="";
-      pass.value="";
-      show(login);
-    });
-  </script>
+logoutBtn.onclick=()=>{
+  user.value="";
+  pass.value="";
+  show(login);
+};
+</script>
 
 </body>
 </html>
-``
