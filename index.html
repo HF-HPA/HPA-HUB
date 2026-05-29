@@ -18,6 +18,8 @@
       --radius:18px;
       --danger:#ff6b6b;
       --chip:rgba(0,0,0,.35);
+      --ok:#4ade80;
+      --warn:#ffd166;
     }
 
     *{ box-sizing:border-box; font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial; }
@@ -109,6 +111,8 @@
       font-size:13px;
     }
     .chip.subtle{ opacity:.86; }
+    .chip.good{ border-color: rgba(74,222,128,.28); background: rgba(74,222,128,.10); }
+    .chip.warn{ border-color: rgba(255,209,102,.28); background: rgba(255,209,102,.08); }
 
     /* Cards / Inputs */
     .card{
@@ -264,7 +268,7 @@
     .toolbar h2{ margin:0; }
     .tools{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
 
-    /* Order Tracker - weekly calendar */
+    /* ===== NEW ORDER TRACKER: Excel-style sheet ===== */
     .weekHeader{
       display:flex;
       gap:10px;
@@ -273,48 +277,161 @@
       margin-bottom:10px;
       flex-wrap:wrap;
     }
-    .weekGrid{
-      display:grid;
-      grid-template-columns: repeat(7, 1fr);
-      gap:12px;
-      min-height: 420px;
+
+    .orderSheet{
+      display:flex;
+      flex-direction:column;
+      gap:18px;
+      padding-bottom: 12px;
     }
-    .dayCol{
+
+    .orderSection{
+      border:1px solid rgba(255,255,255,.12);
+      border-radius:18px;
       background:rgba(0,0,0,.35);
-      border:1px solid var(--border);
-      border-radius:14px;
-      padding:10px;
-      min-height: 320px;
+      padding:14px;
+      box-shadow: 0 18px 50px rgba(0,0,0,.30);
     }
-    .dayCol h4{
-      margin:0 0 8px;
-      font-size:13px;
-      color:var(--muted);
+
+    .sectionHeader{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      justify-content:space-between;
+      flex-wrap:wrap;
+      margin-bottom:8px;
+    }
+    .sectionHeader .title{
+      font-weight: 950;
+      letter-spacing: .4px;
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+    .sectionHeader .meta{
+      display:flex;
+      gap:8px;
+      align-items:center;
+      flex-wrap:wrap;
+      color: rgba(238,246,241,.75);
+      font-size: 13px;
+    }
+
+    .pickupBlock{
+      margin-top:10px;
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(0,0,0,.40);
+      border-radius:16px;
+      overflow:hidden;
+    }
+
+    .pickupHead{
       display:flex;
       justify-content:space-between;
+      gap:10px;
       align-items:center;
+      flex-wrap:wrap;
+      padding:10px 12px;
+      background: rgba(0,0,0,.35);
+      border-bottom:1px solid rgba(255,255,255,.08);
+    }
+    .pickupHead .left{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+    .pickupHead .right{
+      display:flex;
       gap:8px;
+      align-items:center;
+      flex-wrap:wrap;
     }
-    .dayDate{ opacity:.85; font-weight:750; color:rgba(238,246,241,.78); font-size:12px; }
+    .pickupTitle{
+      font-weight:950;
+      letter-spacing:.2px;
+      white-space:nowrap;
+    }
+    .pickupSub{
+      color: rgba(238,246,241,.72);
+      font-size: 13px;
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+    }
 
-    .truckCard{
-      background:rgba(0,0,0,.55);
-      border:1px solid rgba(255,255,255,.10);
-      border-radius:12px;
-      padding:10px;
-      margin-bottom:8px;
-      font-size:12.5px;
-      cursor:pointer;
+    .vendorSheetBlock{
+      padding:10px 12px 12px;
+      border-top:1px solid rgba(255,255,255,.08);
     }
-    .truckCard:hover{ border-color: rgba(59,255,154,.25); }
-    .truckCard strong{ display:block; font-size:13px; }
-    .truckMeta{ color:rgba(238,246,241,.72); margin-top:6px; display:flex; gap:8px; flex-wrap:wrap; }
-    .pillMini{
-      padding:4px 8px;
+
+    .vendorLine{
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      align-items:flex-start;
+      flex-wrap:wrap;
+      margin-bottom:6px;
+    }
+    .vendorLine .vTitle{
+      font-weight:950;
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+
+    .statusPill{
+      padding:4px 10px;
+      border-radius:999px;
+      font-size:12px;
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(0,0,0,.28);
+      color: rgba(238,246,241,.86);
+      white-space:nowrap;
+    }
+    .statusConfirmed{ border-color: rgba(74,222,128,.30); background: rgba(74,222,128,.10); }
+    .statusOpen{ border-color: rgba(255,209,102,.30); background: rgba(255,209,102,.10); }
+
+    .sheetTable{
+      width:100%;
+      border-collapse:separate;
+      border-spacing:0;
+      overflow:hidden;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.10);
+      margin-top:6px;
+    }
+    .sheetTable th, .sheetTable td{
+      padding:9px 10px;
+      border-bottom:1px solid rgba(255,255,255,.08);
+      font-size:13px;
+      vertical-align:top;
+    }
+    .sheetTable th{
+      text-align:left;
+      color: rgba(238,246,241,.72);
+      background: rgba(0,0,0,.28);
+      font-weight: 950;
+      white-space:nowrap;
+    }
+    .sheetTable tr:last-child td{ border-bottom:none; }
+
+    .totalsStrip{
+      display:flex;
+      gap:14px;
+      flex-wrap:wrap;
+      margin-top:8px;
+      font-weight:950;
+      color: rgba(238,246,241,.88);
+    }
+    .totalsStrip .pillMini{
+      padding:5px 10px;
       border-radius:999px;
       border:1px solid rgba(255,255,255,.10);
       background:rgba(0,0,0,.28);
-      font-size:11px;
+      font-size:12px;
     }
 
     /* Modal */
@@ -375,7 +492,9 @@
       font-size: 13px;
       white-space:nowrap;
     }
-    .v_name{ flex:1; min-width: 240px; }
+    .v_name{ flex:1; min-width: 220px; }
+    .v_po{ width: 160px; min-width: 160px; }
+    .v_status{ width: 160px; min-width: 160px; }
     .vendorActions{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
 
     /* Items table */
@@ -399,6 +518,7 @@
       color:rgba(238,246,241,.72);
       background:rgba(0,0,0,.30);
       font-weight:950;
+      white-space:nowrap;
     }
     .itemsTable tr:last-child td{ border-bottom:none; }
 
@@ -537,14 +657,10 @@
     /* Responsive */
     @media (max-width: 980px){
       .appShell{ grid-template-columns: 1fr; height: calc(100vh - 86px); }
-      .weekGrid{ grid-template-columns: repeat(2, 1fr); }
       .checkRow{ grid-template-columns: 42px 1fr; }
       .checkRow > div:nth-child(3),
       .checkRow > div:nth-child(4),
       .checkRow > div:nth-child(5){ grid-column: span 2; }
-    }
-    @media (max-width: 520px){
-      .weekGrid{ grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -584,6 +700,7 @@
 
       <button id="loginBtn" class="btn">Login</button>
       <div id="loginError" class="error" role="alert" aria-live="assertive"></div>
+      <div class="note">Note: This is a local session (no backend auth yet).</div>
     </div>
   </section>
 
@@ -617,7 +734,7 @@
               <button id="prevWeek" class="btnGhost">← Prev</button>
               <button id="todayWeek" class="btnGhost">This Week</button>
               <button id="nextWeek" class="btnGhost">Next →</button>
-              <button id="newTruckBtn" class="btnGhost">＋ New Truck</button>
+              <button id="newTruckBtn" class="btnGhost">＋ New Order</button>
               <button id="deleteWeekBtn" class="btnGhost" style="border-color: rgba(255,107,107,.25); background: rgba(255,107,107,.08);">Delete Week</button>
 
               <button id="exportTruckBtn" class="btnGhost">Export Truck Order</button>
@@ -629,15 +746,16 @@
           <div class="weekHeader">
             <div class="tools">
               <div class="chip subtle" id="weekLabel">Week</div>
-              <div class="chip subtle" id="truckCountLabel">0 trucks</div>
+              <div class="chip subtle" id="truckCountLabel">0 orders</div>
             </div>
-            <div class="chip subtle">Weekly calendar</div>
+            <div class="chip subtle">Weekly order sheet</div>
           </div>
 
-          <div class="weekGrid" id="weekGrid"></div>
+          <!-- NEW: Excel-style sheet container -->
+          <div id="orderSheet" class="orderSheet"></div>
 
           <div class="note">
-            Click a truck card to edit. Trucks store location, PO, trucking + price, vendor blocks, and item lines.
+            Layout matches your weekly order sheet style: Location + Type → Pickup → Vendor → Item table + totals.
           </div>
         </div>
 
@@ -742,16 +860,16 @@
     </div>
   </section>
 
-  <!-- TRUCK MODAL -->
+  <!-- TRUCK / ORDER MODAL -->
   <div id="truckModal" class="modal" aria-hidden="true">
     <div class="modalCard">
       <div class="modalHead">
         <div>
-          <h3 id="truckModalTitle" style="margin:0;">New Truck</h3>
-          <div class="note" id="truckModalSub">Add truck info + vendor blocks with item lines.</div>
+          <h3 id="truckModalTitle" style="margin:0;">New Order</h3>
+          <div class="note" id="truckModalSub">Add pickup + location/type + vendor blocks with item lines.</div>
         </div>
         <div class="row" style="max-width: 420px; justify-content:flex-end;">
-          <button id="truckDeleteBtn" class="tinyBtn danger" style="display:none;">Delete Truck</button>
+          <button id="truckDeleteBtn" class="tinyBtn danger" style="display:none;">Delete Order</button>
           <button id="truckCloseBtn" class="closeX">Close ✕</button>
         </div>
       </div>
@@ -763,16 +881,24 @@
         </label>
 
         <label>
-          <span class="lbl">PO</span>
-          <input id="t_po" placeholder="PO #"/>
-        </label>
-
-        <label>
           <span class="lbl">Location</span>
           <select id="t_region">
             <option value="Homestead">Homestead</option>
             <option value="Apopka">Apopka</option>
             <option value="Canada">Canada</option>
+            <option value="New Jersey">New Jersey</option>
+          </select>
+        </label>
+
+        <label>
+          <span class="lbl">Order Type</span>
+          <select id="t_type">
+            <option value="CC">CC</option>
+            <option value="FLOOR STACK">FLOOR STACK</option>
+            <option value="CC RACKS/PALLETS">CC RACKS/PALLETS</option>
+            <option value="CC RACKS">CC RACKS</option>
+            <option value="PALLETS">PALLETS</option>
+            <option value="DIRECT SHIP">DIRECT SHIP</option>
           </select>
         </label>
       </div>
@@ -789,19 +915,19 @@
       </div>
 
       <label>
-        <span class="lbl">Truck Notes</span>
-        <textarea id="t_notes" placeholder="General notes for this truck..."></textarea>
+        <span class="lbl">Truck / Order Notes</span>
+        <textarea id="t_notes" placeholder="General notes for this order..."></textarea>
       </label>
 
       <div class="row" style="margin-top:6px; align-items:center;">
-        <div class="chip subtle" id="t_totals">Totals: 0 racks • 0 plants</div>
+        <div class="chip subtle" id="t_totals">Totals: 0 racks • 0 cases • 0 plants</div>
         <button id="addVendorBtn" class="tinyBtn">＋ Add Vendor</button>
       </div>
 
       <div id="vendorWrap" style="margin-top:10px;"></div>
 
       <div class="row" style="margin-top:12px;">
-        <button id="saveTruckBtn" class="btn">Save Truck</button>
+        <button id="saveTruckBtn" class="btn">Save Order</button>
       </div>
     </div>
   </div>
@@ -955,10 +1081,10 @@
 
   <script>
     /*********************************************************
-     * localStorage helper
+     * localStorage helper (with quota guard)
      *********************************************************/
     const LS = {
-      trucksKey: "hpa_trucks_v2",
+      trucksKey: "hpa_trucks_v3", // bumped version due to schema changes
       photosKey: "hpa_photos_v1",
       issuesKey: "hpa_issues_v1",
       userKey:   "hpa_user_v1",
@@ -968,7 +1094,12 @@
         try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; }
       },
       set(key, value){
-        localStorage.setItem(key, JSON.stringify(value));
+        try{
+          localStorage.setItem(key, JSON.stringify(value));
+        } catch (e){
+          alert("Storage limit reached. Consider deleting old photos or reducing stored data.");
+          throw e;
+        }
       }
     };
 
@@ -982,6 +1113,7 @@
       if(!y||!m||!dd) return null;
       return new Date(y, m-1, dd);
     };
+
     function startOfWeek(date){
       const d = new Date(date);
       const day = (d.getDay()+6)%7; // Mon=0..Sun=6
@@ -994,33 +1126,39 @@
       d.setDate(d.getDate() + days);
       return d;
     }
+
+    /* ISO week key (UTC-safe) */
     function weekKeyFromDate(date){
-      const d = startOfWeek(date);
-      const year = d.getFullYear();
-      const jan4 = new Date(year,0,4);
-      const week1 = startOfWeek(jan4);
-      const diff = Math.round((d - week1) / (7*24*60*60*1000));
-      const week = diff + 1;
-      return `${year}-W${pad2(week)}`;
+      if(!(date instanceof Date)) date = new Date(date);
+      const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+      d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+      const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+      const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+      return `${d.getUTCFullYear()}-W${pad2(weekNo)}`;
     }
+
     function weekLabel(date){
       const s = startOfWeek(date);
       const e = addDays(s,6);
       return `${weekKeyFromDate(date)} • ${s.toLocaleDateString()} – ${e.toLocaleDateString()}`;
     }
+
     function cryptoRandomId(){
       return (crypto?.getRandomValues)
         ? Array.from(crypto.getRandomValues(new Uint8Array(8))).map(b=>b.toString(16).padStart(2,"0")).join("")
         : String(Math.random()).slice(2) + String(Date.now());
     }
+
+    /* FIXED escaper */
     function escapeHtml(str){
       return String(str ?? "")
-        .replaceAll("&","&amp;")
-        .replaceAll("<","&lt;")
-        .replaceAll(">","&gt;")
-        .replaceAll('"',"&quot;")
-        .replaceAll("'","&#039;");
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
     }
+
     function downloadCSV(filename, rows, headers){
       const csv = [
         headers.join(","),
@@ -1040,6 +1178,7 @@
       a.remove();
       URL.revokeObjectURL(url);
     }
+
     function fileToDataURL(file){
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -1052,6 +1191,11 @@
       const dt = new DataTransfer();
       files.forEach(f => dt.items.add(f));
       return dt.files;
+    }
+
+    function money(n){
+      const x = Number(n || 0);
+      return "$" + x.toLocaleString(undefined, { maximumFractionDigits: 2 });
     }
 
     /*********************************************************
@@ -1100,6 +1244,7 @@
       statusChip.textContent = "Ready";
       showScreen(app);
       renderAll();
+      showPage("order");
     });
 
     document.getElementById("logoutBtn").addEventListener("click", () => {
@@ -1113,7 +1258,7 @@
     });
 
     /*********************************************************
-     * Navigation (NO recursion bug)
+     * Navigation
      *********************************************************/
     const navBtns = Array.from(document.querySelectorAll(".navBtn[data-page]"));
     const pages = {
@@ -1129,21 +1274,19 @@
       pages[key].style.display = "block";
       navBtns.forEach(b => b.classList.toggle("active", b.dataset.page === key));
 
-      // page-specific refresh (one-way)
       if(key === "order") renderOrder();
       if(key === "photos") renderPhotos();
       if(key === "avail") renderAvailability();
       if(key === "checkin") renderCheckIn();
       if(key === "issues") renderIssues();
     }
-
     navBtns.forEach(b => b.addEventListener("click", () => showPage(b.dataset.page)));
 
     /*********************************************************
-     * Trucks data model
-     * truck = { id, pickupDate, weekKey, region, po, trucking, price, notes,
-     *           vendorBlocks:[{name, items:[{item,racks,qty,notes}]}],
-     *           totals:{racks,qty} }
+     * Trucks data model (v3)
+     * truck = { id, pickupDate, weekKey, region, orderType, trucking, price, notes,
+     *           vendorBlocks:[{name, po, status, items:[{item,racks,cases,qty,notes}]}],
+     *           totals:{racks,cases,qty} }
      *********************************************************/
     function loadTrucks(){ return LS.get(LS.trucksKey, []); }
     function saveTrucks(list){ LS.set(LS.trucksKey, list); }
@@ -1151,7 +1294,6 @@
     // current week anchor
     let weekAnchor = startOfWeek(new Date());
 
-    const weekGrid = document.getElementById("weekGrid");
     const weekLabelEl = document.getElementById("weekLabel");
     const truckCountLabel = document.getElementById("truckCountLabel");
 
@@ -1164,13 +1306,14 @@
       const trucks = loadTrucks();
       const keep = trucks.filter(t => t.weekKey !== wk);
       if(keep.length === trucks.length){
-        alert("No trucks to delete for this week.");
+        alert("No orders to delete for this week.");
         return;
       }
-      const ok = confirm(`Delete ALL trucks for ${wk}? This cannot be undone.`);
+      const ok = confirm(`Delete ALL orders for ${wk}? This cannot be undone.`);
       if(!ok) return;
       saveTrucks(keep);
       renderAll();
+      renderOrder();
     });
 
     /*********************************************************
@@ -1191,30 +1334,47 @@
     truckModal.addEventListener("click", (e) => { if(e.target === truckModal) closeTruckModal(); });
     addVendorBtn.addEventListener("click", () => addVendorBlock());
 
+    function normalizeOrderType(truck){
+      // Back-compat: if a user wrote "floor" or "direct" in notes, infer type
+      const note = (truck?.notes || "").toLowerCase();
+      if(note.includes("floor")) return "FLOOR STACK";
+      if(note.includes("direct")) return "DIRECT SHIP";
+      return truck?.orderType || "CC";
+    }
+
     function openTruckModal(truck){
       editingTruckId = truck?.id ?? null;
-      truckModalTitle.textContent = editingTruckId ? "Edit Truck" : "New Truck";
+      truckModalTitle.textContent = editingTruckId ? "Edit Order" : "New Order";
       truckDeleteBtn.style.display = editingTruckId ? "inline-block" : "none";
 
       const defaultDate = fmtDate(addDays(weekAnchor, 1));
       document.getElementById("t_pickup").value = truck?.pickupDate ?? defaultDate;
-      document.getElementById("t_po").value = truck?.po ?? "";
       document.getElementById("t_region").value = truck?.region ?? "Homestead";
+      document.getElementById("t_type").value = normalizeOrderType(truck);
       document.getElementById("t_trucking").value = truck?.trucking ?? "";
-      document.getElementById("t_price").value = truck?.price ?? "";
+      document.getElementById("t_price").value = (truck?.price ?? "");
       document.getElementById("t_notes").value = truck?.notes ?? "";
 
       vendorWrap.innerHTML = "";
 
-      // Backward compatibility: if old trucks exist without vendorBlocks
+      // Backward compatibility:
+      // - older schema had: truck.po, truck.vendorBlocks without po/status, or truck.items array
       const vendorBlocks =
         truck?.vendorBlocks?.length ? truck.vendorBlocks :
-        (truck ? [{ name: (truck.vendors || ""), items: (truck.items || []) }] : []);
+        (truck ? [{ name: (truck.vendors || ""), po: (truck.po || ""), status:"Confirmed", items: (truck.items || []) }] : []);
 
       if(vendorBlocks.length){
         vendorBlocks.forEach(vb => addVendorBlock({
           name: vb.name || "",
-          items: (vb.items || []).map(x => ({ item:x.item, racks:x.racks, qty:x.qty, notes:x.notes }))
+          po: vb.po || truck?.po || "",
+          status: vb.status || "Confirmed",
+          items: (vb.items || []).map(x => ({
+            item: x.item,
+            racks: x.racks,
+            cases: x.cases ?? "",
+            qty: x.qty,
+            notes: x.notes
+          }))
         }));
       } else {
         addVendorBlock();
@@ -1231,7 +1391,7 @@
       editingTruckId = null;
     }
 
-    function addVendorBlock(vendorObj = { name:"", items:[{ item:"", racks:"", qty:"", notes:"" }] }){
+    function addVendorBlock(vendorObj = { name:"", po:"", status:"Confirmed", items:[{ item:"", racks:"", cases:"", qty:"", notes:"" }] }){
       const block = document.createElement("div");
       block.className = "vendorBlock";
 
@@ -1239,6 +1399,12 @@
         <div class="vendorHead">
           <div class="vendorLabel">Vendor</div>
           <input class="v_name" placeholder="Vendor name (e.g., ANCHOR)" value="${escapeHtml(vendorObj.name || "")}">
+          <input class="v_po" placeholder="PO (per vendor)" value="${escapeHtml(vendorObj.po || "")}">
+          <select class="v_status">
+            <option ${vendorObj.status==="Confirmed" ? "selected":""}>Confirmed</option>
+            <option ${vendorObj.status==="Open" ? "selected":""}>Open</option>
+            <option ${vendorObj.status==="Submitted" ? "selected":""}>Submitted</option>
+          </select>
           <div class="vendorActions">
             <button class="tinyBtn v_addItem">＋ Add Item</button>
             <button class="tinyBtn danger v_removeVendor">Remove Vendor</button>
@@ -1248,9 +1414,10 @@
         <table class="itemsTable">
           <thead>
             <tr>
-              <th style="width:40%;">Item</th>
-              <th style="width:15%;">CC Rack Count</th>
-              <th style="width:15%;">Plant Qty</th>
+              <th style="width:36%;">Item</th>
+              <th style="width:12%;">CC Rack Count</th>
+              <th style="width:12%;">Case Count</th>
+              <th style="width:12%;">Plant Qty</th>
               <th>Notes</th>
               <th style="width:1%;"></th>
             </tr>
@@ -1260,11 +1427,11 @@
       `;
 
       const tbody = block.querySelector("tbody");
-      const items = vendorObj.items?.length ? vendorObj.items : [{ item:"", racks:"", qty:"", notes:"" }];
+      const items = vendorObj.items?.length ? vendorObj.items : [{ item:"", racks:"", cases:"", qty:"", notes:"" }];
       items.forEach(it => addItemRowToVendor(tbody, it));
 
       block.querySelector(".v_addItem").addEventListener("click", () => {
-        addItemRowToVendor(tbody, { item:"", racks:"", qty:"", notes:"" });
+        addItemRowToVendor(tbody, { item:"", racks:"", cases:"", qty:"", notes:"" });
         recalcTotals();
       });
 
@@ -1285,6 +1452,7 @@
       tr.innerHTML = `
         <td><input class="it_item" placeholder='e.g., 6" MONSTERA' value="${escapeHtml(itemObj.item ?? "")}"></td>
         <td><input class="it_racks" type="number" step="1" placeholder="0" value="${escapeHtml(itemObj.racks ?? "")}"></td>
+        <td><input class="it_cases" type="number" step="1" placeholder="0" value="${escapeHtml(itemObj.cases ?? "")}"></td>
         <td><input class="it_qty" type="number" step="1" placeholder="0" value="${escapeHtml(itemObj.qty ?? "")}"></td>
         <td><input class="it_notes" placeholder="Line notes (optional)" value="${escapeHtml(itemObj.notes ?? "")}"></td>
         <td><button class="tinyBtn danger" title="Remove item">✕</button></td>
@@ -1293,7 +1461,7 @@
       tr.querySelector("button").addEventListener("click", () => {
         tr.remove();
         if(tbody.children.length === 0){
-          addItemRowToVendor(tbody, { item:"", racks:"", qty:"", notes:"" });
+          addItemRowToVendor(tbody, { item:"", racks:"", cases:"", qty:"", notes:"" });
         }
         recalcTotals();
       });
@@ -1307,20 +1475,21 @@
     }
 
     function recalcTotals(){
-      let racks = 0, qty = 0;
+      let racks = 0, cases = 0, qty = 0;
       vendorWrap.querySelectorAll(".vendorBlock").forEach(block => {
         block.querySelectorAll("tbody tr").forEach(tr => {
           racks += Number(tr.querySelector(".it_racks").value || 0);
+          cases += Number(tr.querySelector(".it_cases").value || 0);
           qty   += Number(tr.querySelector(".it_qty").value || 0);
         });
       });
-      truckTotalsEl.textContent = `Totals: ${racks.toLocaleString()} racks • ${qty.toLocaleString()} plants`;
+      truckTotalsEl.textContent = `Totals: ${racks.toLocaleString()} racks • ${cases.toLocaleString()} cases • ${qty.toLocaleString()} plants`;
     }
 
     document.getElementById("saveTruckBtn").addEventListener("click", () => {
       const pickupDate = document.getElementById("t_pickup").value;
-      const po = document.getElementById("t_po").value.trim();
       const region = document.getElementById("t_region").value;
+      const orderType = document.getElementById("t_type").value;
       const trucking = document.getElementById("t_trucking").value.trim();
       const price = document.getElementById("t_price").value.trim();
       const notes = document.getElementById("t_notes").value.trim();
@@ -1334,21 +1503,24 @@
       const vendorBlocks = [];
       vendorWrap.querySelectorAll(".vendorBlock").forEach(block => {
         const name = block.querySelector(".v_name").value.trim();
+        const po = block.querySelector(".v_po").value.trim();
+        const status = block.querySelector(".v_status").value;
 
         const items = [];
         block.querySelectorAll("tbody tr").forEach(tr => {
           const item = tr.querySelector(".it_item").value.trim();
           const racks = Number(tr.querySelector(".it_racks").value || 0);
+          const cases = Number(tr.querySelector(".it_cases").value || 0);
           const qty = Number(tr.querySelector(".it_qty").value || 0);
           const lineNotes = tr.querySelector(".it_notes").value.trim();
 
-          if(item || racks || qty || lineNotes){
-            items.push({ item, racks, qty, notes: lineNotes });
+          if(item || racks || cases || qty || lineNotes){
+            items.push({ item, racks, cases, qty, notes: lineNotes });
           }
         });
 
-        if(name || items.length){
-          vendorBlocks.push({ name, items });
+        if(name || po || items.length){
+          vendorBlocks.push({ name, po, status, items });
         }
       });
 
@@ -1360,10 +1532,11 @@
       const totals = vendorBlocks.reduce((acc, vb) => {
         for(const it of vb.items){
           acc.racks += Number(it.racks || 0);
+          acc.cases += Number(it.cases || 0);
           acc.qty   += Number(it.qty || 0);
         }
         return acc;
-      }, { racks:0, qty:0 });
+      }, { racks:0, cases:0, qty:0 });
 
       const wk = weekKeyFromDate(parseDate(pickupDate));
       const trucks = loadTrucks();
@@ -1373,14 +1546,16 @@
         if(idx >= 0){
           trucks[idx] = {
             ...trucks[idx],
-            pickupDate, weekKey:wk, region, po, trucking, price:Number(price||0), notes,
+            pickupDate, weekKey:wk, region, orderType,
+            trucking, price:Number(price||0), notes,
             vendorBlocks, totals
           };
         }
       } else {
         trucks.push({
           id: cryptoRandomId(),
-          pickupDate, weekKey:wk, region, po, trucking, price:Number(price||0), notes,
+          pickupDate, weekKey:wk, region, orderType,
+          trucking, price:Number(price||0), notes,
           vendorBlocks, totals
         });
       }
@@ -1388,15 +1563,17 @@
       saveTrucks(trucks);
       closeTruckModal();
       renderAll();
+      renderOrder();
     });
 
     truckDeleteBtn.addEventListener("click", () => {
       if(!editingTruckId) return;
-      const ok = confirm("Delete this truck?");
+      const ok = confirm("Delete this order?");
       if(!ok) return;
       saveTrucks(loadTrucks().filter(t => t.id !== editingTruckId));
       closeTruckModal();
       renderAll();
+      renderOrder();
     });
 
     function openTruckDetail(id){
@@ -1405,62 +1582,210 @@
     }
 
     /*********************************************************
-     * Render Order Tracker
+     * NEW Render Order Tracker (Excel-style sheet)
      *********************************************************/
+    function statusPillClass(s){
+      const x = (s || "").toLowerCase();
+      if(x === "confirmed") return "statusPill statusConfirmed";
+      return "statusPill statusOpen";
+    }
+
     function renderOrder(){
       const wk = weekKeyFromDate(weekAnchor);
       weekLabelEl.textContent = weekLabel(weekAnchor);
 
       const trucks = loadTrucks().filter(t => t.weekKey === wk);
-      truckCountLabel.textContent = `${trucks.length} truck${trucks.length===1?"":"s"}`;
+      truckCountLabel.textContent = `${trucks.length} order${trucks.length===1?"":"s"}`;
 
-      weekGrid.innerHTML = "";
+      const wrap = document.getElementById("orderSheet");
+      wrap.innerHTML = "";
 
-      const start = startOfWeek(weekAnchor);
-      const dayNames = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+      if(!trucks.length){
+        wrap.innerHTML = `<div class="note">No orders in this week yet. Click “＋ New Order”.</div>`;
+        refreshWeekSelectors();
+        return;
+      }
 
-      for(let i=0;i<7;i++){
-        const date = addDays(start, i);
-        const col = document.createElement("div");
-        col.className = "dayCol";
-        col.dataset.date = fmtDate(date);
-        col.innerHTML = `<h4>${dayNames[i]} <span class="dayDate">${date.toLocaleDateString()}</span></h4>`;
+      // group: Location + Type (like spreadsheet sections)
+      const groupMap = new Map();
+      for(const t of trucks){
+        const type = normalizeOrderType(t);
+        const key = `${t.region || "—"} — ${type || "CC"}`;
+        if(!groupMap.has(key)) groupMap.set(key, []);
+        groupMap.get(key).push(t);
+      }
 
-        const dayTrucks = trucks
-          .filter(t => t.pickupDate === fmtDate(date))
-          .sort((a,b) => (a.region||"").localeCompare(b.region||""));
+      // stable ordering: Homestead, Apopka, New Jersey, Canada; then by type
+      const preferredLocOrder = ["Homestead","Apopka","New Jersey","Canada"];
+      const keys = Array.from(groupMap.keys()).sort((a,b) => {
+        const [al] = a.split(" — ");
+        const [bl] = b.split(" — ");
+        const ai = preferredLocOrder.indexOf(al);
+        const bi = preferredLocOrder.indexOf(bl);
+        if(ai !== bi) return (ai===-1?999:ai) - (bi===-1?999:bi);
+        return a.localeCompare(b);
+      });
 
-        dayTrucks.forEach(t => {
-          const vendorNames = (t.vendorBlocks || []).map(v => v.name).filter(Boolean);
-          const vendorTitle =
-            vendorNames.length === 0 ? "Truck" :
-            vendorNames.length <= 2 ? vendorNames.join(", ") :
-            `${vendorNames.slice(0,2).join(", ")} +${vendorNames.length-2}`;
+      // week totals (optional)
+      const weekTotals = trucks.reduce((acc,t) => {
+        acc.racks += Number(t.totals?.racks || 0);
+        acc.cases += Number(t.totals?.cases || 0);
+        acc.qty   += Number(t.totals?.qty   || 0);
+        acc.price += Number(t.price || 0);
+        return acc;
+      }, { racks:0, cases:0, qty:0, price:0 });
 
-          const price = Number(t.price||0);
+      const weekStrip = document.createElement("div");
+      weekStrip.className = "orderSection";
+      weekStrip.innerHTML = `
+        <div class="sectionHeader">
+          <div class="title">WEEK TOTALS</div>
+          <div class="meta">
+            <span class="chip subtle">Orders: ${trucks.length}</span>
+            <span class="chip subtle">Racks: ${weekTotals.racks.toLocaleString()}</span>
+            <span class="chip subtle">Cases: ${weekTotals.cases.toLocaleString()}</span>
+            <span class="chip subtle">Plants: ${weekTotals.qty.toLocaleString()}</span>
+            <span class="chip subtle">Trucking: ${money(weekTotals.price)}</span>
+          </div>
+        </div>
+        <div class="note">This summary is for quick scanning. Each section below matches the weekly order sheet layout.</div>
+      `;
+      wrap.appendChild(weekStrip);
 
-          const card = document.createElement("div");
-          card.className = "truckCard";
-          card.innerHTML = `
-            <strong>${escapeHtml(vendorTitle)}</strong>
-            <div class="truckMeta">
-              <span class="pillMini">${escapeHtml(t.region || "—")}</span>
-              <span class="pillMini">PO ${escapeHtml(t.po || "—")}</span>
-              <span class="pillMini">${escapeHtml(t.trucking || "Trucking —")}</span>
-              <span class="pillMini">$${price.toLocaleString()}</span>
-              <span class="pillMini">${Number(t.totals?.racks||0).toLocaleString()} racks</span>
-              <span class="pillMini">${Number(t.totals?.qty||0).toLocaleString()} plants</span>
+      for(const key of keys){
+        const sectionTrucks = groupMap.get(key).slice()
+          .sort((a,b) => (a.pickupDate||"").localeCompare(b.pickupDate||""));
+
+        // section totals
+        const secTotals = sectionTrucks.reduce((acc,t) => {
+          acc.racks += Number(t.totals?.racks || 0);
+          acc.cases += Number(t.totals?.cases || 0);
+          acc.qty   += Number(t.totals?.qty   || 0);
+          acc.price += Number(t.price || 0);
+          return acc;
+        }, { racks:0, cases:0, qty:0, price:0 });
+
+        const section = document.createElement("div");
+        section.className = "orderSection";
+        section.innerHTML = `
+          <div class="sectionHeader">
+            <div class="title">${escapeHtml(key)}</div>
+            <div class="meta">
+              <span class="chip subtle">${sectionTrucks.length} order(s)</span>
+              <span class="chip subtle">${secTotals.racks.toLocaleString()} racks</span>
+              <span class="chip subtle">${secTotals.cases.toLocaleString()} cases</span>
+              <span class="chip subtle">${secTotals.qty.toLocaleString()} plants</span>
+              <span class="chip subtle">${money(secTotals.price)}</span>
             </div>
-            <div class="truckMeta">
-              <span class="pillMini">${(t.vendorBlocks||[]).length} vendor(s)</span>
-              <span class="pillMini">${(t.vendorBlocks||[]).reduce((n,v)=>n+(v.items?.length||0),0)} item lines</span>
+          </div>
+        `;
+
+        sectionTrucks.forEach(t => {
+          const pickup = document.createElement("div");
+          pickup.className = "pickupBlock";
+
+          const vendorCount = (t.vendorBlocks || []).length;
+          const itemLines = (t.vendorBlocks || []).reduce((n,v) => n + (v.items?.length || 0), 0);
+
+          pickup.innerHTML = `
+            <div class="pickupHead">
+              <div class="left">
+                <div class="pickupTitle">PU ${escapeHtml(t.pickupDate || "—")}</div>
+                <div class="pickupSub">
+                  <span class="chip subtle">${escapeHtml(t.trucking || "Trucking —")}</span>
+                  <span class="chip subtle">${money(t.price || 0)}</span>
+                  <span class="chip subtle">${vendorCount} vendor(s)</span>
+                  <span class="chip subtle">${itemLines} line(s)</span>
+                </div>
+              </div>
+              <div class="right">
+                <span class="chip subtle">${Number(t.totals?.racks||0).toLocaleString()} racks</span>
+                <span class="chip subtle">${Number(t.totals?.cases||0).toLocaleString()} cases</span>
+                <span class="chip subtle">${Number(t.totals?.qty||0).toLocaleString()} plants</span>
+                <button class="tinyBtn">Edit</button>
+              </div>
             </div>
           `;
-          card.addEventListener("click", () => openTruckDetail(t.id));
-          col.appendChild(card);
+
+          pickup.querySelector("button").addEventListener("click", () => openTruckDetail(t.id));
+
+          // vendors
+          (t.vendorBlocks || []).forEach(vb => {
+            const v = document.createElement("div");
+            v.className = "vendorSheetBlock";
+
+            const vendorName = (vb.name || "Vendor —").trim() || "Vendor —";
+            const vendorPO = (vb.po || "").trim();
+            const vendorStatus = (vb.status || "Open").trim();
+
+            const items = (vb.items || []);
+            const showCases = items.some(it => Number(it.cases || 0) > 0);
+
+            const vTotals = items.reduce((acc,it) => {
+              acc.racks += Number(it.racks || 0);
+              acc.cases += Number(it.cases || 0);
+              acc.qty   += Number(it.qty   || 0);
+              return acc;
+            }, { racks:0, cases:0, qty:0 });
+
+            v.innerHTML = `
+              <div class="vendorLine">
+                <div class="vTitle">
+                  <span>${escapeHtml(vendorName)}</span>
+                  ${vendorPO ? `<span class="chip subtle">PO ${escapeHtml(vendorPO)}</span>` : ``}
+                  <span class="${statusPillClass(vendorStatus)}">${escapeHtml(vendorStatus)}</span>
+                </div>
+              </div>
+
+              <table class="sheetTable">
+                <thead>
+                  <tr>
+                    <th style="width:42%;">Item</th>
+                    <th style="width:14%;">CC Rack Count</th>
+                    ${showCases ? `<th style="width:14%;">Case Count</th>` : ``}
+                    <th style="width:14%;">Plant Qty</th>
+                    <th>Notes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${
+                    items.length
+                      ? items.map(it => `
+                        <tr>
+                          <td>${escapeHtml(it.item || "—")}</td>
+                          <td>${Number(it.racks || 0) ? Number(it.racks).toLocaleString() : ""}</td>
+                          ${showCases ? `<td>${Number(it.cases || 0) ? Number(it.cases).toLocaleString() : ""}</td>` : ``}
+                          <td>${Number(it.qty || 0) ? Number(it.qty).toLocaleString() : ""}</td>
+                          <td>${escapeHtml(it.notes || "")}</td>
+                        </tr>
+                      `).join("")
+                      : `<tr><td colspan="${showCases ? 5 : 4}" style="color: rgba(238,246,241,.72);">No lines.</td></tr>`
+                  }
+                </tbody>
+              </table>
+
+              <div class="totalsStrip">
+                <span class="pillMini">TOTAL RACKS: ${vTotals.racks.toLocaleString()}</span>
+                ${showCases ? `<span class="pillMini">TOTAL CASES: ${vTotals.cases.toLocaleString()}</span>` : ``}
+                <span class="pillMini">TOTAL PLANTS: ${vTotals.qty.toLocaleString()}</span>
+              </div>
+            `;
+
+            pickup.appendChild(v);
+          });
+
+          // order notes (optional)
+          if((t.notes || "").trim()){
+            const notes = document.createElement("div");
+            notes.className = "vendorSheetBlock";
+            notes.innerHTML = `<div class="note"><strong>Order Notes:</strong> ${escapeHtml(t.notes)}</div>`;
+            pickup.appendChild(notes);
+          }
+
+          section.appendChild(pickup);
         });
 
-        weekGrid.appendChild(col);
+        wrap.appendChild(section);
       }
 
       refreshWeekSelectors();
@@ -1469,6 +1794,9 @@
     /*********************************************************
      * Week selectors (photos/availability/check-in)
      *********************************************************/
+    function loadPhotos(){ return LS.get(LS.photosKey, []); }
+    function loadIssues(){ return LS.get(LS.issuesKey, []); }
+
     function getAllWeeks(){
       const trucks = loadTrucks();
       const photos = loadPhotos();
@@ -1510,10 +1838,10 @@
     }
 
     /*********************************************************
-     * Exports + CC Rules (Vendor, CC Base #, CC Shelves, CC Poles, CC Extenders)
+     * Exports + CC Rules
      *********************************************************/
     const DEFAULT_CC_RULES = [
-      { match: '6"', basePerRack: 1, shelvesPerRack: 0, polesPerRack: 0, extendersPerRack: 0, notes: "Default 6-inch (edit me)" },
+      { match: '/\\b6"\\b/i', basePerRack: 1, shelvesPerRack: 0, polesPerRack: 0, extendersPerRack: 0, notes: '6" only (edit me)' },
       { match: '/monstera/i', basePerRack: 1, shelvesPerRack: 0, polesPerRack: 0, extendersPerRack: 0, notes: "Monstera override (edit me)" },
       { match: '', basePerRack: 1, shelvesPerRack: 0, polesPerRack: 0, extendersPerRack: 0, notes: "Fallback (edit me)" },
     ];
@@ -1564,7 +1892,7 @@
     document.getElementById("exportTruckBtn").addEventListener("click", () => {
       const wk = weekKeyFromDate(weekAnchor);
       const trucks = loadTrucks().filter(t => t.weekKey === wk);
-      if(!trucks.length){ alert("No trucks in this week to export."); return; }
+      if(!trucks.length){ alert("No orders in this week to export."); return; }
 
       const rows = [];
       for(const t of trucks){
@@ -1574,12 +1902,15 @@
               Week: wk,
               PickupDate: t.pickupDate || "",
               Location: t.region || "",
+              OrderType: t.orderType || "CC",
               TruckingCompany: t.trucking || "",
               TruckPrice: Number(t.price||0),
-              PO: t.po || "",
               Vendor: vb.name || "",
+              VendorPO: vb.po || "",
+              VendorStatus: vb.status || "",
               Item: it.item || "",
               CCRackCount: Number(it.racks||0),
+              CaseCount: Number(it.cases||0),
               PlantQty: Number(it.qty||0),
               ItemNotes: it.notes || "",
               TruckNotes: t.notes || ""
@@ -1591,7 +1922,7 @@
       downloadCSV(
         `truck-order_${wk}.csv`,
         rows,
-        ["Week","PickupDate","Location","TruckingCompany","TruckPrice","PO","Vendor","Item","CCRackCount","PlantQty","ItemNotes","TruckNotes"]
+        ["Week","PickupDate","Location","OrderType","TruckingCompany","TruckPrice","Vendor","VendorPO","VendorStatus","Item","CCRackCount","CaseCount","PlantQty","ItemNotes","TruckNotes"]
       );
     });
 
@@ -1599,7 +1930,7 @@
     document.getElementById("exportCCBtn").addEventListener("click", () => {
       const wk = weekKeyFromDate(weekAnchor);
       const trucks = loadTrucks().filter(t => t.weekKey === wk);
-      if(!trucks.length){ alert("No trucks in this week to export."); return; }
+      if(!trucks.length){ alert("No orders in this week to export."); return; }
 
       const map = new Map(); // vendor -> totals
       for(const t of trucks){
@@ -1704,7 +2035,6 @@
     /*********************************************************
      * Photos
      *********************************************************/
-    function loadPhotos(){ return LS.get(LS.photosKey, []); }
     function savePhotos(list){ LS.set(LS.photosKey, list); }
 
     const photoGrid = document.getElementById("photoGrid");
@@ -1743,7 +2073,7 @@
       const sel = document.getElementById("p_truck");
       const trucks = loadTrucks().slice().sort((a,b) => (a.pickupDate||"").localeCompare(b.pickupDate||""));
       sel.innerHTML = `<option value="">No truck</option>` + trucks.map(t =>
-        `<option value="${t.id}">${escapeHtml(t.pickupDate)} • ${escapeHtml(t.region||"—")} • PO ${escapeHtml(t.po||"—")}</option>`
+        `<option value="${t.id}">${escapeHtml(t.pickupDate)} • ${escapeHtml(t.region||"—")} • ${escapeHtml(t.orderType||"CC")}</option>`
       ).join("");
     }
 
@@ -1826,7 +2156,7 @@
             <span class="pillMini">${escapeHtml(p.week || "—")}</span>
             <span class="pillMini">${escapeHtml(p.vendor || "Vendor —")}</span>
             <span class="pillMini">${escapeHtml(p.item || "Item —")}</span>
-            <span class="pillMini">${escapeHtml(t?.po ? ("PO "+t.po) : "Truck —")}</span>
+            <span class="pillMini">${escapeHtml(t?.pickupDate ? ("PU "+t.pickupDate) : "Truck —")}</span>
           </div>
           <div class="row" style="margin-top:10px;">
             <button class="tinyBtn">View</button>
@@ -1865,7 +2195,7 @@
       const map = new Map();
 
       for(const t of trucks){
-        const truckLabel = `PO ${t.po||"—"} (${t.pickupDate||"—"})`;
+        const truckLabel = `PU ${t.pickupDate||"—"} (${t.region||"—"} ${t.orderType||"CC"})`;
 
         for(const vb of (t.vendorBlocks || [])){
           const vendor = (vb.name || "—").trim() || "—";
@@ -1914,7 +2244,7 @@
 
       tbody.innerHTML = "";
       if(rows.length === 0){
-        tbody.innerHTML = `<tr><td colspan="5" style="color: rgba(238,246,241,.72);">No availability data for this week yet. Add trucks + items in Order Tracker.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="5" style="color: rgba(238,246,241,.72);">No availability data for this week yet. Add orders + items in Order Tracker.</td></tr>`;
         return;
       }
 
@@ -1934,7 +2264,6 @@
     /*********************************************************
      * Issue Tracker
      *********************************************************/
-    function loadIssues(){ return LS.get(LS.issuesKey, []); }
     function saveIssues(list){ LS.set(LS.issuesKey, list); }
 
     const issueModal = document.getElementById("issueModal");
@@ -1960,7 +2289,7 @@
       const sel = document.getElementById("i_truck");
       const trucks = loadTrucks().slice().sort((a,b) => (a.pickupDate||"").localeCompare(b.pickupDate||""));
       sel.innerHTML = `<option value="">No truck</option>` + trucks.map(t =>
-        `<option value="${t.id}">${escapeHtml(t.pickupDate)} • ${escapeHtml(t.region||"—")} • PO ${escapeHtml(t.po||"—")}</option>`
+        `<option value="${t.id}">${escapeHtml(t.pickupDate)} • ${escapeHtml(t.region||"—")} • ${escapeHtml(t.orderType||"CC")}</option>`
       ).join("");
     }
 
@@ -2005,7 +2334,7 @@
       const photoId = document.getElementById("i_photo").value;
 
       const t = loadTrucks().find(x => x.id === truckId);
-      const truckLabel = t ? `${t.pickupDate} • ${t.region||"—"} • PO ${t.po||"—"}` : "";
+      const truckLabel = t ? `PU ${t.pickupDate} • ${t.region||"—"} • ${t.orderType||"CC"}` : "";
 
       if(!date || !vendor || !item){
         alert("Date, Vendor, and Item are required.");
@@ -2105,7 +2434,7 @@
       const vendorMap = new Map();
 
       for(const t of trucks){
-        const truckLabel = `PO ${t.po||"—"} (${t.pickupDate||"—"})`;
+        const truckLabel = `PU ${t.pickupDate||"—"} (${t.region||"—"} ${t.orderType||"CC"})`;
 
         for(const vb of (t.vendorBlocks || [])){
           const vendor = (vb.name || "—").trim() || "—";
@@ -2193,7 +2522,7 @@
       checkinWrap.innerHTML = "";
 
       if(data.length === 0){
-        checkinWrap.innerHTML = `<div class="note">No items found for this week. Add trucks/items in Order Tracker.</div>`;
+        checkinWrap.innerHTML = `<div class="note">No items found for this week. Add orders/items in Order Tracker.</div>`;
         return;
       }
 
@@ -2244,9 +2573,12 @@
             </div>
             <div>
               <div class="small">Notes</div>
-              <textarea class="checkNotes" placeholder="Notes when checking...">${escapeHtml(s.notes || "")}</textarea>
+              <textarea class="checkNotes" placeholder="Notes when checking..."></textarea>
             </div>
           `;
+
+          // Set textarea value safely (no HTML injection)
+          row.querySelector(".checkNotes").value = s.notes || "";
 
           const chk = row.querySelector('input[type="checkbox"]');
           const notes = row.querySelector("textarea");
@@ -2324,7 +2656,6 @@
       populatePhotoTruckOptions();
       populateIssueTruckOptions();
       populateIssuePhotoOptions();
-      // other pages render on demand
     }
 
     /*********************************************************
@@ -2336,13 +2667,11 @@
       showScreen(app);
       statusChip.textContent = "Ready";
       renderAll();
+      showPage("order");
     } else {
       showScreen(splash);
       statusChip.textContent = "Cinematic Jungle";
     }
-
-    // Default to order page when app is open
-    showPage("order");
   </script>
 </body>
 </html>
