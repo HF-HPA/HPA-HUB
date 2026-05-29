@@ -1,79 +1,114 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
+<html lang=" <meta charset="UTF-8" /><html lang="en">
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>HPA Jungle Hub</title>
 
   <style>
+    /* =========================================================
+       BRIGHT TROPICAL THEME + READABILITY
+       ========================================================= */
     :root{
-      --text:#eef6f1;
-      --muted:#a9d1bb;
-      --accent:#3bff9a;
-      --accent2:#16c873;
-      --glass:rgba(0,0,0,.64);
-      --glass2:rgba(0,0,0,.38);
-      --border:rgba(255,255,255,.12);
-      --shadow:0 40px 120px rgba(0,0,0,.90);
+      /* Typography */
+      --font: system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+      --base: 15px;
+      --lh: 1.45;
+
+      /* Tropical palette */
+      --text:#083324;
+      --muted:#2f6f5a;
+      --accent:#00e5a8;   /* mint */
+      --accent2:#2dd4bf;  /* aqua */
+      --accent3:#a7f3d0;  /* pale mint */
+      --sun:#fff7cc;      /* warm sun highlight */
+
+      /* Surfaces */
+      --glass:rgba(255,255,255,.86);
+      --glass2:rgba(255,255,255,.66);
+      --chip:rgba(255,255,255,.74);
+      --card:rgba(255,255,255,.88);
+
+      /* Borders & shadows */
+      --border:rgba(0,0,0,.08);
+      --border2:rgba(6,95,70,.18);
+      --shadow:0 22px 70px rgba(0,0,0,.18);
+      --shadow2:0 10px 24px rgba(0,0,0,.10);
       --radius:18px;
-      --danger:#ff6b6b;
-      --chip:rgba(0,0,0,.35);
-      --ok:#4ade80;
-      --warn:#ffd166;
+
+      /* Status */
+      --danger:#ef4444;
+      --ok:#22c55e;
+      --warn:#facc15;
+
+      /* Tables */
+      --thead: rgba(16,185,129,.18);
+      --rowA: rgba(255,255,255,.72);
+      --rowB: rgba(255,255,255,.56);
+      --rowHover: rgba(34,197,94,.12);
     }
 
-    *{ box-sizing:border-box; font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial; }
-    html, body{ height:100%; margin:0; overflow:hidden; color:var(--text); background:#020b07; }
+    *{ box-sizing:border-box; font-family:var(--font); }
+    html, body{
+      height:100%;
+      margin:0;
+      overflow:hidden;
+      color:var(--text);
+      background:#e9fff6;
+      font-size: var(--base);
+      line-height: var(--lh);
+    }
 
-    /* One stable cinematic background across the entire app */
+    /* Tropical sunlit canopy */
     body{
       background:
-        linear-gradient(rgba(0,0,0,.62), rgba(0,0,0,.86)),
+        radial-gradient(1200px 600px at 18% 10%, rgba(167,243,208,.90), transparent 60%),
+        radial-gradient(1000px 520px at 80% 25%, rgba(94,234,212,.78), transparent 64%),
+        radial-gradient(900px 520px at 55% 90%, rgba(255,247,204,.55), transparent 60%),
+        linear-gradient(rgba(255,255,255,.70), rgba(255,255,255,.88)),
         url("jungle-bg.jpg") center / cover no-repeat fixed;
     }
     body::after{
       content:"";
       position:fixed;
       inset:0;
-      background:radial-gradient(circle at center, transparent 38%, rgba(0,0,0,.93));
+      background: radial-gradient(circle at center, transparent 42%, rgba(255,255,255,.92));
       pointer-events:none;
     }
 
-    /* Cinematic overlays */
+    /* Gentle texture (keep subtle for brightness) */
     .grain{
-      position:fixed; inset:0; pointer-events:none; opacity:.16; z-index:0;
+      position:fixed; inset:0; pointer-events:none; opacity:.05; z-index:0;
       background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)' opacity='.55'/%3E%3C/svg%3E");
       mix-blend-mode: overlay;
     }
     .mist{
       position:fixed; inset:-30%; pointer-events:none; z-index:0;
       background:
-        radial-gradient(780px 260px at 22% 40%, rgba(255,255,255,.10), transparent 60%),
-        radial-gradient(980px 320px at 72% 55%, rgba(255,255,255,.08), transparent 65%);
-      filter: blur(28px);
-      opacity:.85;
+        radial-gradient(800px 280px at 18% 30%, rgba(255,255,255,.40), transparent 65%),
+        radial-gradient(980px 320px at 76% 48%, rgba(255,255,255,.28), transparent 68%);
+      filter: blur(26px);
+      opacity:.35;
       mix-blend-mode: screen;
       animation: mistMove 22s ease-in-out infinite;
     }
     @keyframes mistMove{
-      0%{ transform:translateX(-6%); }
-      50%{ transform:translateX(6%); }
-      100%{ transform:translateX(-6%); }
+      0%{ transform:translateX(-4%); }
+      50%{ transform:translateX(4%); }
+      100%{ transform:translateX(-4%); }
     }
     .rays{
       position:fixed; inset:-25%; pointer-events:none; z-index:0;
-      background: repeating-linear-gradient(115deg, rgba(255,255,255,.06) 0 28px, rgba(255,255,255,0) 28px 120px);
-      mask-image: radial-gradient(900px 620px at 30% 15%, black, transparent 70%);
-      -webkit-mask-image: radial-gradient(900px 620px at 30% 15%, black, transparent 70%);
-      opacity:.50;
+      background: repeating-linear-gradient(115deg, rgba(255,255,255,.22) 0 26px, rgba(255,255,255,0) 26px 120px);
+      mask-image: radial-gradient(900px 620px at 30% 10%, black, transparent 72%);
+      -webkit-mask-image: radial-gradient(900px 620px at 30% 10%, black, transparent 72%);
+      opacity:.22;
       mix-blend-mode: screen;
       filter: blur(.2px);
       animation: raysMove 14s ease-in-out infinite;
     }
     @keyframes raysMove{
-      0%{ transform:translateX(-2%); opacity:.28; }
-      50%{ transform:translateX(2%); opacity:.70; }
-      100%{ transform:translateX(-2%); opacity:.28; }
+      0%{ transform:translateX(-2%); opacity:.18; }
+      50%{ transform:translateX(2%); opacity:.28; }
+      100%{ transform:translateX(-2%); opacity:.18; }
     }
 
     /* Screens */
@@ -100,54 +135,55 @@
     }
     .chip{
       pointer-events:auto;
-      padding:10px 12px;
+      padding:9px 12px;
       border-radius:999px;
-      border:1px solid var(--border);
+      border:1px solid var(--border2);
       background:var(--chip);
-      backdrop-filter: blur(14px);
-      box-shadow: 0 10px 22px rgba(0,0,0,.25);
-      color:var(--text);
+      backdrop-filter: blur(14px) saturate(160%);
+      box-shadow: var(--shadow2);
+      color: #065f46;
       user-select:none;
       font-size:13px;
+      font-weight: 750;
     }
-    .chip.subtle{ opacity:.86; }
-    .chip.good{ border-color: rgba(74,222,128,.28); background: rgba(74,222,128,.10); }
-    .chip.warn{ border-color: rgba(255,209,102,.28); background: rgba(255,209,102,.08); }
+    .chip.subtle{ opacity:.92; }
 
     /* Cards / Inputs */
     .card{
-      background:var(--glass);
+      background:var(--card);
       border:1px solid var(--border);
       border-radius:var(--radius);
       padding:30px;
       box-shadow:var(--shadow);
-      backdrop-filter: blur(18px);
+      backdrop-filter: blur(16px) saturate(160%);
       width:min(520px, 92vw);
       position:relative;
+      color: var(--text);
     }
     .card::before{
       content:"";
       position:absolute; inset:0;
       border-radius:inherit;
-      background:linear-gradient(145deg, rgba(255,255,255,.09), transparent 45%);
+      background:linear-gradient(145deg, rgba(255,255,255,.65), transparent 55%);
       pointer-events:none;
+      opacity:.70;
     }
 
     label{ display:block; margin:12px 0; }
-    .lbl{ display:block; margin:0 0 6px; font-size:12px; color:rgba(238,246,241,.72); }
+    .lbl{ display:block; margin:0 0 6px; font-size:12px; color:rgba(6,95,70,.85); font-weight: 750; }
     input, textarea, select{
       width:100%;
       padding:12px;
       border-radius:12px;
-      border:1px solid var(--border);
-      background:rgba(0,0,0,.46);
+      border:1px solid rgba(6,95,70,.18);
+      background:rgba(255,255,255,.80);
       color:var(--text);
       outline:none;
     }
     textarea{ min-height:90px; resize:vertical; }
     input:focus, textarea:focus, select:focus{
-      border-color:rgba(59,255,154,.55);
-      box-shadow: 0 0 0 4px rgba(59,255,154,.12);
+      border-color:rgba(16,185,129,.55);
+      box-shadow: 0 0 0 4px rgba(16,185,129,.18);
     }
 
     .btn{
@@ -155,43 +191,47 @@
       padding:12px 14px;
       border-radius:14px;
       border:none;
-      background:linear-gradient(135deg,var(--accent),var(--accent2));
-      color:#041b12;
+      background:linear-gradient(135deg, #34f5c5, #22c55e);
+      color:#043826;
       font-weight:950;
       cursor:pointer;
-      box-shadow: 0 16px 34px rgba(59,255,154,.10);
+      box-shadow: 0 12px 26px rgba(16,185,129,.28);
     }
     .btn:active{ transform: translateY(1px); }
 
     .btnGhost{
-      border:1px solid var(--border);
-      background:rgba(0,0,0,.35);
-      color:var(--text);
+      border:1px solid rgba(6,95,70,.18);
+      background:rgba(255,255,255,.78);
+      color:#065f46;
       padding:10px 14px;
       border-radius:14px;
       cursor:pointer;
-      backdrop-filter: blur(14px);
+      backdrop-filter: blur(14px) saturate(160%);
+      font-weight: 850;
     }
+    .btnGhost:active{ transform: translateY(1px); }
 
     .tinyBtn{
       padding:8px 10px;
       border-radius:12px;
-      border:1px solid rgba(255,255,255,.10);
-      background:rgba(0,0,0,.30);
-      color:var(--text);
+      border:1px solid rgba(6,95,70,.18);
+      background:rgba(255,255,255,.72);
+      color:#065f46;
       cursor:pointer;
       white-space:nowrap;
+      font-weight: 850;
     }
     .tinyBtn.danger{
-      border-color: rgba(255,107,107,.35);
-      background: rgba(255,107,107,.10);
+      border-color: rgba(239,68,68,.35);
+      background: rgba(239,68,68,.12);
+      color: #7f1d1d;
     }
 
     .row{ display:flex; gap:10px; align-items:flex-start; flex-wrap:wrap; }
     .row > *{ flex:1; min-width: 160px; }
 
-    .error{ color:var(--danger); font-size:13px; margin-top:10px; min-height:18px; }
-    .note{ color:rgba(238,246,241,.72); font-size:13px; margin-top:8px; }
+    .error{ color:var(--danger); font-size:13px; margin-top:10px; min-height:18px; font-weight: 750; }
+    .note{ color:rgba(6,95,70,.82); font-size:13px; margin-top:8px; }
 
     /* Splash */
     .logoWrap{ text-align:center; cursor:pointer; user-select:none; }
@@ -202,15 +242,15 @@
       margin:0 auto;
       animation:pulse 2.6s ease-in-out infinite;
       transition:opacity .85s ease, transform .85s ease, filter .85s ease;
-      filter: drop-shadow(0 18px 36px rgba(0,0,0,.65));
+      filter: drop-shadow(0 18px 36px rgba(0,0,0,.22));
     }
     @keyframes pulse{
       0%{ transform:scale(1); }
-      50%{ transform:scale(1.09); }
+      50%{ transform:scale(1.07); }
       100%{ transform:scale(1); }
     }
-    .logo.fade{ opacity:0; transform:scale(.88); filter: blur(2px) drop-shadow(0 18px 36px rgba(0,0,0,.65)); }
-    .hint{ margin-top:16px; color:var(--muted); font-size:14px; letter-spacing:.5px; }
+    .logo.fade{ opacity:0; transform:scale(.90); filter: blur(2px) drop-shadow(0 18px 36px rgba(0,0,0,.20)); }
+    .hint{ margin-top:16px; color:var(--muted); font-size:14px; letter-spacing:.3px; font-weight: 800; }
 
     /* App shell */
     .appShell{
@@ -222,39 +262,41 @@
       gap:16px;
     }
     .side{
-      background:rgba(0,0,0,.35);
+      background:rgba(255,255,255,.80);
       border:1px solid var(--border);
       border-radius:var(--radius);
-      box-shadow: 0 22px 60px rgba(0,0,0,.45);
-      backdrop-filter: blur(16px);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(16px) saturate(160%);
       padding:14px;
       overflow:auto;
     }
     .main{
-      background:rgba(0,0,0,.30);
+      background:rgba(255,255,255,.72);
       border:1px solid var(--border);
       border-radius:var(--radius);
-      box-shadow: 0 22px 60px rgba(0,0,0,.45);
-      backdrop-filter: blur(16px);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(16px) saturate(160%);
       padding:16px;
       overflow:auto;
       position:relative;
     }
-    .navTitle{ font-weight:950; letter-spacing:.4px; margin:6px 0 10px; }
+    .navTitle{ font-weight:950; letter-spacing:.2px; margin:6px 0 10px; color:#064e3b; }
     .navBtn{
       width:100%;
       text-align:left;
       padding:12px 12px;
       border-radius:14px;
-      border:1px solid rgba(255,255,255,.10);
-      background:rgba(0,0,0,.28);
-      color:var(--text);
+      border:1px solid rgba(6,95,70,.18);
+      background:rgba(255,255,255,.70);
+      color:#065f46;
       cursor:pointer;
       margin:8px 0;
+      font-weight: 900;
     }
     .navBtn.active{
-      border-color: rgba(59,255,154,.35);
-      background: rgba(59,255,154,.10);
+      border-color: rgba(16,185,129,.45);
+      background: rgba(16,185,129,.14);
+      color:#064e3b;
     }
 
     .toolbar{
@@ -265,10 +307,17 @@
       margin-bottom:12px;
       flex-wrap:wrap;
     }
-    .toolbar h2{ margin:0; }
+    .toolbar h2{
+      margin:0;
+      font-size: 20px;
+      letter-spacing:.2px;
+      color:#064e3b;
+    }
     .tools{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
 
-    /* ===== NEW ORDER TRACKER: Excel-style sheet ===== */
+    /* =========================================================
+       ORDER TRACKER (SHEET) — EASY READ
+       ========================================================= */
     .weekHeader{
       display:flex;
       gap:10px;
@@ -276,6 +325,20 @@
       justify-content:space-between;
       margin-bottom:10px;
       flex-wrap:wrap;
+    }
+
+    /* Density system */
+    .density-comfortable{
+      --cellPad: 10px;
+      --headerPad: 10px 12px;
+      --tableFont: 14px;
+      --blockGap: 12px;
+    }
+    .density-compact{
+      --cellPad: 7px;
+      --headerPad: 8px 10px;
+      --tableFont: 13px;
+      --blockGap: 10px;
     }
 
     .orderSheet{
@@ -286,11 +349,11 @@
     }
 
     .orderSection{
-      border:1px solid rgba(255,255,255,.12);
+      border:1px solid rgba(6,95,70,.14);
       border-radius:18px;
-      background:rgba(0,0,0,.35);
-      padding:14px;
-      box-shadow: 0 18px 50px rgba(0,0,0,.30);
+      background: rgba(255,255,255,.86);
+      box-shadow: var(--shadow2);
+      overflow:hidden;
     }
 
     .sectionHeader{
@@ -299,145 +362,245 @@
       align-items:center;
       justify-content:space-between;
       flex-wrap:wrap;
-      margin-bottom:8px;
+      padding: 12px 12px;
+      background:
+        linear-gradient(180deg, rgba(167,243,208,.65), rgba(255,255,255,.78));
+      border-bottom:1px solid rgba(6,95,70,.12);
     }
-    .sectionHeader .title{
-      font-weight: 950;
-      letter-spacing: .4px;
+    .sectionHeader .left{
       display:flex;
       gap:10px;
       align-items:center;
       flex-wrap:wrap;
+      min-width: 240px;
     }
-    .sectionHeader .meta{
+    .sectionTitle{
+      font-weight: 950;
+      letter-spacing: .2px;
+      font-size: 15px;
+      color:#064e3b;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .sectionMeta{
       display:flex;
       gap:8px;
       align-items:center;
       flex-wrap:wrap;
-      color: rgba(238,246,241,.75);
+      color: rgba(6,95,70,.85);
       font-size: 13px;
+      font-weight: 850;
     }
+
+    .collapseBtn{
+      border:1px solid rgba(6,95,70,.18);
+      background: rgba(255,255,255,.75);
+      color:#065f46;
+      border-radius: 999px;
+      padding: 8px 10px;
+      cursor:pointer;
+      font-weight: 900;
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+    .collapseBtn:active{ transform: translateY(1px); }
+
+    .sectionBody{
+      padding: 12px;
+      display:flex;
+      flex-direction:column;
+      gap: var(--blockGap);
+    }
+
+    .collapsed .sectionBody{ display:none; }
 
     .pickupBlock{
-      margin-top:10px;
-      border:1px solid rgba(255,255,255,.10);
-      background:rgba(0,0,0,.40);
-      border-radius:16px;
-      overflow:hidden;
+      border:1px solid rgba(6,95,70,.14);
+      background: rgba(255,255,255,.82);
+      border-radius: 16px;
+      overflow: hidden;
     }
 
+    /* Sticky pickup header to keep context while scrolling */
     .pickupHead{
+      position: sticky;
+      top: 0;
+      z-index: 3;
       display:flex;
       justify-content:space-between;
       gap:10px;
       align-items:center;
       flex-wrap:wrap;
-      padding:10px 12px;
-      background: rgba(0,0,0,.35);
-      border-bottom:1px solid rgba(255,255,255,.08);
+      padding: var(--headerPad);
+      background:
+        linear-gradient(180deg, rgba(255,247,204,.75), rgba(255,255,255,.86));
+      border-bottom:1px solid rgba(6,95,70,.12);
     }
-    .pickupHead .left{
+
+    .pickupLeft{
       display:flex;
       gap:10px;
       align-items:center;
       flex-wrap:wrap;
-    }
-    .pickupHead .right{
-      display:flex;
-      gap:8px;
-      align-items:center;
-      flex-wrap:wrap;
+      min-width: 240px;
     }
     .pickupTitle{
-      font-weight:950;
+      font-weight: 950;
+      color:#064e3b;
       letter-spacing:.2px;
       white-space:nowrap;
     }
-    .pickupSub{
-      color: rgba(238,246,241,.72);
-      font-size: 13px;
+    .pickupChips{
       display:flex;
       gap:8px;
-      flex-wrap:wrap;
-    }
-
-    .vendorSheetBlock{
-      padding:10px 12px 12px;
-      border-top:1px solid rgba(255,255,255,.08);
-    }
-
-    .vendorLine{
-      display:flex;
-      justify-content:space-between;
-      gap:10px;
-      align-items:flex-start;
-      flex-wrap:wrap;
-      margin-bottom:6px;
-    }
-    .vendorLine .vTitle{
-      font-weight:950;
-      display:flex;
-      gap:10px;
       align-items:center;
       flex-wrap:wrap;
     }
 
+    .pickupRight{
+      display:flex;
+      gap:8px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+
+    .pickupBody{
+      padding: 10px 12px 12px;
+      display:flex;
+      flex-direction:column;
+      gap: 12px;
+    }
+    .pickupCollapsed .pickupBody{ display:none; }
+
+    .vendorBlockXL{
+      border:1px solid rgba(6,95,70,.12);
+      border-radius: 14px;
+      background: rgba(255,255,255,.70);
+      overflow:hidden;
+    }
+
+    .vendorHeadXL{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:10px;
+      flex-wrap:wrap;
+      padding: 10px 12px;
+      background: rgba(16,185,129,.12);
+      border-bottom:1px solid rgba(6,95,70,.10);
+    }
+    .vendorTitleXL{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
+      font-weight: 950;
+      color:#064e3b;
+    }
+
     .statusPill{
-      padding:4px 10px;
+      padding:5px 10px;
       border-radius:999px;
       font-size:12px;
-      border:1px solid rgba(255,255,255,.10);
-      background:rgba(0,0,0,.28);
-      color: rgba(238,246,241,.86);
+      border:1px solid rgba(6,95,70,.18);
+      background:rgba(255,255,255,.78);
+      color:#065f46;
       white-space:nowrap;
+      font-weight: 850;
     }
-    .statusConfirmed{ border-color: rgba(74,222,128,.30); background: rgba(74,222,128,.10); }
-    .statusOpen{ border-color: rgba(255,209,102,.30); background: rgba(255,209,102,.10); }
+    .statusConfirmed{ border-color: rgba(34,197,94,.45); background: rgba(34,197,94,.16); color:#065f46; }
+    .statusOpen{ border-color: rgba(250,204,21,.60); background: rgba(250,204,21,.22); color:#78350f; }
+    .statusSubmitted{ border-color: rgba(45,212,191,.55); background: rgba(45,212,191,.18); color:#0f766e; }
 
     .sheetTable{
       width:100%;
       border-collapse:separate;
       border-spacing:0;
-      overflow:hidden;
-      border-radius:12px;
-      border:1px solid rgba(255,255,255,.10);
-      margin-top:6px;
+      font-size: var(--tableFont);
     }
     .sheetTable th, .sheetTable td{
-      padding:9px 10px;
-      border-bottom:1px solid rgba(255,255,255,.08);
-      font-size:13px;
-      vertical-align:top;
+      padding: var(--cellPad);
+      border-bottom:1px solid rgba(6,95,70,.10);
+      vertical-align: top;
     }
     .sheetTable th{
+      position: sticky;
+      top: 52px; /* below pickupHead */
+      z-index: 2;
       text-align:left;
-      color: rgba(238,246,241,.72);
-      background: rgba(0,0,0,.28);
+      color:#064e3b;
+      background: var(--thead);
       font-weight: 950;
+      letter-spacing:.15px;
+      border-bottom:1px solid rgba(6,95,70,.14);
       white-space:nowrap;
     }
-    .sheetTable tr:last-child td{ border-bottom:none; }
+    .sheetTable tbody tr:nth-child(odd) td{ background: var(--rowA); }
+    .sheetTable tbody tr:nth-child(even) td{ background: var(--rowB); }
+    .sheetTable tbody tr:hover td{ background: var(--rowHover); }
+
+    .num{ text-align:right; font-variant-numeric: tabular-nums; }
+    .nowrap{ white-space:nowrap; }
 
     .totalsStrip{
       display:flex;
-      gap:14px;
+      gap:10px;
       flex-wrap:wrap;
-      margin-top:8px;
-      font-weight:950;
-      color: rgba(238,246,241,.88);
+      padding: 10px 12px 12px;
+      border-top:1px solid rgba(6,95,70,.10);
+      background: rgba(255,255,255,.78);
     }
-    .totalsStrip .pillMini{
-      padding:5px 10px;
+    .pillMini{
+      padding:6px 10px;
       border-radius:999px;
-      border:1px solid rgba(255,255,255,.10);
-      background:rgba(0,0,0,.28);
+      border:1px solid rgba(6,95,70,.18);
+      background: rgba(255,255,255,.86);
       font-size:12px;
+      color:#065f46;
+      font-weight: 950;
+      box-shadow: 0 6px 14px rgba(0,0,0,.06);
+    }
+
+    .orderSummary{
+      border:1px solid rgba(6,95,70,.14);
+      border-radius:18px;
+      background: rgba(255,255,255,.88);
+      box-shadow: var(--shadow2);
+      overflow:hidden;
+    }
+    .orderSummary .sectionHeader{
+      background: linear-gradient(180deg, rgba(94,234,212,.40), rgba(255,255,255,.86));
+    }
+
+    .filterBar{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+    .filterInput{
+      min-width: 240px;
+      flex: 1;
+      padding:10px 12px;
+      border-radius:999px;
+      border:1px solid rgba(6,95,70,.18);
+      background:rgba(255,255,255,.84);
+      color:var(--text);
+      outline:none;
+      font-weight: 800;
+    }
+    .filterInput:focus{
+      box-shadow: 0 0 0 4px rgba(16,185,129,.18);
+      border-color: rgba(16,185,129,.55);
     }
 
     /* Modal */
     .modal{
       position:fixed; inset:0;
-      background: rgba(0,0,0,.62);
+      background: rgba(6,95,70,.20);
       display:none;
       align-items:center;
       justify-content:center;
@@ -453,27 +616,29 @@
       border-radius:var(--radius);
       border:1px solid var(--border);
       background: var(--glass);
-      backdrop-filter: blur(18px);
+      backdrop-filter: blur(16px) saturate(160%);
       box-shadow: var(--shadow);
       position:relative;
+      color: var(--text);
     }
     .modalHead{
       display:flex; justify-content:space-between; align-items:flex-start; gap:10px; flex-wrap:wrap;
       margin-bottom:10px;
     }
     .closeX{
-      border:1px solid var(--border);
-      background:rgba(0,0,0,.35);
-      color:var(--text);
+      border:1px solid rgba(6,95,70,.18);
+      background:rgba(255,255,255,.78);
+      color:#065f46;
       border-radius:999px;
       padding:8px 12px;
       cursor:pointer;
+      font-weight: 950;
     }
 
-    /* Vendor blocks inside truck modal */
+    /* Vendor blocks in modal */
     .vendorBlock{
-      border:1px solid rgba(255,255,255,.10);
-      background: rgba(0,0,0,.28);
+      border:1px solid rgba(6,95,70,.14);
+      background: rgba(255,255,255,.76);
       border-radius: 16px;
       padding: 12px;
       margin-top: 12px;
@@ -487,8 +652,8 @@
     }
     .vendorLabel{
       font-weight: 950;
-      color: rgba(238,246,241,.82);
-      letter-spacing: .3px;
+      color: rgba(6,95,70,.90);
+      letter-spacing: .2px;
       font-size: 13px;
       white-space:nowrap;
     }
@@ -497,7 +662,7 @@
     .v_status{ width: 160px; min-width: 160px; }
     .vendorActions{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
 
-    /* Items table */
+    /* Items table in modal */
     .itemsTable{
       width:100%;
       border-collapse:separate;
@@ -505,18 +670,18 @@
       margin-top:10px;
       overflow:hidden;
       border-radius:14px;
-      border:1px solid rgba(255,255,255,.10);
+      border:1px solid rgba(6,95,70,.14);
     }
     .itemsTable th, .itemsTable td{
       padding:10px;
-      border-bottom:1px solid rgba(255,255,255,.08);
+      border-bottom:1px solid rgba(6,95,70,.10);
       vertical-align:top;
       font-size:13px;
     }
     .itemsTable th{
       text-align:left;
-      color:rgba(238,246,241,.72);
-      background:rgba(0,0,0,.30);
+      color:#064e3b;
+      background: rgba(16,185,129,.14);
       font-weight:950;
       white-space:nowrap;
     }
@@ -524,11 +689,11 @@
 
     /* Photo library */
     .dropZone{
-      border:1px dashed rgba(255,255,255,.22);
-      background:rgba(0,0,0,.20);
+      border:1px dashed rgba(6,95,70,.28);
+      background:rgba(255,255,255,.70);
       border-radius:14px;
       padding:14px;
-      color:rgba(238,246,241,.72);
+      color:rgba(6,95,70,.85);
       text-align:center;
     }
     .photoGrid{
@@ -538,20 +703,22 @@
       margin-top:12px;
     }
     .photoTile{
-      background:rgba(0,0,0,.40);
-      border:1px solid rgba(255,255,255,.10);
+      background:rgba(255,255,255,.74);
+      border:1px solid rgba(6,95,70,.14);
       border-radius:14px;
       padding:10px;
       overflow:hidden;
+      box-shadow: 0 10px 22px rgba(0,0,0,.08);
     }
     .photoTile img{
       width:100%; height:130px; object-fit:cover; border-radius:10px;
       display:block;
     }
-    .photoMeta{ margin-top:8px; color:rgba(238,246,241,.72); font-size:12px; display:flex; flex-wrap:wrap; gap:6px; }
+    .photoMeta{ margin-top:8px; color:rgba(6,95,70,.82); font-size:12px; display:flex; flex-wrap:wrap; gap:6px; }
+
     .lightbox{
       position:fixed; inset:0;
-      background:rgba(0,0,0,.82);
+      background:rgba(0,0,0,.70);
       display:none; align-items:center; justify-content:center;
       z-index:40;
       padding:16px;
@@ -560,7 +727,7 @@
     .lightbox img{
       max-width: 96vw; max-height: 92vh;
       border-radius:16px;
-      box-shadow: var(--shadow);
+      box-shadow: 0 40px 120px rgba(0,0,0,.35);
     }
 
     /* Tables (availability + issues) */
@@ -568,18 +735,24 @@
       width:100%;
       border-collapse:separate;
       border-spacing:0;
-      border:1px solid rgba(255,255,255,.10);
+      border:1px solid rgba(6,95,70,.14);
       border-radius:14px;
       overflow:hidden;
       margin-top:10px;
+      background: rgba(255,255,255,.78);
+      box-shadow: 0 10px 24px rgba(0,0,0,.08);
     }
     .table th,.table td{
       padding:10px;
-      border-bottom:1px solid rgba(255,255,255,.08);
+      border-bottom:1px solid rgba(6,95,70,.10);
       font-size:13px;
       text-align:left;
     }
-    .table th{ background:rgba(0,0,0,.30); color:rgba(238,246,241,.72); font-weight:950; }
+    .table th{
+      background: rgba(16,185,129,.14);
+      color:#064e3b;
+      font-weight:950;
+    }
     .table tr:last-child td{ border-bottom:none; }
 
     /* Issue tracker status */
@@ -587,24 +760,27 @@
       padding:5px 10px;
       border-radius:999px;
       font-size:12px;
-      border:1px solid rgba(255,255,255,.10);
-      background:rgba(0,0,0,.28);
+      border:1px solid rgba(6,95,70,.18);
+      background:rgba(255,255,255,.78);
       display:inline-flex;
       align-items:center;
       gap:6px;
       white-space:nowrap;
+      font-weight: 850;
+      color:#065f46;
     }
-    .statusOpen{ border-color: rgba(255,209,102,.35); background: rgba(255,209,102,.10); }
-    .statusSubmitted{ border-color: rgba(59,255,154,.25); background: rgba(59,255,154,.08); }
-    .statusResolved{ border-color: rgba(74,222,128,.28); background: rgba(74,222,128,.08); }
+    .statusOpen{ border-color: rgba(250,204,21,.55); background: rgba(250,204,21,.20); color:#78350f; }
+    .statusSubmitted{ border-color: rgba(45,212,191,.55); background: rgba(45,212,191,.18); color:#0f766e; }
+    .statusResolved{ border-color: rgba(34,197,94,.45); background: rgba(34,197,94,.16); color:#065f46; }
 
     /* Order Check-In */
     .checkVendor{
-      border:1px solid rgba(255,255,255,.10);
-      background: rgba(0,0,0,.28);
+      border:1px solid rgba(6,95,70,.14);
+      background: rgba(255,255,255,.76);
       border-radius: 16px;
       padding: 12px;
       margin-top: 12px;
+      box-shadow: 0 10px 24px rgba(0,0,0,.08);
     }
     .checkVendorHead{
       display:flex;
@@ -617,7 +793,8 @@
     .checkVendorHead h3{
       margin:0;
       font-size: 15px;
-      letter-spacing: .2px;
+      letter-spacing: .1px;
+      color:#064e3b;
     }
     .checkActions{ display:flex; gap:8px; flex-wrap:wrap; }
     .checkRow{
@@ -626,25 +803,26 @@
       gap:10px;
       align-items:start;
       padding:10px;
-      border-top:1px solid rgba(255,255,255,.08);
+      border-top:1px solid rgba(6,95,70,.10);
     }
     .checkRow:first-of-type{ border-top:none; }
     .checkRow .small{
-      color: rgba(238,246,241,.70);
+      color: rgba(6,95,70,.78);
       font-size: 12px;
+      font-weight: 750;
     }
     .checkRow input[type="checkbox"]{
       width:20px;
       height:20px;
       margin-top:4px;
-      accent-color: var(--accent);
+      accent-color: #22c55e;
     }
     .checkNotes{
       min-height: 44px;
       padding:10px;
       border-radius: 12px;
-      border:1px solid rgba(255,255,255,.12);
-      background: rgba(0,0,0,.38);
+      border:1px solid rgba(6,95,70,.18);
+      background: rgba(255,255,255,.86);
       color: var(--text);
       resize: vertical;
       width:100%;
@@ -652,26 +830,37 @@
     .checkItemTitle{
       font-weight: 950;
       margin-bottom: 4px;
+      color:#064e3b;
     }
 
     /* Responsive */
     @media (max-width: 980px){
       .appShell{ grid-template-columns: 1fr; height: calc(100vh - 86px); }
+      .sheetTable th{ top: 58px; }
       .checkRow{ grid-template-columns: 42px 1fr; }
       .checkRow > div:nth-child(3),
       .checkRow > div:nth-child(4),
       .checkRow > div:nth-child(5){ grid-column: span 2; }
     }
+
+    /* Print-friendly order tracker */
+    @media print{
+      body{ background:white !important; }
+      .side, .topbar, .toolbar, .navBtn, .btnGhost, .tinyBtn, .note, .chip{ display:none !important; }
+      .main{ box-shadow:none !important; border:none !important; background:white !important; }
+      .orderSection, .pickupBlock, .vendorBlockXL{ box-shadow:none !important; }
+      .sheetTable th{ position: static !important; }
+    }
   </style>
 </head>
 
-<body>
+<body class="density-comfortable">
   <div class="grain" aria-hidden="true"></div>
   <div class="mist" aria-hidden="true"></div>
   <div class="rays" aria-hidden="true"></div>
 
   <div class="topbar">
-    <div id="statusChip" class="chip subtle">Cinematic Jungle</div>
+    <div id="statusChip" class="chip subtle">Tropical Hub</div>
     <div id="userChip" class="chip subtle">Not signed in</div>
   </div>
 
@@ -686,7 +875,7 @@
   <!-- LOGIN -->
   <section id="login" class="screen" aria-label="Login">
     <div class="card">
-      <h2 style="margin:0 0 6px;">HPA Team Login</h2>
+      <h2 style="margin:0 0 6px; color:#064e3b;">HPA Team Login</h2>
 
       <label>
         <span class="lbl">Username</span>
@@ -700,7 +889,7 @@
 
       <button id="loginBtn" class="btn">Login</button>
       <div id="loginError" class="error" role="alert" aria-live="assertive"></div>
-      <div class="note">Note: This is a local session (no backend auth yet).</div>
+      <div class="note">Local session only (no backend auth yet).</div>
     </div>
   </section>
 
@@ -718,7 +907,7 @@
 
         <div style="height:10px"></div>
 
-        <button id="logoutBtn" class="navBtn" style="border-color: rgba(255,107,107,.25); background: rgba(255,107,107,.08);">
+        <button id="logoutBtn" class="navBtn" style="border-color: rgba(239,68,68,.30); background: rgba(239,68,68,.12); color:#7f1d1d;">
           Logout
         </button>
 
@@ -735,11 +924,13 @@
               <button id="todayWeek" class="btnGhost">This Week</button>
               <button id="nextWeek" class="btnGhost">Next →</button>
               <button id="newTruckBtn" class="btnGhost">＋ New Order</button>
-              <button id="deleteWeekBtn" class="btnGhost" style="border-color: rgba(255,107,107,.25); background: rgba(255,107,107,.08);">Delete Week</button>
+              <button id="deleteWeekBtn" class="btnGhost" style="border-color: rgba(239,68,68,.30); background: rgba(239,68,68,.12); color:#7f1d1d;">Delete Week</button>
 
               <button id="exportTruckBtn" class="btnGhost">Export Truck Order</button>
               <button id="exportCCBtn" class="btnGhost">Export CC Order</button>
               <button id="ccRulesBtn" class="btnGhost">CC Rules</button>
+
+              <button id="printBtn" class="btnGhost">Print</button>
             </div>
           </div>
 
@@ -748,14 +939,19 @@
               <div class="chip subtle" id="weekLabel">Week</div>
               <div class="chip subtle" id="truckCountLabel">0 orders</div>
             </div>
-            <div class="chip subtle">Weekly order sheet</div>
+
+            <div class="filterBar">
+              <input id="orderFilter" class="filterInput" placeholder="Search: vendor, item, PO, location, type…" />
+              <button id="expandAllBtn" class="btnGhost">Expand All</button>
+              <button id="collapseAllBtn" class="btnGhost">Collapse All</button>
+              <button id="densityBtn" class="btnGhost">Comfortable</button>
+            </div>
           </div>
 
-          <!-- NEW: Excel-style sheet container -->
           <div id="orderSheet" class="orderSheet"></div>
 
           <div class="note">
-            Layout matches your weekly order sheet style: Location + Type → Pickup → Vendor → Item table + totals.
+            Tip: Use the search box to quickly filter by vendor/item/PO/location/type for this week.
           </div>
         </div>
 
@@ -816,7 +1012,7 @@
               <input id="checkinVendorFilter" placeholder="Vendor filter (optional)" />
               <input id="checkinItemFilter" placeholder="Item filter (optional)" />
               <button id="checkinExportBtn" class="btnGhost">Export CSV</button>
-              <button id="checkinClearWeekBtn" class="btnGhost" style="border-color: rgba(255,107,107,.25); background: rgba(255,107,107,.08);">Clear Week Checks</button>
+              <button id="checkinClearWeekBtn" class="btnGhost" style="border-color: rgba(239,68,68,.30); background: rgba(239,68,68,.12); color:#7f1d1d;">Clear Week Checks</button>
             </div>
           </div>
 
@@ -860,12 +1056,12 @@
     </div>
   </section>
 
-  <!-- TRUCK / ORDER MODAL -->
+  <!-- ORDER MODAL -->
   <div id="truckModal" class="modal" aria-hidden="true">
     <div class="modalCard">
       <div class="modalHead">
         <div>
-          <h3 id="truckModalTitle" style="margin:0;">New Order</h3>
+          <h3 id="truckModalTitle" style="margin:0; color:#064e3b;">New Order</h3>
           <div class="note" id="truckModalSub">Add pickup + location/type + vendor blocks with item lines.</div>
         </div>
         <div class="row" style="max-width: 420px; justify-content:flex-end;">
@@ -937,7 +1133,7 @@
     <div class="modalCard">
       <div class="modalHead">
         <div>
-          <h3 style="margin:0;">CC Rules (per item → per rack components)</h3>
+          <h3 style="margin:0; color:#064e3b;">CC Rules (per item → per rack components)</h3>
           <div class="note">Top rule wins. Match supports keyword or /regex/flags.</div>
         </div>
         <button id="ccRulesCloseBtn" class="closeX">Close ✕</button>
@@ -974,7 +1170,7 @@
     <div class="modalCard">
       <div class="modalHead">
         <div>
-          <h3 style="margin:0;">Add Photos</h3>
+          <h3 style="margin:0; color:#064e3b;">Add Photos</h3>
           <div class="note">Tag by week/vendor/truck/item for fast filtering.</div>
         </div>
         <button id="photoCloseBtn" class="closeX">Close ✕</button>
@@ -1015,7 +1211,7 @@
     <div class="modalCard">
       <div class="modalHead">
         <div>
-          <h3 style="margin:0;">New Issue</h3>
+          <h3 style="margin:0; color:#064e3b;">New Issue</h3>
           <div class="note">Track shortages, damages, delivery issues, etc.</div>
         </div>
         <button id="issueCloseBtn" class="closeX">Close ✕</button>
@@ -1081,10 +1277,10 @@
 
   <script>
     /*********************************************************
-     * localStorage helper (with quota guard)
+     * localStorage helper
      *********************************************************/
     const LS = {
-      trucksKey: "hpa_trucks_v3", // bumped version due to schema changes
+      trucksKey: "hpa_trucks_v3",
       photosKey: "hpa_photos_v1",
       issuesKey: "hpa_issues_v1",
       userKey:   "hpa_user_v1",
@@ -1113,7 +1309,6 @@
       if(!y||!m||!dd) return null;
       return new Date(y, m-1, dd);
     };
-
     function startOfWeek(date){
       const d = new Date(date);
       const day = (d.getDay()+6)%7; // Mon=0..Sun=6
@@ -1126,8 +1321,6 @@
       d.setDate(d.getDate() + days);
       return d;
     }
-
-    /* ISO week key (UTC-safe) */
     function weekKeyFromDate(date){
       if(!(date instanceof Date)) date = new Date(date);
       const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
@@ -1136,20 +1329,16 @@
       const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
       return `${d.getUTCFullYear()}-W${pad2(weekNo)}`;
     }
-
     function weekLabel(date){
       const s = startOfWeek(date);
       const e = addDays(s,6);
       return `${weekKeyFromDate(date)} • ${s.toLocaleDateString()} – ${e.toLocaleDateString()}`;
     }
-
     function cryptoRandomId(){
       return (crypto?.getRandomValues)
         ? Array.from(crypto.getRandomValues(new Uint8Array(8))).map(b=>b.toString(16).padStart(2,"0")).join("")
         : String(Math.random()).slice(2) + String(Date.now());
     }
-
-    /* FIXED escaper */
     function escapeHtml(str){
       return String(str ?? "")
         .replaceAll("&", "&amp;")
@@ -1158,7 +1347,6 @@
         .replaceAll('"', "&quot;")
         .replaceAll("'", "&#039;");
     }
-
     function downloadCSV(filename, rows, headers){
       const csv = [
         headers.join(","),
@@ -1167,7 +1355,6 @@
           return `"${val}"`;
         }).join(","))
       ].join("\n");
-
       const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -1178,7 +1365,6 @@
       a.remove();
       URL.revokeObjectURL(url);
     }
-
     function fileToDataURL(file){
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -1192,7 +1378,6 @@
       files.forEach(f => dt.items.add(f));
       return dt.files;
     }
-
     function money(n){
       const x = Number(n || 0);
       return "$" + x.toLocaleString(undefined, { maximumFractionDigits: 2 });
@@ -1213,14 +1398,11 @@
       [splash, login, app].forEach(s => s.classList.remove("active"));
       which.classList.add("active");
     }
-
     function setUser(name){
       LS.set(LS.userKey, { name });
       userChip.textContent = `Signed in: ${name}`;
     }
-    function getUser(){
-      return LS.get(LS.userKey, null);
-    }
+    function getUser(){ return LS.get(LS.userKey, null); }
 
     logoCard.addEventListener("click", () => {
       logo.classList.add("fade");
@@ -1228,7 +1410,7 @@
       setTimeout(() => {
         showScreen(login);
         statusChip.textContent = "Login";
-      }, 850);
+      }, 650);
     });
 
     document.getElementById("loginBtn").addEventListener("click", () => {
@@ -1268,12 +1450,10 @@
       checkin:document.getElementById("page-checkin"),
       issues: document.getElementById("page-issues")
     };
-
     function showPage(key){
       Object.values(pages).forEach(p => p.style.display = "none");
       pages[key].style.display = "block";
       navBtns.forEach(b => b.classList.toggle("active", b.dataset.page === key));
-
       if(key === "order") renderOrder();
       if(key === "photos") renderPhotos();
       if(key === "avail") renderAvailability();
@@ -1283,7 +1463,7 @@
     navBtns.forEach(b => b.addEventListener("click", () => showPage(b.dataset.page)));
 
     /*********************************************************
-     * Trucks data model (v3)
+     * Trucks (Orders) v3 schema
      * truck = { id, pickupDate, weekKey, region, orderType, trucking, price, notes,
      *           vendorBlocks:[{name, po, status, items:[{item,racks,cases,qty,notes}]}],
      *           totals:{racks,cases,qty} }
@@ -1291,9 +1471,7 @@
     function loadTrucks(){ return LS.get(LS.trucksKey, []); }
     function saveTrucks(list){ LS.set(LS.trucksKey, list); }
 
-    // current week anchor
     let weekAnchor = startOfWeek(new Date());
-
     const weekLabelEl = document.getElementById("weekLabel");
     const truckCountLabel = document.getElementById("truckCountLabel");
 
@@ -1316,8 +1494,10 @@
       renderOrder();
     });
 
+    document.getElementById("printBtn").addEventListener("click", () => window.print());
+
     /*********************************************************
-     * Truck modal (multi-vendor)
+     * Modal CRUD
      *********************************************************/
     const truckModal = document.getElementById("truckModal");
     const truckCloseBtn = document.getElementById("truckCloseBtn");
@@ -1326,7 +1506,6 @@
     const truckTotalsEl = document.getElementById("t_totals");
     const vendorWrap = document.getElementById("vendorWrap");
     const addVendorBtn = document.getElementById("addVendorBtn");
-
     let editingTruckId = null;
 
     document.getElementById("newTruckBtn").addEventListener("click", () => openTruckModal(null));
@@ -1335,7 +1514,6 @@
     addVendorBtn.addEventListener("click", () => addVendorBlock());
 
     function normalizeOrderType(truck){
-      // Back-compat: if a user wrote "floor" or "direct" in notes, infer type
       const note = (truck?.notes || "").toLowerCase();
       if(note.includes("floor")) return "FLOOR STACK";
       if(note.includes("direct")) return "DIRECT SHIP";
@@ -1357,8 +1535,6 @@
 
       vendorWrap.innerHTML = "";
 
-      // Backward compatibility:
-      // - older schema had: truck.po, truck.vendorBlocks without po/status, or truck.items array
       const vendorBlocks =
         truck?.vendorBlocks?.length ? truck.vendorBlocks :
         (truck ? [{ name: (truck.vendors || ""), po: (truck.po || ""), status:"Confirmed", items: (truck.items || []) }] : []);
@@ -1457,7 +1633,6 @@
         <td><input class="it_notes" placeholder="Line notes (optional)" value="${escapeHtml(itemObj.notes ?? "")}"></td>
         <td><button class="tinyBtn danger" title="Remove item">✕</button></td>
       `;
-
       tr.querySelector("button").addEventListener("click", () => {
         tr.remove();
         if(tbody.children.length === 0){
@@ -1465,12 +1640,10 @@
         }
         recalcTotals();
       });
-
       tr.querySelectorAll("input").forEach(inp => {
         inp.addEventListener("input", recalcTotals);
         inp.addEventListener("change", recalcTotals);
       });
-
       tbody.appendChild(tr);
     }
 
@@ -1499,7 +1672,6 @@
         return;
       }
 
-      // collect vendor blocks + items
       const vendorBlocks = [];
       vendorWrap.querySelectorAll(".vendorBlock").forEach(block => {
         const name = block.querySelector(".v_name").value.trim();
@@ -1513,7 +1685,6 @@
           const cases = Number(tr.querySelector(".it_cases").value || 0);
           const qty = Number(tr.querySelector(".it_qty").value || 0);
           const lineNotes = tr.querySelector(".it_notes").value.trim();
-
           if(item || racks || cases || qty || lineNotes){
             items.push({ item, racks, cases, qty, notes: lineNotes });
           }
@@ -1582,12 +1753,77 @@
     }
 
     /*********************************************************
-     * NEW Render Order Tracker (Excel-style sheet)
+     * Order Tracker rendering + readability helpers
      *********************************************************/
     function statusPillClass(s){
       const x = (s || "").toLowerCase();
       if(x === "confirmed") return "statusPill statusConfirmed";
+      if(x === "submitted") return "statusPill statusSubmitted";
       return "statusPill statusOpen";
+    }
+
+    // Collapsing helpers
+    function setAllSectionsCollapsed(collapsed){
+      document.querySelectorAll(".orderSection[data-kind='group']").forEach(sec => {
+        sec.classList.toggle("collapsed", collapsed);
+        const btn = sec.querySelector("[data-action='toggleSection']");
+        if(btn) btn.setAttribute("aria-expanded", String(!collapsed));
+      });
+    }
+    function setAllPickupsCollapsed(collapsed){
+      document.querySelectorAll(".pickupBlock").forEach(p => {
+        p.classList.toggle("pickupCollapsed", collapsed);
+        const btn = p.querySelector("[data-action='togglePickup']");
+        if(btn) btn.setAttribute("aria-expanded", String(!collapsed));
+      });
+    }
+
+    document.getElementById("expandAllBtn").addEventListener("click", () => {
+      setAllSectionsCollapsed(false);
+      setAllPickupsCollapsed(false);
+    });
+    document.getElementById("collapseAllBtn").addEventListener("click", () => {
+      setAllSectionsCollapsed(true);
+      setAllPickupsCollapsed(true);
+    });
+
+    // Density toggle
+    const densityBtn = document.getElementById("densityBtn");
+    densityBtn.addEventListener("click", () => {
+      const body = document.body;
+      const comfortable = body.classList.contains("density-comfortable");
+      body.classList.toggle("density-comfortable", !comfortable);
+      body.classList.toggle("density-compact", comfortable);
+      densityBtn.textContent = comfortable ? "Compact" : "Comfortable";
+      // Re-render to ensure sticky header offsets remain nice
+      renderOrder();
+    });
+
+    // Search filter (per current week render)
+    const orderFilter = document.getElementById("orderFilter");
+    orderFilter.addEventListener("input", () => applyOrderFilter());
+
+    function applyOrderFilter(){
+      const q = (orderFilter.value || "").trim().toLowerCase();
+      const nodes = document.querySelectorAll("[data-search]");
+      if(!q){
+        nodes.forEach(n => n.style.display = "");
+        // show empty notes too
+        document.querySelectorAll(".orderSection, .pickupBlock").forEach(n => n.style.display = "");
+        return;
+      }
+
+      // Filter at pickup level (fast + simple): if pickup doesn't match, hide entire block
+      document.querySelectorAll(".pickupBlock").forEach(p => {
+        const s = (p.dataset.search || "").toLowerCase();
+        p.style.display = s.includes(q) ? "" : "none";
+      });
+
+      // Hide section if all pickups hidden
+      document.querySelectorAll(".orderSection[data-kind='group']").forEach(sec => {
+        const anyVisible = Array.from(sec.querySelectorAll(".pickupBlock")).some(p => p.style.display !== "none");
+        sec.style.display = anyVisible ? "" : "none";
+      });
     }
 
     function renderOrder(){
@@ -1606,7 +1842,37 @@
         return;
       }
 
-      // group: Location + Type (like spreadsheet sections)
+      // WEEK SUMMARY
+      const weekTotals = trucks.reduce((acc,t) => {
+        acc.racks += Number(t.totals?.racks || 0);
+        acc.cases += Number(t.totals?.cases || 0);
+        acc.qty   += Number(t.totals?.qty   || 0);
+        acc.price += Number(t.price || 0);
+        return acc;
+      }, { racks:0, cases:0, qty:0, price:0 });
+
+      const summary = document.createElement("div");
+      summary.className = "orderSummary";
+      summary.innerHTML = `
+        <div class="sectionHeader">
+          <div class="left">
+            <div class="sectionTitle">WEEK TOTALS</div>
+            <div class="sectionMeta">
+              <span class="chip subtle">Orders: ${trucks.length}</span>
+              <span class="chip subtle">Racks: ${weekTotals.racks.toLocaleString()}</span>
+              <span class="chip subtle">Cases: ${weekTotals.cases.toLocaleString()}</span>
+              <span class="chip subtle">Plants: ${weekTotals.qty.toLocaleString()}</span>
+              <span class="chip subtle">Trucking: ${money(weekTotals.price)}</span>
+            </div>
+          </div>
+          <div class="sectionMeta">
+            <span class="chip subtle">Sticky headers • Zebra rows • Search filter</span>
+          </div>
+        </div>
+      `;
+      wrap.appendChild(summary);
+
+      // Group by Location + Type (sheet layout)
       const groupMap = new Map();
       for(const t of trucks){
         const type = normalizeOrderType(t);
@@ -1615,7 +1881,6 @@
         groupMap.get(key).push(t);
       }
 
-      // stable ordering: Homestead, Apopka, New Jersey, Canada; then by type
       const preferredLocOrder = ["Homestead","Apopka","New Jersey","Canada"];
       const keys = Array.from(groupMap.keys()).sort((a,b) => {
         const [al] = a.split(" — ");
@@ -1626,37 +1891,10 @@
         return a.localeCompare(b);
       });
 
-      // week totals (optional)
-      const weekTotals = trucks.reduce((acc,t) => {
-        acc.racks += Number(t.totals?.racks || 0);
-        acc.cases += Number(t.totals?.cases || 0);
-        acc.qty   += Number(t.totals?.qty   || 0);
-        acc.price += Number(t.price || 0);
-        return acc;
-      }, { racks:0, cases:0, qty:0, price:0 });
-
-      const weekStrip = document.createElement("div");
-      weekStrip.className = "orderSection";
-      weekStrip.innerHTML = `
-        <div class="sectionHeader">
-          <div class="title">WEEK TOTALS</div>
-          <div class="meta">
-            <span class="chip subtle">Orders: ${trucks.length}</span>
-            <span class="chip subtle">Racks: ${weekTotals.racks.toLocaleString()}</span>
-            <span class="chip subtle">Cases: ${weekTotals.cases.toLocaleString()}</span>
-            <span class="chip subtle">Plants: ${weekTotals.qty.toLocaleString()}</span>
-            <span class="chip subtle">Trucking: ${money(weekTotals.price)}</span>
-          </div>
-        </div>
-        <div class="note">This summary is for quick scanning. Each section below matches the weekly order sheet layout.</div>
-      `;
-      wrap.appendChild(weekStrip);
-
       for(const key of keys){
         const sectionTrucks = groupMap.get(key).slice()
           .sort((a,b) => (a.pickupDate||"").localeCompare(b.pickupDate||""));
 
-        // section totals
         const secTotals = sectionTrucks.reduce((acc,t) => {
           acc.racks += Number(t.totals?.racks || 0);
           acc.cases += Number(t.totals?.cases || 0);
@@ -1665,55 +1903,88 @@
           return acc;
         }, { racks:0, cases:0, qty:0, price:0 });
 
-        const section = document.createElement("div");
-        section.className = "orderSection";
-        section.innerHTML = `
+        const sec = document.createElement("div");
+        sec.className = "orderSection";
+        sec.dataset.kind = "group";
+
+        sec.innerHTML = `
           <div class="sectionHeader">
-            <div class="title">${escapeHtml(key)}</div>
-            <div class="meta">
-              <span class="chip subtle">${sectionTrucks.length} order(s)</span>
-              <span class="chip subtle">${secTotals.racks.toLocaleString()} racks</span>
-              <span class="chip subtle">${secTotals.cases.toLocaleString()} cases</span>
-              <span class="chip subtle">${secTotals.qty.toLocaleString()} plants</span>
-              <span class="chip subtle">${money(secTotals.price)}</span>
+            <div class="left">
+              <div class="sectionTitle">${escapeHtml(key)}</div>
+              <div class="sectionMeta">
+                <span class="chip subtle">${sectionTrucks.length} order(s)</span>
+                <span class="chip subtle">${secTotals.racks.toLocaleString()} racks</span>
+                <span class="chip subtle">${secTotals.cases.toLocaleString()} cases</span>
+                <span class="chip subtle">${secTotals.qty.toLocaleString()} plants</span>
+                <span class="chip subtle">${money(secTotals.price)}</span>
+              </div>
             </div>
+            <button class="collapseBtn" data-action="toggleSection" aria-expanded="true">
+              <span>▾</span><span>Collapse</span>
+            </button>
           </div>
+          <div class="sectionBody"></div>
         `;
 
-        sectionTrucks.forEach(t => {
-          const pickup = document.createElement("div");
-          pickup.className = "pickupBlock";
+        const body = sec.querySelector(".sectionBody");
+        const secBtn = sec.querySelector("[data-action='toggleSection']");
+        secBtn.addEventListener("click", () => {
+          const collapsed = sec.classList.toggle("collapsed");
+          secBtn.setAttribute("aria-expanded", String(!collapsed));
+          secBtn.innerHTML = collapsed ? `<span>▸</span><span>Expand</span>` : `<span>▾</span><span>Collapse</span>`;
+        });
 
+        sectionTrucks.forEach(t => {
           const vendorCount = (t.vendorBlocks || []).length;
           const itemLines = (t.vendorBlocks || []).reduce((n,v) => n + (v.items?.length || 0), 0);
 
+          const pickup = document.createElement("div");
+          pickup.className = "pickupBlock";
+
+          // Build searchable string
+          const searchParts = [
+            t.pickupDate, t.region, t.orderType, t.trucking, t.notes, String(t.price || ""),
+            ...(t.vendorBlocks || []).flatMap(vb => [
+              vb.name, vb.po, vb.status,
+              ...(vb.items || []).flatMap(it => [it.item, it.notes, String(it.qty||""), String(it.racks||""), String(it.cases||"")])
+            ])
+          ].filter(Boolean).join(" | ");
+
+          pickup.dataset.search = searchParts;
+
           pickup.innerHTML = `
             <div class="pickupHead">
-              <div class="left">
+              <div class="pickupLeft">
                 <div class="pickupTitle">PU ${escapeHtml(t.pickupDate || "—")}</div>
-                <div class="pickupSub">
+                <div class="pickupChips">
                   <span class="chip subtle">${escapeHtml(t.trucking || "Trucking —")}</span>
                   <span class="chip subtle">${money(t.price || 0)}</span>
                   <span class="chip subtle">${vendorCount} vendor(s)</span>
                   <span class="chip subtle">${itemLines} line(s)</span>
                 </div>
               </div>
-              <div class="right">
+              <div class="pickupRight">
                 <span class="chip subtle">${Number(t.totals?.racks||0).toLocaleString()} racks</span>
                 <span class="chip subtle">${Number(t.totals?.cases||0).toLocaleString()} cases</span>
                 <span class="chip subtle">${Number(t.totals?.qty||0).toLocaleString()} plants</span>
-                <button class="tinyBtn">Edit</button>
+                <button class="tinyBtn" data-action="togglePickup" aria-expanded="true">Collapse</button>
+                <button class="tinyBtn" data-action="edit">Edit</button>
               </div>
             </div>
+            <div class="pickupBody"></div>
           `;
 
-          pickup.querySelector("button").addEventListener("click", () => openTruckDetail(t.id));
+          pickup.querySelector("[data-action='edit']").addEventListener("click", () => openTruckDetail(t.id));
+          const pickupToggle = pickup.querySelector("[data-action='togglePickup']");
+          pickupToggle.addEventListener("click", () => {
+            const collapsed = pickup.classList.toggle("pickupCollapsed");
+            pickupToggle.setAttribute("aria-expanded", String(!collapsed));
+            pickupToggle.textContent = collapsed ? "Expand" : "Collapse";
+          });
 
-          // vendors
+          const pickupBody = pickup.querySelector(".pickupBody");
+
           (t.vendorBlocks || []).forEach(vb => {
-            const v = document.createElement("div");
-            v.className = "vendorSheetBlock";
-
             const vendorName = (vb.name || "Vendor —").trim() || "Vendor —";
             const vendorPO = (vb.po || "").trim();
             const vendorStatus = (vb.status || "Open").trim();
@@ -1728,12 +1999,20 @@
               return acc;
             }, { racks:0, cases:0, qty:0 });
 
+            const v = document.createElement("div");
+            v.className = "vendorBlockXL";
+
             v.innerHTML = `
-              <div class="vendorLine">
-                <div class="vTitle">
+              <div class="vendorHeadXL">
+                <div class="vendorTitleXL">
                   <span>${escapeHtml(vendorName)}</span>
                   ${vendorPO ? `<span class="chip subtle">PO ${escapeHtml(vendorPO)}</span>` : ``}
                   <span class="${statusPillClass(vendorStatus)}">${escapeHtml(vendorStatus)}</span>
+                </div>
+                <div class="sectionMeta">
+                  <span class="chip subtle">${vTotals.racks.toLocaleString()} racks</span>
+                  ${showCases ? `<span class="chip subtle">${vTotals.cases.toLocaleString()} cases</span>` : ``}
+                  <span class="chip subtle">${vTotals.qty.toLocaleString()} plants</span>
                 </div>
               </div>
 
@@ -1741,9 +2020,9 @@
                 <thead>
                   <tr>
                     <th style="width:42%;">Item</th>
-                    <th style="width:14%;">CC Rack Count</th>
-                    ${showCases ? `<th style="width:14%;">Case Count</th>` : ``}
-                    <th style="width:14%;">Plant Qty</th>
+                    <th class="num nowrap" style="width:14%;">CC Racks</th>
+                    ${showCases ? `<th class="num nowrap" style="width:14%;">Cases</th>` : ``}
+                    <th class="num nowrap" style="width:14%;">Plant Qty</th>
                     <th>Notes</th>
                   </tr>
                 </thead>
@@ -1753,13 +2032,13 @@
                       ? items.map(it => `
                         <tr>
                           <td>${escapeHtml(it.item || "—")}</td>
-                          <td>${Number(it.racks || 0) ? Number(it.racks).toLocaleString() : ""}</td>
-                          ${showCases ? `<td>${Number(it.cases || 0) ? Number(it.cases).toLocaleString() : ""}</td>` : ``}
-                          <td>${Number(it.qty || 0) ? Number(it.qty).toLocaleString() : ""}</td>
+                          <td class="num">${Number(it.racks || 0) ? Number(it.racks).toLocaleString() : ""}</td>
+                          ${showCases ? `<td class="num">${Number(it.cases || 0) ? Number(it.cases).toLocaleString() : ""}</td>` : ``}
+                          <td class="num">${Number(it.qty || 0) ? Number(it.qty).toLocaleString() : ""}</td>
                           <td>${escapeHtml(it.notes || "")}</td>
                         </tr>
                       `).join("")
-                      : `<tr><td colspan="${showCases ? 5 : 4}" style="color: rgba(238,246,241,.72);">No lines.</td></tr>`
+                      : `<tr><td colspan="${showCases ? 5 : 4}" style="color: rgba(6,95,70,.75); font-weight:800;">No lines.</td></tr>`
                   }
                 </tbody>
               </table>
@@ -1771,40 +2050,41 @@
               </div>
             `;
 
-            pickup.appendChild(v);
+            pickupBody.appendChild(v);
           });
 
-          // order notes (optional)
           if((t.notes || "").trim()){
             const notes = document.createElement("div");
-            notes.className = "vendorSheetBlock";
-            notes.innerHTML = `<div class="note"><strong>Order Notes:</strong> ${escapeHtml(t.notes)}</div>`;
-            pickup.appendChild(notes);
+            notes.className = "note";
+            notes.style.marginTop = "2px";
+            notes.innerHTML = `<strong>Order Notes:</strong> ${escapeHtml(t.notes)}`;
+            pickupBody.appendChild(notes);
           }
 
-          section.appendChild(pickup);
+          body.appendChild(pickup);
         });
 
-        wrap.appendChild(section);
+        wrap.appendChild(sec);
       }
 
       refreshWeekSelectors();
+      applyOrderFilter(); // keep filter live after re-render
     }
 
     /*********************************************************
-     * Week selectors (photos/availability/check-in)
+     * Weeks selectors
      *********************************************************/
     function loadPhotos(){ return LS.get(LS.photosKey, []); }
+    function savePhotos(list){ LS.set(LS.photosKey, list); }
     function loadIssues(){ return LS.get(LS.issuesKey, []); }
+    function saveIssues(list){ LS.set(LS.issuesKey, list); }
 
     function getAllWeeks(){
       const trucks = loadTrucks();
       const photos = loadPhotos();
-      const issues = loadIssues();
       const set = new Set();
       trucks.forEach(t => set.add(t.weekKey));
       photos.forEach(p => set.add(p.week));
-      // also ensure current week exists
       set.add(weekKeyFromDate(new Date()));
       return Array.from(set).filter(Boolean).sort().reverse();
     }
@@ -1813,24 +2093,20 @@
       const weeks = getAllWeeks();
       const currentWk = weekKeyFromDate(weekAnchor);
 
-      // Photo filter
       const photoWeekFilter = document.getElementById("photoWeekFilter");
       const prevPhoto = photoWeekFilter.value;
       photoWeekFilter.innerHTML = `<option value="">All weeks</option>` + weeks.map(w => `<option value="${w}">${w}</option>`).join("");
       photoWeekFilter.value = prevPhoto || currentWk;
 
-      // Photo modal week
       const pWeek = document.getElementById("p_week");
       pWeek.innerHTML = weeks.map(w => `<option value="${w}">${w}</option>`).join("");
       pWeek.value = currentWk;
 
-      // Availability week
       const availWeekSelect = document.getElementById("availWeekSelect");
       const prevAvail = availWeekSelect.value;
       availWeekSelect.innerHTML = weeks.map(w => `<option value="${w}">${w}</option>`).join("");
       availWeekSelect.value = prevAvail || currentWk;
 
-      // Check-in week
       const checkinWeekSelect = document.getElementById("checkinWeekSelect");
       const prevCheck = checkinWeekSelect.value;
       checkinWeekSelect.innerHTML = weeks.map(w => `<option value="${w}">${w}</option>`).join("");
@@ -1850,9 +2126,7 @@
       const rules = LS.get(LS.ccRulesKey, null);
       return Array.isArray(rules) && rules.length ? rules : DEFAULT_CC_RULES;
     }
-    function saveCCRules(rules){
-      LS.set(LS.ccRulesKey, rules);
-    }
+    function saveCCRules(rules){ LS.set(LS.ccRulesKey, rules); }
 
     function ruleMatches(ruleMatch, itemName){
       const s = (itemName || "").toLowerCase();
@@ -1888,7 +2162,6 @@
       return { basePerRack:0, shelvesPerRack:0, polesPerRack:0, extendersPerRack:0 };
     }
 
-    // Truck Order export (detailed)
     document.getElementById("exportTruckBtn").addEventListener("click", () => {
       const wk = weekKeyFromDate(weekAnchor);
       const trucks = loadTrucks().filter(t => t.weekKey === wk);
@@ -1926,13 +2199,12 @@
       );
     });
 
-    // CC Order export (Vendor - CC Base # - CC Shelves - CC Poles - CC Extenders)
     document.getElementById("exportCCBtn").addEventListener("click", () => {
       const wk = weekKeyFromDate(weekAnchor);
       const trucks = loadTrucks().filter(t => t.weekKey === wk);
       if(!trucks.length){ alert("No orders in this week to export."); return; }
 
-      const map = new Map(); // vendor -> totals
+      const map = new Map();
       for(const t of trucks){
         for(const vb of (t.vendorBlocks||[])){
           const vendor = (vb.name || "—").trim() || "—";
@@ -1943,7 +2215,6 @@
             const racks = Number(it.racks || 0);
             if(!racks) continue;
             const m = ccMultipliersFor(itemName);
-
             cur.base      += racks * m.basePerRack;
             cur.shelves   += racks * m.shelvesPerRack;
             cur.poles     += racks * m.polesPerRack;
@@ -1976,14 +2247,12 @@
     document.getElementById("addRuleBtn").addEventListener("click", () => addRuleRow({
       match:"", basePerRack:1, shelvesPerRack:0, polesPerRack:0, extendersPerRack:0, notes:""
     }));
-
     document.getElementById("resetRulesBtn").addEventListener("click", () => {
       const ok = confirm("Reset CC rules to defaults?");
       if(!ok) return;
       saveCCRules(DEFAULT_CC_RULES);
       openRulesModal();
     });
-
     document.getElementById("saveRulesBtn").addEventListener("click", () => {
       const rules = [];
       rulesTbody.querySelectorAll("tr").forEach(tr => {
@@ -1993,7 +2262,6 @@
         const polesPerRack = Number(tr.querySelector(".r_poles").value || 0);
         const extendersPerRack = Number(tr.querySelector(".r_extenders").value || 0);
         const notes = tr.querySelector(".r_notes").value.trim();
-
         if(match || basePerRack || shelvesPerRack || polesPerRack || extendersPerRack || notes){
           rules.push({ match, basePerRack, shelvesPerRack, polesPerRack, extendersPerRack, notes });
         }
@@ -2035,8 +2303,6 @@
     /*********************************************************
      * Photos
      *********************************************************/
-    function savePhotos(list){ LS.set(LS.photosKey, list); }
-
     const photoGrid = document.getElementById("photoGrid");
     const dropZone = document.getElementById("dropZone");
     const photoModal = document.getElementById("photoModal");
@@ -2052,14 +2318,13 @@
       lightbox.setAttribute("aria-hidden","true");
     });
 
-    // Drag & drop
     ["dragenter","dragover"].forEach(ev => dropZone.addEventListener(ev, (e) => {
       e.preventDefault(); e.stopPropagation();
-      dropZone.style.borderColor = "rgba(59,255,154,.45)";
+      dropZone.style.borderColor = "rgba(16,185,129,.55)";
     }));
     ["dragleave","drop"].forEach(ev => dropZone.addEventListener(ev, (e) => {
       e.preventDefault(); e.stopPropagation();
-      dropZone.style.borderColor = "rgba(255,255,255,.22)";
+      dropZone.style.borderColor = "rgba(6,95,70,.28)";
     }));
     dropZone.addEventListener("drop", (e) => {
       const files = Array.from(e.dataTransfer.files || []).filter(f => f.type.startsWith("image/"));
@@ -2107,8 +2372,7 @@
         const dataUrl = await fileToDataURL(f);
         photos.push({
           id: cryptoRandomId(),
-          week,
-          vendor,
+          week, vendor,
           truckId: truckId || "",
           item,
           createdAt: new Date().toISOString(),
@@ -2140,7 +2404,6 @@
         .sort((a,b) => (b.createdAt||"").localeCompare(a.createdAt||""));
 
       photoGrid.innerHTML = "";
-
       if(photos.length === 0){
         photoGrid.innerHTML = `<div class="note">No photos yet. Add photos and tag them by week/vendor/truck/item.</div>`;
         return;
@@ -2176,15 +2439,13 @@
           renderPhotos();
           populateIssuePhotoOptions();
         });
-
         photoGrid.appendChild(tile);
       }
-
       populatePhotoTruckOptions();
     }
 
     /*********************************************************
-     * Availability (Vendor + Item aggregate)
+     * Availability
      *********************************************************/
     function buildAvailabilityRows(){
       const week = document.getElementById("availWeekSelect").value;
@@ -2244,7 +2505,7 @@
 
       tbody.innerHTML = "";
       if(rows.length === 0){
-        tbody.innerHTML = `<tr><td colspan="5" style="color: rgba(238,246,241,.72);">No availability data for this week yet. Add orders + items in Order Tracker.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="5" style="color: rgba(6,95,70,.80); font-weight:800;">No availability data for this week yet. Add orders + items in Order Tracker.</td></tr>`;
         return;
       }
 
@@ -2264,8 +2525,6 @@
     /*********************************************************
      * Issue Tracker
      *********************************************************/
-    function saveIssues(list){ LS.set(LS.issuesKey, list); }
-
     const issueModal = document.getElementById("issueModal");
     document.getElementById("newIssueBtn").addEventListener("click", openIssueModal);
     document.getElementById("issueCloseBtn").addEventListener("click", closeIssueModal);
@@ -2375,7 +2634,7 @@
 
       tbody.innerHTML = "";
       if(issues.length === 0){
-        tbody.innerHTML = `<tr><td colspan="8" style="color: rgba(238,246,241,.72);">No issues yet. Click “New Issue” to log one.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" style="color: rgba(6,95,70,.80); font-weight:800;">No issues yet. Click “New Issue” to log one.</td></tr>`;
         return;
       }
 
@@ -2420,7 +2679,7 @@
     }
 
     /*********************************************************
-     * Order Check-In (per week, grouped by Vendor + Item)
+     * Order Check-In
      *********************************************************/
     function loadCheckin(){ return LS.get(LS.checkinKey, {}); }
     function saveCheckin(obj){ LS.set(LS.checkinKey, obj); }
@@ -2510,7 +2769,6 @@
 
     function renderCheckIn(){
       refreshWeekSelectors();
-
       const wk = document.getElementById("checkinWeekSelect").value;
       const vFilter = (document.getElementById("checkinVendorFilter").value || "").trim().toLowerCase();
       const iFilter = (document.getElementById("checkinItemFilter").value || "").trim().toLowerCase();
@@ -2540,7 +2798,7 @@
               <button class="tinyBtn danger unmarkAll">Unmark all</button>
             </div>
           </div>
-          <div class="small" style="color: rgba(238,246,241,.70); margin-bottom:6px;">
+          <div class="small" style="color: rgba(6,95,70,.78); margin-bottom:6px;">
             Items for ${escapeHtml(wk)}
           </div>
           <div class="checkList"></div>
@@ -2565,19 +2823,17 @@
             </div>
             <div>
               <div class="small">CC Racks</div>
-              <div style="font-weight:950;">${Number(it.racks).toLocaleString()}</div>
+              <div style="font-weight:950; color:#064e3b;">${Number(it.racks).toLocaleString()}</div>
             </div>
             <div>
               <div class="small">Plants</div>
-              <div style="font-weight:950;">${Number(it.qty).toLocaleString()}</div>
+              <div style="font-weight:950; color:#064e3b;">${Number(it.qty).toLocaleString()}</div>
             </div>
             <div>
               <div class="small">Notes</div>
               <textarea class="checkNotes" placeholder="Notes when checking..."></textarea>
             </div>
           `;
-
-          // Set textarea value safely (no HTML injection)
           row.querySelector(".checkNotes").value = s.notes || "";
 
           const chk = row.querySelector('input[type="checkbox"]');
@@ -2648,7 +2904,7 @@
     }
 
     /*********************************************************
-     * Render all (sync selectors + keep app consistent)
+     * Render all
      *********************************************************/
     function renderAll(){
       refreshWeekSelectors();
@@ -2670,8 +2926,9 @@
       showPage("order");
     } else {
       showScreen(splash);
-      statusChip.textContent = "Cinematic Jungle";
+      statusChip.textContent = "Tropical Hub";
     }
   </script>
 </body>
 </html>
+<head>
