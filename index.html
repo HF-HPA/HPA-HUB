@@ -1,37 +1,40 @@
 <!DOCTYPE html>
-<html lang=" <meta charset="UTF-8" /><html lang="en">
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>HPA Jungle Hub</title>
 
   <style>
     /* =========================================================
-       BRIGHT TROPICAL THEME + READABILITY
+       THEME: BRIGHT TROPICAL UI + CINEMATIC PHOTO BACKDROP
+       (Vibrant bright, NOT whitewashed)
        ========================================================= */
+
     :root{
       /* Typography */
       --font: system-ui, -apple-system, "Segoe UI", Roboto, Arial;
       --base: 15px;
       --lh: 1.45;
 
-      /* Tropical palette */
+      /* UI palette (readable on bright cards) */
       --text:#083324;
       --muted:#2f6f5a;
+
       --accent:#00e5a8;   /* mint */
-      --accent2:#2dd4bf;  /* aqua */
-      --accent3:#a7f3d0;  /* pale mint */
-      --sun:#fff7cc;      /* warm sun highlight */
+      --accent2:#22c55e;  /* tropical green */
+      --accent3:#2dd4bf;  /* aqua */
 
       /* Surfaces */
-      --glass:rgba(255,255,255,.86);
-      --glass2:rgba(255,255,255,.66);
-      --chip:rgba(255,255,255,.74);
-      --card:rgba(255,255,255,.88);
+      --glass:rgba(255,255,255,.82);   /* main panel */
+      --glass2:rgba(255,255,255,.70);  /* inner blocks */
+      --chip:rgba(255,255,255,.68);
 
       /* Borders & shadows */
-      --border:rgba(0,0,0,.08);
-      --border2:rgba(6,95,70,.18);
-      --shadow:0 22px 70px rgba(0,0,0,.18);
-      --shadow2:0 10px 24px rgba(0,0,0,.10);
+      --border:rgba(6,95,70,.18);
+      --borderSoft:rgba(6,95,70,.12);
+      --shadow:0 24px 80px rgba(0,0,0,.30);
+      --shadow2:0 10px 24px rgba(0,0,0,.12);
       --radius:18px;
 
       /* Status */
@@ -41,9 +44,9 @@
 
       /* Tables */
       --thead: rgba(16,185,129,.18);
-      --rowA: rgba(255,255,255,.72);
-      --rowB: rgba(255,255,255,.56);
-      --rowHover: rgba(34,197,94,.12);
+      --rowA: rgba(255,255,255,.78);
+      --rowB: rgba(255,255,255,.62);
+      --rowHover: rgba(34,197,94,.14);
     }
 
     *{ box-sizing:border-box; font-family:var(--font); }
@@ -52,41 +55,59 @@
       margin:0;
       overflow:hidden;
       color:var(--text);
-      background:#e9fff6;
       font-size: var(--base);
       line-height: var(--lh);
+      background:#061a13;
     }
 
-    /* Tropical sunlit canopy */
+    /* =========================================================
+       CINEMATIC BACKGROUND (uses your normal photo; vibrant, not white)
+       ========================================================= */
     body{
+      /* Base: photo + cinematic dark gradient to keep depth */
       background:
-        radial-gradient(1200px 600px at 18% 10%, rgba(167,243,208,.90), transparent 60%),
-        radial-gradient(1000px 520px at 80% 25%, rgba(94,234,212,.78), transparent 64%),
-        radial-gradient(900px 520px at 55% 90%, rgba(255,247,204,.55), transparent 60%),
-        linear-gradient(rgba(255,255,255,.70), rgba(255,255,255,.88)),
+        linear-gradient(rgba(0,0,0,.22), rgba(0,0,0,.48)),
         url("jungle-bg.jpg") center / cover no-repeat fixed;
     }
+
+    /* Color grade (greens + warm highlights) */
+    body::before{
+      content:"";
+      position:fixed;
+      inset:0;
+      pointer-events:none;
+      z-index:0;
+      background:
+        radial-gradient(900px 520px at 18% 12%, rgba(64,255,192,.22), transparent 60%),
+        radial-gradient(1000px 620px at 82% 28%, rgba(34,197,94,.18), transparent 65%),
+        linear-gradient(rgba(255,214,102,.06), rgba(0,0,0,.10));
+      mix-blend-mode: screen;
+    }
+
+    /* Vignette for cinematic contrast */
     body::after{
       content:"";
       position:fixed;
       inset:0;
-      background: radial-gradient(circle at center, transparent 42%, rgba(255,255,255,.92));
       pointer-events:none;
+      z-index:0;
+      background:
+        radial-gradient(circle at center, transparent 38%, rgba(0,0,0,.58));
     }
 
-    /* Gentle texture (keep subtle for brightness) */
+    /* Cinematic overlays */
     .grain{
-      position:fixed; inset:0; pointer-events:none; opacity:.05; z-index:0;
+      position:fixed; inset:0; pointer-events:none; opacity:.07; z-index:0;
       background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)' opacity='.55'/%3E%3C/svg%3E");
       mix-blend-mode: overlay;
     }
     .mist{
       position:fixed; inset:-30%; pointer-events:none; z-index:0;
       background:
-        radial-gradient(800px 280px at 18% 30%, rgba(255,255,255,.40), transparent 65%),
-        radial-gradient(980px 320px at 76% 48%, rgba(255,255,255,.28), transparent 68%);
+        radial-gradient(780px 260px at 22% 40%, rgba(255,255,255,.16), transparent 60%),
+        radial-gradient(980px 320px at 72% 55%, rgba(255,255,255,.10), transparent 65%);
       filter: blur(26px);
-      opacity:.35;
+      opacity:.30;
       mix-blend-mode: screen;
       animation: mistMove 22s ease-in-out infinite;
     }
@@ -100,18 +121,20 @@
       background: repeating-linear-gradient(115deg, rgba(255,255,255,.22) 0 26px, rgba(255,255,255,0) 26px 120px);
       mask-image: radial-gradient(900px 620px at 30% 10%, black, transparent 72%);
       -webkit-mask-image: radial-gradient(900px 620px at 30% 10%, black, transparent 72%);
-      opacity:.22;
+      opacity:.38;
       mix-blend-mode: screen;
       filter: blur(.2px);
       animation: raysMove 14s ease-in-out infinite;
     }
     @keyframes raysMove{
-      0%{ transform:translateX(-2%); opacity:.18; }
-      50%{ transform:translateX(2%); opacity:.28; }
-      100%{ transform:translateX(-2%); opacity:.18; }
+      0%{ transform:translateX(-2%); opacity:.24; }
+      50%{ transform:translateX(2%); opacity:.42; }
+      100%{ transform:translateX(-2%); opacity:.24; }
     }
 
-    /* Screens */
+    /* =========================================================
+       SCREENS
+       ========================================================= */
     .screen{
       position:absolute;
       inset:0;
@@ -137,21 +160,23 @@
       pointer-events:auto;
       padding:9px 12px;
       border-radius:999px;
-      border:1px solid var(--border2);
-      background:var(--chip);
+      border:1px solid rgba(255,255,255,.16);
+      background:rgba(0,0,0,.26); /* blends with cinematic backdrop */
       backdrop-filter: blur(14px) saturate(160%);
       box-shadow: var(--shadow2);
-      color: #065f46;
+      color: rgba(245,255,250,.92);
       user-select:none;
       font-size:13px;
-      font-weight: 750;
+      font-weight: 800;
     }
     .chip.subtle{ opacity:.92; }
 
-    /* Cards / Inputs */
+    /* =========================================================
+       CARDS / INPUTS
+       ========================================================= */
     .card{
-      background:var(--card);
-      border:1px solid var(--border);
+      background: var(--glass);
+      border:1px solid var(--borderSoft);
       border-radius:var(--radius);
       padding:30px;
       box-shadow:var(--shadow);
@@ -164,19 +189,19 @@
       content:"";
       position:absolute; inset:0;
       border-radius:inherit;
-      background:linear-gradient(145deg, rgba(255,255,255,.65), transparent 55%);
+      background:linear-gradient(145deg, rgba(255,255,255,.55), transparent 55%);
       pointer-events:none;
       opacity:.70;
     }
 
     label{ display:block; margin:12px 0; }
-    .lbl{ display:block; margin:0 0 6px; font-size:12px; color:rgba(6,95,70,.85); font-weight: 750; }
+    .lbl{ display:block; margin:0 0 6px; font-size:12px; color:rgba(6,95,70,.85); font-weight: 800; }
     input, textarea, select{
       width:100%;
       padding:12px;
       border-radius:12px;
       border:1px solid rgba(6,95,70,.18);
-      background:rgba(255,255,255,.80);
+      background:rgba(255,255,255,.86);
       color:var(--text);
       outline:none;
     }
@@ -207,7 +232,7 @@
       border-radius:14px;
       cursor:pointer;
       backdrop-filter: blur(14px) saturate(160%);
-      font-weight: 850;
+      font-weight: 900;
     }
     .btnGhost:active{ transform: translateY(1px); }
 
@@ -215,23 +240,23 @@
       padding:8px 10px;
       border-radius:12px;
       border:1px solid rgba(6,95,70,.18);
-      background:rgba(255,255,255,.72);
+      background:rgba(255,255,255,.76);
       color:#065f46;
       cursor:pointer;
       white-space:nowrap;
-      font-weight: 850;
+      font-weight: 900;
     }
     .tinyBtn.danger{
       border-color: rgba(239,68,68,.35);
-      background: rgba(239,68,68,.12);
+      background: rgba(239,68,68,.14);
       color: #7f1d1d;
     }
 
     .row{ display:flex; gap:10px; align-items:flex-start; flex-wrap:wrap; }
     .row > *{ flex:1; min-width: 160px; }
 
-    .error{ color:var(--danger); font-size:13px; margin-top:10px; min-height:18px; font-weight: 750; }
-    .note{ color:rgba(6,95,70,.82); font-size:13px; margin-top:8px; }
+    .error{ color:var(--danger); font-size:13px; margin-top:10px; min-height:18px; font-weight: 800; }
+    .note{ color:rgba(6,95,70,.86); font-size:13px; margin-top:8px; font-weight: 750; }
 
     /* Splash */
     .logoWrap{ text-align:center; cursor:pointer; user-select:none; }
@@ -242,17 +267,19 @@
       margin:0 auto;
       animation:pulse 2.6s ease-in-out infinite;
       transition:opacity .85s ease, transform .85s ease, filter .85s ease;
-      filter: drop-shadow(0 18px 36px rgba(0,0,0,.22));
+      filter: drop-shadow(0 18px 36px rgba(0,0,0,.35));
     }
     @keyframes pulse{
       0%{ transform:scale(1); }
       50%{ transform:scale(1.07); }
       100%{ transform:scale(1); }
     }
-    .logo.fade{ opacity:0; transform:scale(.90); filter: blur(2px) drop-shadow(0 18px 36px rgba(0,0,0,.20)); }
-    .hint{ margin-top:16px; color:var(--muted); font-size:14px; letter-spacing:.3px; font-weight: 800; }
+    .logo.fade{ opacity:0; transform:scale(.90); filter: blur(2px) drop-shadow(0 18px 36px rgba(0,0,0,.32)); }
+    .hint{ margin-top:16px; color:var(--muted); font-size:14px; letter-spacing:.3px; font-weight: 900; }
 
-    /* App shell */
+    /* =========================================================
+       APP SHELL
+       ========================================================= */
     .appShell{
       width:min(1240px, 96vw);
       height: calc(100vh - 92px);
@@ -262,8 +289,8 @@
       gap:16px;
     }
     .side{
-      background:rgba(255,255,255,.80);
-      border:1px solid var(--border);
+      background: var(--glass);
+      border:1px solid var(--borderSoft);
       border-radius:var(--radius);
       box-shadow: var(--shadow);
       backdrop-filter: blur(16px) saturate(160%);
@@ -271,8 +298,8 @@
       overflow:auto;
     }
     .main{
-      background:rgba(255,255,255,.72);
-      border:1px solid var(--border);
+      background: rgba(255,255,255,.72);
+      border:1px solid rgba(255,255,255,.12);
       border-radius:var(--radius);
       box-shadow: var(--shadow);
       backdrop-filter: blur(16px) saturate(160%);
@@ -287,15 +314,15 @@
       padding:12px 12px;
       border-radius:14px;
       border:1px solid rgba(6,95,70,.18);
-      background:rgba(255,255,255,.70);
+      background:rgba(255,255,255,.74);
       color:#065f46;
       cursor:pointer;
       margin:8px 0;
-      font-weight: 900;
+      font-weight: 950;
     }
     .navBtn.active{
       border-color: rgba(16,185,129,.45);
-      background: rgba(16,185,129,.14);
+      background: rgba(16,185,129,.16);
       color:#064e3b;
     }
 
@@ -333,12 +360,16 @@
       --headerPad: 10px 12px;
       --tableFont: 14px;
       --blockGap: 12px;
+      --pickupStickyTop: 0px;
+      --theadStickyTop: 52px; /* table header sticks below pickup header */
     }
     .density-compact{
       --cellPad: 7px;
       --headerPad: 8px 10px;
       --tableFont: 13px;
       --blockGap: 10px;
+      --pickupStickyTop: 0px;
+      --theadStickyTop: 58px;
     }
 
     .orderSheet{
@@ -363,8 +394,7 @@
       justify-content:space-between;
       flex-wrap:wrap;
       padding: 12px 12px;
-      background:
-        linear-gradient(180deg, rgba(167,243,208,.65), rgba(255,255,255,.78));
+      background: linear-gradient(180deg, rgba(16,185,129,.22), rgba(255,255,255,.86));
       border-bottom:1px solid rgba(6,95,70,.12);
     }
     .sectionHeader .left{
@@ -389,19 +419,19 @@
       gap:8px;
       align-items:center;
       flex-wrap:wrap;
-      color: rgba(6,95,70,.85);
+      color: rgba(6,95,70,.86);
       font-size: 13px;
-      font-weight: 850;
+      font-weight: 900;
     }
 
     .collapseBtn{
       border:1px solid rgba(6,95,70,.18);
-      background: rgba(255,255,255,.75);
+      background: rgba(255,255,255,.80);
       color:#065f46;
       border-radius: 999px;
       padding: 8px 10px;
       cursor:pointer;
-      font-weight: 900;
+      font-weight: 950;
       display:flex;
       align-items:center;
       gap:8px;
@@ -414,7 +444,6 @@
       flex-direction:column;
       gap: var(--blockGap);
     }
-
     .collapsed .sectionBody{ display:none; }
 
     .pickupBlock{
@@ -424,10 +453,10 @@
       overflow: hidden;
     }
 
-    /* Sticky pickup header to keep context while scrolling */
+    /* Sticky pickup header */
     .pickupHead{
       position: sticky;
-      top: 0;
+      top: var(--pickupStickyTop);
       z-index: 3;
       display:flex;
       justify-content:space-between;
@@ -435,8 +464,7 @@
       align-items:center;
       flex-wrap:wrap;
       padding: var(--headerPad);
-      background:
-        linear-gradient(180deg, rgba(255,247,204,.75), rgba(255,255,255,.86));
+      background: linear-gradient(180deg, rgba(255,214,102,.20), rgba(255,255,255,.90));
       border-bottom:1px solid rgba(6,95,70,.12);
     }
 
@@ -478,7 +506,7 @@
     .vendorBlockXL{
       border:1px solid rgba(6,95,70,.12);
       border-radius: 14px;
-      background: rgba(255,255,255,.70);
+      background: rgba(255,255,255,.74);
       overflow:hidden;
     }
 
@@ -506,10 +534,10 @@
       border-radius:999px;
       font-size:12px;
       border:1px solid rgba(6,95,70,.18);
-      background:rgba(255,255,255,.78);
+      background:rgba(255,255,255,.84);
       color:#065f46;
       white-space:nowrap;
-      font-weight: 850;
+      font-weight: 900;
     }
     .statusConfirmed{ border-color: rgba(34,197,94,.45); background: rgba(34,197,94,.16); color:#065f46; }
     .statusOpen{ border-color: rgba(250,204,21,.60); background: rgba(250,204,21,.22); color:#78350f; }
@@ -528,7 +556,7 @@
     }
     .sheetTable th{
       position: sticky;
-      top: 52px; /* below pickupHead */
+      top: var(--theadStickyTop);
       z-index: 2;
       text-align:left;
       color:#064e3b;
@@ -551,13 +579,13 @@
       flex-wrap:wrap;
       padding: 10px 12px 12px;
       border-top:1px solid rgba(6,95,70,.10);
-      background: rgba(255,255,255,.78);
+      background: rgba(255,255,255,.82);
     }
     .pillMini{
       padding:6px 10px;
       border-radius:999px;
       border:1px solid rgba(6,95,70,.18);
-      background: rgba(255,255,255,.86);
+      background: rgba(255,255,255,.90);
       font-size:12px;
       color:#065f46;
       font-weight: 950;
@@ -572,7 +600,7 @@
       overflow:hidden;
     }
     .orderSummary .sectionHeader{
-      background: linear-gradient(180deg, rgba(94,234,212,.40), rgba(255,255,255,.86));
+      background: linear-gradient(180deg, rgba(45,212,191,.20), rgba(255,255,255,.90));
     }
 
     .filterBar{
@@ -587,20 +615,22 @@
       padding:10px 12px;
       border-radius:999px;
       border:1px solid rgba(6,95,70,.18);
-      background:rgba(255,255,255,.84);
+      background:rgba(255,255,255,.88);
       color:var(--text);
       outline:none;
-      font-weight: 800;
+      font-weight: 900;
     }
     .filterInput:focus{
       box-shadow: 0 0 0 4px rgba(16,185,129,.18);
       border-color: rgba(16,185,129,.55);
     }
 
-    /* Modal */
+    /* =========================================================
+       MODALS
+       ========================================================= */
     .modal{
       position:fixed; inset:0;
-      background: rgba(6,95,70,.20);
+      background: rgba(0,0,0,.55);
       display:none;
       align-items:center;
       justify-content:center;
@@ -614,7 +644,7 @@
       overflow:auto;
       padding:18px;
       border-radius:var(--radius);
-      border:1px solid var(--border);
+      border:1px solid rgba(255,255,255,.18);
       background: var(--glass);
       backdrop-filter: blur(16px) saturate(160%);
       box-shadow: var(--shadow);
@@ -627,7 +657,7 @@
     }
     .closeX{
       border:1px solid rgba(6,95,70,.18);
-      background:rgba(255,255,255,.78);
+      background:rgba(255,255,255,.82);
       color:#065f46;
       border-radius:999px;
       padding:8px 12px;
@@ -693,8 +723,9 @@
       background:rgba(255,255,255,.70);
       border-radius:14px;
       padding:14px;
-      color:rgba(6,95,70,.85);
+      color:rgba(6,95,70,.88);
       text-align:center;
+      font-weight: 850;
     }
     .photoGrid{
       display:grid;
@@ -708,17 +739,17 @@
       border-radius:14px;
       padding:10px;
       overflow:hidden;
-      box-shadow: 0 10px 22px rgba(0,0,0,.08);
+      box-shadow: 0 10px 22px rgba(0,0,0,.10);
     }
     .photoTile img{
       width:100%; height:130px; object-fit:cover; border-radius:10px;
       display:block;
     }
-    .photoMeta{ margin-top:8px; color:rgba(6,95,70,.82); font-size:12px; display:flex; flex-wrap:wrap; gap:6px; }
+    .photoMeta{ margin-top:8px; color:rgba(6,95,70,.86); font-size:12px; display:flex; flex-wrap:wrap; gap:6px; }
 
     .lightbox{
       position:fixed; inset:0;
-      background:rgba(0,0,0,.70);
+      background:rgba(0,0,0,.78);
       display:none; align-items:center; justify-content:center;
       z-index:40;
       padding:16px;
@@ -727,7 +758,7 @@
     .lightbox img{
       max-width: 96vw; max-height: 92vh;
       border-radius:16px;
-      box-shadow: 0 40px 120px rgba(0,0,0,.35);
+      box-shadow: 0 40px 120px rgba(0,0,0,.45);
     }
 
     /* Tables (availability + issues) */
@@ -740,7 +771,7 @@
       overflow:hidden;
       margin-top:10px;
       background: rgba(255,255,255,.78);
-      box-shadow: 0 10px 24px rgba(0,0,0,.08);
+      box-shadow: 0 10px 24px rgba(0,0,0,.10);
     }
     .table th,.table td{
       padding:10px;
@@ -766,7 +797,7 @@
       align-items:center;
       gap:6px;
       white-space:nowrap;
-      font-weight: 850;
+      font-weight: 900;
       color:#065f46;
     }
     .statusOpen{ border-color: rgba(250,204,21,.55); background: rgba(250,204,21,.20); color:#78350f; }
@@ -780,7 +811,7 @@
       border-radius: 16px;
       padding: 12px;
       margin-top: 12px;
-      box-shadow: 0 10px 24px rgba(0,0,0,.08);
+      box-shadow: 0 10px 24px rgba(0,0,0,.10);
     }
     .checkVendorHead{
       display:flex;
@@ -795,6 +826,7 @@
       font-size: 15px;
       letter-spacing: .1px;
       color:#064e3b;
+      font-weight: 950;
     }
     .checkActions{ display:flex; gap:8px; flex-wrap:wrap; }
     .checkRow{
@@ -809,7 +841,7 @@
     .checkRow .small{
       color: rgba(6,95,70,.78);
       font-size: 12px;
-      font-weight: 750;
+      font-weight: 850;
     }
     .checkRow input[type="checkbox"]{
       width:20px;
@@ -822,10 +854,11 @@
       padding:10px;
       border-radius: 12px;
       border:1px solid rgba(6,95,70,.18);
-      background: rgba(255,255,255,.86);
+      background: rgba(255,255,255,.88);
       color: var(--text);
       resize: vertical;
       width:100%;
+      outline: none;
     }
     .checkItemTitle{
       font-weight: 950;
@@ -836,7 +869,6 @@
     /* Responsive */
     @media (max-width: 980px){
       .appShell{ grid-template-columns: 1fr; height: calc(100vh - 86px); }
-      .sheetTable th{ top: 58px; }
       .checkRow{ grid-template-columns: 42px 1fr; }
       .checkRow > div:nth-child(3),
       .checkRow > div:nth-child(4),
@@ -846,10 +878,12 @@
     /* Print-friendly order tracker */
     @media print{
       body{ background:white !important; }
+      body::before, body::after, .grain, .mist, .rays { display:none !important; }
       .side, .topbar, .toolbar, .navBtn, .btnGhost, .tinyBtn, .note, .chip{ display:none !important; }
       .main{ box-shadow:none !important; border:none !important; background:white !important; }
       .orderSection, .pickupBlock, .vendorBlockXL{ box-shadow:none !important; }
       .sheetTable th{ position: static !important; }
+      .pickupHead{ position: static !important; }
     }
   </style>
 </head>
@@ -860,7 +894,7 @@
   <div class="rays" aria-hidden="true"></div>
 
   <div class="topbar">
-    <div id="statusChip" class="chip subtle">Tropical Hub</div>
+    <div id="statusChip" class="chip subtle">Cinematic Jungle</div>
     <div id="userChip" class="chip subtle">Not signed in</div>
   </div>
 
@@ -951,7 +985,7 @@
           <div id="orderSheet" class="orderSheet"></div>
 
           <div class="note">
-            Tip: Use the search box to quickly filter by vendor/item/PO/location/type for this week.
+            Tip: Use search to filter this week by vendor/item/PO/location/type.
           </div>
         </div>
 
@@ -969,7 +1003,7 @@
 
           <div class="dropZone" id="dropZone">
             <strong>Drag & drop</strong> images here or click “Add Photos”.
-            <div class="note">Photos stored in this browser. Large uploads may hit limits.</div>
+            <div class="note" style="margin-top:6px;">Photos stored in this browser. Large uploads may hit limits.</div>
           </div>
 
           <div class="photoGrid" id="photoGrid"></div>
@@ -1052,6 +1086,7 @@
             <tbody></tbody>
           </table>
         </div>
+
       </main>
     </div>
   </section>
@@ -1464,9 +1499,6 @@
 
     /*********************************************************
      * Trucks (Orders) v3 schema
-     * truck = { id, pickupDate, weekKey, region, orderType, trucking, price, notes,
-     *           vendorBlocks:[{name, po, status, items:[{item,racks,cases,qty,notes}]}],
-     *           totals:{racks,cases,qty} }
      *********************************************************/
     function loadTrucks(){ return LS.get(LS.trucksKey, []); }
     function saveTrucks(list){ LS.set(LS.trucksKey, list); }
@@ -1795,7 +1827,6 @@
       body.classList.toggle("density-comfortable", !comfortable);
       body.classList.toggle("density-compact", comfortable);
       densityBtn.textContent = comfortable ? "Compact" : "Comfortable";
-      // Re-render to ensure sticky header offsets remain nice
       renderOrder();
     });
 
@@ -1805,21 +1836,15 @@
 
     function applyOrderFilter(){
       const q = (orderFilter.value || "").trim().toLowerCase();
-      const nodes = document.querySelectorAll("[data-search]");
       if(!q){
-        nodes.forEach(n => n.style.display = "");
-        // show empty notes too
-        document.querySelectorAll(".orderSection, .pickupBlock").forEach(n => n.style.display = "");
+        document.querySelectorAll(".pickupBlock").forEach(p => p.style.display = "");
+        document.querySelectorAll(".orderSection[data-kind='group']").forEach(sec => sec.style.display = "");
         return;
       }
-
-      // Filter at pickup level (fast + simple): if pickup doesn't match, hide entire block
       document.querySelectorAll(".pickupBlock").forEach(p => {
         const s = (p.dataset.search || "").toLowerCase();
         p.style.display = s.includes(q) ? "" : "none";
       });
-
-      // Hide section if all pickups hidden
       document.querySelectorAll(".orderSection[data-kind='group']").forEach(sec => {
         const anyVisible = Array.from(sec.querySelectorAll(".pickupBlock")).some(p => p.style.display !== "none");
         sec.style.display = anyVisible ? "" : "none";
@@ -1858,15 +1883,15 @@
           <div class="left">
             <div class="sectionTitle">WEEK TOTALS</div>
             <div class="sectionMeta">
-              <span class="chip subtle">Orders: ${trucks.length}</span>
-              <span class="chip subtle">Racks: ${weekTotals.racks.toLocaleString()}</span>
-              <span class="chip subtle">Cases: ${weekTotals.cases.toLocaleString()}</span>
-              <span class="chip subtle">Plants: ${weekTotals.qty.toLocaleString()}</span>
-              <span class="chip subtle">Trucking: ${money(weekTotals.price)}</span>
+              <span class="pillMini">Orders: ${trucks.length}</span>
+              <span class="pillMini">Racks: ${weekTotals.racks.toLocaleString()}</span>
+              <span class="pillMini">Cases: ${weekTotals.cases.toLocaleString()}</span>
+              <span class="pillMini">Plants: ${weekTotals.qty.toLocaleString()}</span>
+              <span class="pillMini">Trucking: ${money(weekTotals.price)}</span>
             </div>
           </div>
           <div class="sectionMeta">
-            <span class="chip subtle">Sticky headers • Zebra rows • Search filter</span>
+            <span class="pillMini">Sticky headers • Zebra rows • Search filter</span>
           </div>
         </div>
       `;
@@ -1912,11 +1937,11 @@
             <div class="left">
               <div class="sectionTitle">${escapeHtml(key)}</div>
               <div class="sectionMeta">
-                <span class="chip subtle">${sectionTrucks.length} order(s)</span>
-                <span class="chip subtle">${secTotals.racks.toLocaleString()} racks</span>
-                <span class="chip subtle">${secTotals.cases.toLocaleString()} cases</span>
-                <span class="chip subtle">${secTotals.qty.toLocaleString()} plants</span>
-                <span class="chip subtle">${money(secTotals.price)}</span>
+                <span class="pillMini">${sectionTrucks.length} order(s)</span>
+                <span class="pillMini">${secTotals.racks.toLocaleString()} racks</span>
+                <span class="pillMini">${secTotals.cases.toLocaleString()} cases</span>
+                <span class="pillMini">${secTotals.qty.toLocaleString()} plants</span>
+                <span class="pillMini">${money(secTotals.price)}</span>
               </div>
             </div>
             <button class="collapseBtn" data-action="toggleSection" aria-expanded="true">
@@ -1957,16 +1982,16 @@
               <div class="pickupLeft">
                 <div class="pickupTitle">PU ${escapeHtml(t.pickupDate || "—")}</div>
                 <div class="pickupChips">
-                  <span class="chip subtle">${escapeHtml(t.trucking || "Trucking —")}</span>
-                  <span class="chip subtle">${money(t.price || 0)}</span>
-                  <span class="chip subtle">${vendorCount} vendor(s)</span>
-                  <span class="chip subtle">${itemLines} line(s)</span>
+                  <span class="pillMini">${escapeHtml(t.trucking || "Trucking —")}</span>
+                  <span class="pillMini">${money(t.price || 0)}</span>
+                  <span class="pillMini">${vendorCount} vendor(s)</span>
+                  <span class="pillMini">${itemLines} line(s)</span>
                 </div>
               </div>
               <div class="pickupRight">
-                <span class="chip subtle">${Number(t.totals?.racks||0).toLocaleString()} racks</span>
-                <span class="chip subtle">${Number(t.totals?.cases||0).toLocaleString()} cases</span>
-                <span class="chip subtle">${Number(t.totals?.qty||0).toLocaleString()} plants</span>
+                <span class="pillMini">${Number(t.totals?.racks||0).toLocaleString()} racks</span>
+                <span class="pillMini">${Number(t.totals?.cases||0).toLocaleString()} cases</span>
+                <span class="pillMini">${Number(t.totals?.qty||0).toLocaleString()} plants</span>
                 <button class="tinyBtn" data-action="togglePickup" aria-expanded="true">Collapse</button>
                 <button class="tinyBtn" data-action="edit">Edit</button>
               </div>
@@ -2006,13 +2031,13 @@
               <div class="vendorHeadXL">
                 <div class="vendorTitleXL">
                   <span>${escapeHtml(vendorName)}</span>
-                  ${vendorPO ? `<span class="chip subtle">PO ${escapeHtml(vendorPO)}</span>` : ``}
+                  ${vendorPO ? `<span class="pillMini">PO ${escapeHtml(vendorPO)}</span>` : ``}
                   <span class="${statusPillClass(vendorStatus)}">${escapeHtml(vendorStatus)}</span>
                 </div>
                 <div class="sectionMeta">
-                  <span class="chip subtle">${vTotals.racks.toLocaleString()} racks</span>
-                  ${showCases ? `<span class="chip subtle">${vTotals.cases.toLocaleString()} cases</span>` : ``}
-                  <span class="chip subtle">${vTotals.qty.toLocaleString()} plants</span>
+                  <span class="pillMini">${vTotals.racks.toLocaleString()} racks</span>
+                  ${showCases ? `<span class="pillMini">${vTotals.cases.toLocaleString()} cases</span>` : ``}
+                  <span class="pillMini">${vTotals.qty.toLocaleString()} plants</span>
                 </div>
               </div>
 
@@ -2038,7 +2063,7 @@
                           <td>${escapeHtml(it.notes || "")}</td>
                         </tr>
                       `).join("")
-                      : `<tr><td colspan="${showCases ? 5 : 4}" style="color: rgba(6,95,70,.75); font-weight:800;">No lines.</td></tr>`
+                      : `<tr><td colspan="${showCases ? 5 : 4}" style="color: rgba(6,95,70,.80); font-weight:900;">No lines.</td></tr>`
                   }
                 </tbody>
               </table>
@@ -2068,11 +2093,11 @@
       }
 
       refreshWeekSelectors();
-      applyOrderFilter(); // keep filter live after re-render
+      applyOrderFilter();
     }
 
     /*********************************************************
-     * Weeks selectors
+     * Week selectors
      *********************************************************/
     function loadPhotos(){ return LS.get(LS.photosKey, []); }
     function savePhotos(list){ LS.set(LS.photosKey, list); }
@@ -2505,7 +2530,7 @@
 
       tbody.innerHTML = "";
       if(rows.length === 0){
-        tbody.innerHTML = `<tr><td colspan="5" style="color: rgba(6,95,70,.80); font-weight:800;">No availability data for this week yet. Add orders + items in Order Tracker.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="5" style="color: rgba(6,95,70,.84); font-weight:900;">No availability data for this week yet. Add orders + items in Order Tracker.</td></tr>`;
         return;
       }
 
@@ -2634,7 +2659,7 @@
 
       tbody.innerHTML = "";
       if(issues.length === 0){
-        tbody.innerHTML = `<tr><td colspan="8" style="color: rgba(6,95,70,.80); font-weight:800;">No issues yet. Click “New Issue” to log one.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" style="color: rgba(6,95,70,.84); font-weight:900;">No issues yet. Click “New Issue” to log one.</td></tr>`;
         return;
       }
 
@@ -2926,9 +2951,16 @@
       showPage("order");
     } else {
       showScreen(splash);
-      statusChip.textContent = "Tropical Hub";
+      statusChip.textContent = "Cinematic Jungle";
     }
+
+    /* Ensure default order page */
+    function ensureOrderPage(){
+      showPage("order");
+    }
+
+    /* Login behavior */
+    // (login button already calls showPage("order") after renderAll)
   </script>
 </body>
 </html>
-<head>
