@@ -535,6 +535,24 @@
       .availRow > .availRowActions{ grid-column:2 / 4; justify-content:flex-start; }
     }
 
+    /* Multi-item entry rows inside the Add Availability modal */
+    .availItemsHead{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin:14px 0 6px; }
+    .availItemsHead .lbl{ margin:0; }
+    .availEntryRow{
+      display:grid; grid-template-columns:1.6fr 1.2fr 90px 40px;
+      gap:8px; align-items:center; margin-bottom:8px;
+    }
+    .availEntryRow input{ margin:0; }
+    .availEntryRow .rmItem{
+      width:40px; height:40px; padding:0; line-height:1;
+      display:flex; align-items:center; justify-content:center;
+    }
+    @media (max-width:560px){
+      .availEntryRow{ grid-template-columns:1fr 1fr; }
+      .availEntryRow > input:nth-child(3){ grid-column:1; }
+      .availEntryRow > .rmItem{ grid-column:2; justify-self:end; }
+    }
+
     .checkVendor{ border:1px solid var(--line); background:var(--paper-2); border-radius:var(--radius-sm); padding:14px; margin-top:12px; box-shadow:var(--shadow-sm); }
     .checkVendorHead{ display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:10px; }
     .checkVendorHead h3{ margin:0; font-family:var(--display); font-size:17px; color:var(--ink); font-weight:600; }
@@ -761,6 +779,9 @@
           <div class="toolbar">
             <h2>Availability</h2>
             <div class="tools">
+              <button id="availPrevWeek" class="btnGhost">← Prev</button>
+              <button id="availThisWeek" class="btnGhost">This Week</button>
+              <button id="availNextWeek" class="btnGhost">Next →</button>
               <select id="availWeekSelect"></select>
               <input id="availSearch" placeholder="Search vendor or item (optional)" />
               <button id="availAddBtn" class="btnGhost">＋ Add Availability</button>
@@ -768,7 +789,7 @@
             </div>
           </div>
 
-          <div class="note">Manually entered availability for the selected week, grouped by vendor. Check an item to flag it to order this week.</div>
+          <div class="note" id="availNote">Manually entered availability for the selected week, grouped by vendor. Check an item to flag it to order this week.</div>
 
           <div class="availTabs" id="availTabs"></div>
           <div id="availWrap"></div>
@@ -1064,21 +1085,11 @@
         </label>
       </div>
 
-      <label>
-        <span class="lbl">Item Available</span>
-        <input id="a_item" placeholder='e.g., Monstera Deliciosa'/>
-      </label>
-
-      <div class="row">
-        <label>
-          <span class="lbl">Spec</span>
-          <input id="a_spec" placeholder='e.g., 6" / 10 per case'/>
-        </label>
-        <label>
-          <span class="lbl">Amount Available</span>
-          <input id="a_amount" placeholder="e.g., 200"/>
-        </label>
+      <div class="availItemsHead">
+        <span class="lbl">Items Available</span>
+        <button id="a_addItemBtn" class="tinyBtn" type="button">＋ Add Another Item</button>
       </div>
+      <div id="a_itemRows"></div>
 
       <button id="availSaveBtn" class="btn">Save Availability</button>
     </div>
@@ -1148,6 +1159,20 @@
       const s = startOfWeek(date);
       const e = addDays(s,6);
       return `${weekKeyFromDate(date)} • ${s.toLocaleDateString()} – ${e.toLocaleDateString()}`;
+    }
+    // Inverse of weekKeyFromDate: returns the Monday (start of week) for "YYYY-Www".
+    function dateFromWeekKey(key){
+      const m = /^(\d{4})-W(\d{2})$/.exec(key || "");
+      if(!m) return startOfWeek(new Date());
+      const year = Number(m[1]), week = Number(m[2]);
+      // ISO: week 1 contains Jan 4th; find that week's Monday, then add weeks.
+      const jan4 = new Date(Date.UTC(year, 0, 4));
+      const jan4Day = (jan4.getUTCDay() + 6) % 7; // Mon=0
+      const week1Mon = new Date(jan4);
+      week1Mon.setUTCDate(jan4.getUTCDate() - jan4Day);
+      const target = new Date(week1Mon);
+      target.setUTCDate(week1Mon.getUTCDate() + (week - 1) * 7);
+      return new Date(target.getUTCFullYear(), target.getUTCMonth(), target.getUTCDate());
     }
     function cryptoRandomId(){
       return (crypto?.getRandomValues)
@@ -1966,6 +1991,7 @@
       avail.forEach(a => set.add(a.week));
       set.add(weekKeyFromDate(new Date()));
       set.add(weekKeyFromDate(weekAnchor)); // the week currently navigated to
+      set.add(weekKeyFromDate(availAnchor)); // the Availability week being viewed
       return Array.from(set).filter(Boolean).sort().reverse();
     }
 
@@ -1983,9 +2009,8 @@
       pWeek.value = currentWk;
 
       const availWeekSelect = document.getElementById("availWeekSelect");
-      const prevAvail = availWeekSelect.value;
       availWeekSelect.innerHTML = weeks.map(w => `<option value="${w}">${w}</option>`).join("");
-      availWeekSelect.value = prevAvail || currentWk;
+      availWeekSelect.value = weekKeyFromDate(availAnchor);
 
       const checkinWeekSelect = document.getElementById("checkinWeekSelect");
       const prevCheck = checkinWeekSelect.value;
@@ -2368,6 +2393,7 @@
      *********************************************************/
     const AVAIL_CATEGORIES = ['4" Foliage', '6" Foliage', '10" Foliage', "Hanging Baskets", "Bromeliads"];
     let availActiveCat = AVAIL_CATEGORIES[0];
+    let availAnchor = startOfWeek(new Date());   // which week Availability is showing
 
     function loadAvail(){ return LS.get(LS.availKey, []); }
     function saveAvail(list){ LS.set(LS.availKey, list); }
@@ -2377,7 +2403,12 @@
     function loadAvailOrders(){ return LS.get(LS.availOrdersKey, {}); }
     function saveAvailOrders(obj){ LS.set(LS.availOrdersKey, obj); }
 
-    function availWeek(){ return document.getElementById("availWeekSelect").value || weekKeyFromDate(weekAnchor); }
+    function availWeek(){ return weekKeyFromDate(availAnchor); }
+
+    // ----- Week navigation -----
+    document.getElementById("availPrevWeek").addEventListener("click", () => { availAnchor = addDays(availAnchor, -7); renderAvailability(); });
+    document.getElementById("availNextWeek").addEventListener("click", () => { availAnchor = addDays(availAnchor,  7); renderAvailability(); });
+    document.getElementById("availThisWeek").addEventListener("click", () => { availAnchor = startOfWeek(new Date()); renderAvailability(); });
 
     // ----- Add / Edit modal -----
     const availModal = document.getElementById("availModal");
@@ -2392,18 +2423,52 @@
       sel.innerHTML = AVAIL_CATEGORIES.map(c => `<option ${c===selected?"selected":""}>${escapeHtml(c)}</option>`).join("");
     }
 
+    // ----- Multi-item entry rows -----
+    function addAvailItemRow(item = "", spec = "", amount = ""){
+      const rows = document.getElementById("a_itemRows");
+      const row = document.createElement("div");
+      row.className = "availEntryRow";
+      row.innerHTML = `
+        <input class="ai_item" placeholder='Item (e.g., Monstera Deliciosa)' value="${escapeHtml(item)}">
+        <input class="ai_spec" placeholder='Spec (e.g., 6")' value="${escapeHtml(spec)}">
+        <input class="ai_amount" placeholder="Amount" value="${escapeHtml(amount)}">
+        <button class="tinyBtn danger rmItem" type="button" title="Remove item">✕</button>
+      `;
+      row.querySelector(".rmItem").addEventListener("click", () => {
+        row.remove();
+        // always keep at least one row
+        if(document.getElementById("a_itemRows").children.length === 0) addAvailItemRow();
+      });
+      rows.appendChild(row);
+      return row;
+    }
+
+    document.getElementById("a_addItemBtn").addEventListener("click", () => {
+      const row = addAvailItemRow();
+      row.querySelector(".ai_item").focus();
+    });
+
     function openAvailModal(entry){
       editingAvailId = entry?.id ?? null;
       document.getElementById("availModalTitle").textContent = editingAvailId ? "Edit Availability" : "Add Availability";
       const wk = availWeek();
-      document.getElementById("availModalSub").textContent =
-        `Entry saves to week ${wk}.`;
+      document.getElementById("availModalSub").textContent = editingAvailId
+        ? `Editing one item in week ${wk}.`
+        : `Add one or more items for a vendor — all save to week ${wk}.`;
 
       fillAvailCategoryOptions(entry?.category || availActiveCat);
       document.getElementById("a_vendor").value = entry?.vendor ?? "";
-      document.getElementById("a_item").value   = entry?.item ?? "";
-      document.getElementById("a_spec").value   = entry?.spec ?? "";
-      document.getElementById("a_amount").value = entry?.amount ?? "";
+
+      // Build the item rows: a single row when editing, one empty row when adding.
+      const rows = document.getElementById("a_itemRows");
+      rows.innerHTML = "";
+      if(entry){
+        addAvailItemRow(entry.item ?? "", entry.spec ?? "", entry.amount ?? "");
+      } else {
+        addAvailItemRow();
+      }
+      // Adding lets you stack more rows; editing stays single-item for clarity.
+      document.getElementById("a_addItemBtn").style.display = editingAvailId ? "none" : "";
 
       availModal.classList.add("active");
       availModal.setAttribute("aria-hidden","false");
@@ -2417,37 +2482,58 @@
     document.getElementById("availSaveBtn").addEventListener("click", () => {
       const category = document.getElementById("a_category").value;
       const vendor = document.getElementById("a_vendor").value.trim();
-      const item   = document.getElementById("a_item").value.trim();
-      const spec   = document.getElementById("a_spec").value.trim();
-      const amount = document.getElementById("a_amount").value.trim();
 
-      if(!vendor || !item){
-        alert("Vendor and Item Available are required.");
+      if(!vendor){
+        alert("Vendor is required.");
+        return;
+      }
+
+      // Collect every item row that has at least an item name.
+      const rows = Array.from(document.querySelectorAll("#a_itemRows .availEntryRow"));
+      const items = rows.map(r => ({
+        item:   r.querySelector(".ai_item").value.trim(),
+        spec:   r.querySelector(".ai_spec").value.trim(),
+        amount: r.querySelector(".ai_amount").value.trim()
+      })).filter(x => x.item);
+
+      if(items.length === 0){
+        alert("Add at least one item (the Item field can't be blank).");
         return;
       }
 
       const list = loadAvail();
+
       if(editingAvailId){
+        // Editing updates the single existing entry with the first row.
         const idx = list.findIndex(e => e.id === editingAvailId);
         if(idx >= 0){
-          list[idx] = { ...list[idx], category, vendor, item, spec, amount };
+          const it = items[0];
+          list[idx] = { ...list[idx], category, vendor, item: it.item, spec: it.spec, amount: it.amount };
         }
       } else {
-        list.push({
-          id: cryptoRandomId(),
-          week: availWeek(),
-          category, vendor, item, spec, amount,
-          createdAt: new Date().toISOString()
-        });
+        // Adding creates one entry per filled row, all sharing vendor + category.
+        for(const it of items){
+          list.push({
+            id: cryptoRandomId(),
+            week: availWeek(),
+            category, vendor,
+            item: it.item, spec: it.spec, amount: it.amount,
+            createdAt: new Date().toISOString()
+          });
+        }
         availActiveCat = category; // jump to the tab we just added to
       }
+
       saveAvail(list);
       closeAvailModal();
       renderAvailability();
     });
 
     // ----- Tabs, search, week -----
-    document.getElementById("availWeekSelect").addEventListener("change", renderAvailability);
+    document.getElementById("availWeekSelect").addEventListener("change", (e) => {
+      availAnchor = dateFromWeekKey(e.target.value);
+      renderAvailability();
+    });
     document.getElementById("availSearch").addEventListener("input", renderAvailability);
 
     document.getElementById("availExportBtn").addEventListener("click", () => {
@@ -2485,6 +2571,11 @@
     function renderAvailability(){
       refreshWeekSelectors();
       const wk = availWeek();
+      const noteEl = document.getElementById("availNote");
+      if(noteEl){
+        const s = startOfWeek(availAnchor), e = addDays(s, 6);
+        noteEl.textContent = `Showing ${wk} (${s.toLocaleDateString()} – ${e.toLocaleDateString()}). Grouped by vendor — check an item to flag it to order this week.`;
+      }
       const search = (document.getElementById("availSearch").value || "").trim().toLowerCase();
 
       const weekEntries = loadAvail().filter(e => e.week === wk);
