@@ -477,7 +477,10 @@
 
   <div class="topbar">
     <div id="statusChip" class="chip subtle">Cinematic Jungle</div>
-    <div id="userChip" class="chip subtle">Not signed in</div>
+    <div style="display:flex; gap:10px; pointer-events:none;">
+      <div id="syncChip" class="chip subtle" role="button" tabindex="0" title="Team sync" style="pointer-events:auto; cursor:pointer;">Sync: off</div>
+      <div id="userChip" class="chip subtle">Not signed in</div>
+    </div>
   </div>
 
   <section id="splash" class="screen active" aria-label="Splash">
@@ -607,16 +610,15 @@
             <div class="tools">
               <button id="checkinImportBtn" class="btnGhost">⬆ Import PO Analysis</button>
               <input id="checkinImportFile" type="file" accept=".xlsx,.xls" style="display:none;" />
+              <select id="checkinWeekSelect" title="Imported week"></select>
               <input id="checkinVendorFilter" placeholder="Vendor filter (optional)" />
               <input id="checkinItemFilter" placeholder="Item filter (optional)" />
               <button id="checkinExportBtn" class="btnGhost">Export CSV</button>
-              <button id="checkinClearWeekBtn" class="btnGhost" style="border-color:rgba(224,86,63,.3); color:#a8341f;">Clear Import</button>
+              <button id="checkinClearWeekBtn" class="btnGhost" style="border-color:rgba(224,86,63,.3); color:#a8341f;">Clear This Week</button>
             </div>
           </div>
           <div class="note" id="checkinNote">Import the weekly <strong>PO Analysis</strong> spreadsheet, then check items in as they arrive and add notes per line.</div>
           <div id="checkinWrap" style="margin-top:12px;"></div>
-          <!-- legacy hidden control kept for compatibility -->
-          <select id="checkinWeekSelect" style="display:none;"></select>
         </div>
 
         <div id="page-issues" class="page" style="display:none;">
@@ -836,8 +838,11 @@
       thumbKey:  "hpa_plant_thumbs_v1",
       poImportKey:"hpa_po_import_v1",
       poStateKey:"hpa_po_checkin_v1",
+      poHistKey:"hpa_po_history_v1",
+      poActiveKey:"hpa_po_active_v1",
       trainingKey:"hpa_training_v1",
       availLinkKey:"hpa_avail_link_v1",
+      teamKey:"hpa_team_v1",
       get(key, fallback){
         try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; }
       },
@@ -848,6 +853,7 @@
           alert("Storage limit reached. Consider deleting old photos or reducing stored data.");
           throw e;
         }
+        try { if(window.HPASync && window.HPASync.onLocalSet) window.HPASync.onLocalSet(key); } catch(_){}
       }
     };
 
@@ -1049,6 +1055,7 @@
       renderAll();
       showPage("order");
       ensureNotifyPermission();
+      Sync.init({ name: u });
       if(window.IGGY){ window.IGGY.show(); window.IGGY.schedule(); }
     });
 
@@ -3067,13 +3074,50 @@
     }
 
     /*********************************************************
-     * Order Check-In — driven by imported PO Analysis
+     * Order Check-In — driven by imported PO Analysis (with week history)
      *********************************************************/
-    function loadPO(){ return LS.get(LS.poImportKey, null); }      // { fileName, importedAt, rows:[...] }
-    function savePO(obj){ LS.set(LS.poImportKey, obj); }
-    function loadPOState(){ return LS.get(LS.poStateKey, {}); }     // { rowKey:{checked,notes} }
-    function savePOState(obj){ LS.set(LS.poStateKey, obj); }
+    // History model:
+    //   poHistKey  = { [weekKey]: { weekKey, label, fileName, importedAt, rows:[...] } }
+    //   poActiveKey= weekKey currently being viewed
+    //   poStateKey = { [weekKey]: { [rowKey]: {checked,notes} } }
+    function loadHist(){ return LS.get(LS.poHistKey, {}); }
+    function saveHist(o){ LS.set(LS.poHistKey, o); }
+    function loadActive(){ return LS.get(LS.poActiveKey, ""); }
+    function saveActive(w){ LS.set(LS.poActiveKey, w); }
+    function loadAllState(){ return LS.get(LS.poStateKey, {}); }
+    function saveAllState(o){ LS.set(LS.poStateKey, o); }
+    function stateForWeek(wk){ const all = loadAllState(); return all[wk] || {}; }
+    function setStateForWeek(wk, obj){ const all = loadAllState(); all[wk] = obj; saveAllState(all); }
     function poRowKey(r){ return `${(r.po||"").trim()}||${(r.itemNo||"").trim()}||${r._i}`; }
+
+    function weekNumKey(s){ const m = String(s).match(/WK?(\d{1,2})/i) || String(s).match(/(\d{1,2})/); return m ? parseInt(m[1],10) : -1; }
+    function poWeekInfo(rows, fileName){
+      const counts = {};
+      rows.forEach(r => { const k = (r.reqweek||"").trim(); if(k) counts[k] = (counts[k]||0)+1; });
+      let wk = "", best = -1;
+      Object.keys(counts).forEach(k => { if(counts[k] > best){ best = counts[k]; wk = k; } });
+      if(wk) return { key:"WK"+wk, label:"Week "+wk };
+      const m = (fileName||"").match(/WK[_-]?(\d{1,2})/i);
+      if(m) return { key:"WK"+m[1], label:"Week "+m[1] };
+      const base = (fileName||"import").replace(/\.(xlsx|xls)$/i, "");
+      return { key:"F:"+base, label:base };
+    }
+    // migrate any v1 single-import into the history model (runs once)
+    function migratePOHistory(){
+      if(LS.get(LS.poHistKey, null) !== null) return;
+      const hist = {};
+      const old = LS.get(LS.poImportKey, null);
+      if(old && old.rows && old.rows.length){
+        const info = poWeekInfo(old.rows, old.fileName);
+        hist[info.key] = { weekKey:info.key, label:info.label, fileName:old.fileName, importedAt:old.importedAt, rows:old.rows };
+        saveActive(info.key);
+        const oldState = LS.get(LS.poStateKey, {});
+        const isFlat = Object.keys(oldState).length && Object.values(oldState).some(v => v && typeof v === "object" && ("checked" in v));
+        if(isFlat) saveAllState({ [info.key]: oldState });
+      }
+      saveHist(hist);
+      try { localStorage.removeItem(LS.poImportKey); } catch(e){}
+    }
 
     let _sheetjsPromise = null;
     function loadSheetJS(){
@@ -3088,7 +3132,6 @@
       });
       return _sheetjsPromise;
     }
-
     function pickPOSheet(wb){
       const want = ["vendor name","item description","po number"];
       let best = null, bestScore = -1;
@@ -3106,7 +3149,6 @@
     }
     function colIndex(hdr, names){ for(const n of names){ const i = hdr.indexOf(n); if(i >= 0) return i; } return -1; }
     function cleanComment(s){ return String(s || "").replace(/_x000D_/g, "").replace(/\r/g, "").replace(/\n{2,}/g, "\n").trim(); }
-
     function parsePOWorkbook(wb){
       const picked = pickPOSheet(wb);
       if(!picked) return null;
@@ -3145,6 +3187,7 @@
     }
 
     const checkinWrap = document.getElementById("checkinWrap");
+    const checkinWeekSelect = document.getElementById("checkinWeekSelect");
     document.getElementById("checkinImportBtn").addEventListener("click", () => document.getElementById("checkinImportFile").click());
     document.getElementById("checkinImportFile").addEventListener("change", async (e) => {
       const f = e.target.files && e.target.files[0]; if(!f) return;
@@ -3159,63 +3202,88 @@
         const rows = parsePOWorkbook(wb);
         if(!rows || !rows.length){
           alert("Couldn't find PO Analysis columns (Vendor Name, Item Description, PO Number) in that file.");
-          note.textContent = "Import failed — unrecognized layout.";
-          e.target.value = ""; return;
+          note.textContent = "Import failed — unrecognized layout."; e.target.value = ""; return;
         }
-        const existing = loadPOState();
-        const fresh = (loadPO() && loadPO().fileName) !== f.name;
-        savePO({ fileName: f.name, importedAt: new Date().toISOString(), rows });
-        if(fresh){ /* keep state keyed by PO+item; matching rows retain their checks */ }
+        const info = poWeekInfo(rows, f.name);
+        const hist = loadHist();
+        const existed = !!hist[info.key];
+        if(existed && !confirm(`${info.label} is already in your history. Replace its imported lines with this file?\n(Your check marks and notes for ${info.label} are kept where PO + item still match.)`)){
+          note.innerHTML = checkinSummaryHTML(); e.target.value = ""; return;
+        }
+        hist[info.key] = { weekKey:info.key, label:info.label, fileName:f.name, importedAt:new Date().toISOString(), rows };
+        saveHist(hist);
+        saveActive(info.key);
         markTabChanged("checkin");
         renderCheckIn();
       } catch(err){
         alert("Could not read that spreadsheet: " + err.message);
         note.textContent = "Import failed.";
-      } finally {
-        e.target.value = "";
-      }
+      } finally { e.target.value = ""; }
     });
+    checkinWeekSelect.addEventListener("change", () => { saveActive(checkinWeekSelect.value); renderCheckIn(); });
     document.getElementById("checkinVendorFilter").addEventListener("input", renderCheckIn);
     document.getElementById("checkinItemFilter").addEventListener("input", renderCheckIn);
     document.getElementById("checkinClearWeekBtn").addEventListener("click", () => {
-      if(!loadPO()){ alert("Nothing imported yet."); return; }
-      if(!confirm("Clear the imported PO Analysis and all its check-ins and notes?")) return;
-      localStorage.removeItem(LS.poImportKey);
-      localStorage.removeItem(LS.poStateKey);
+      const hist = loadHist();
+      const active = loadActive();
+      if(!hist[active]){ alert("Nothing imported yet."); return; }
+      if(!confirm(`Clear ${hist[active].label} (its imported lines, check marks and notes)? Other weeks are kept.`)) return;
+      delete hist[active];
+      saveHist(hist);
+      const allState = loadAllState(); delete allState[active]; saveAllState(allState);
+      const remaining = Object.keys(hist);
+      saveActive(remaining.length ? remaining.sort((a,b) => weekNumKey(b)-weekNumKey(a))[0] : "");
       renderCheckIn();
     });
     document.getElementById("checkinExportBtn").addEventListener("click", () => {
-      const po = loadPO(); if(!po){ alert("Import a PO Analysis first."); return; }
-      const st = loadPOState();
-      const rows = po.rows.map(r => {
+      const hist = loadHist(); const active = loadActive(); const rec = hist[active];
+      if(!rec){ alert("Import a PO Analysis first."); return; }
+      const st = stateForWeek(active);
+      const rows = rec.rows.map(r => {
         const s = st[poRowKey(r)] || {};
-        return { Vendor:r.vendor, "Item Description":r.desc, "PO Number":r.po, Ordered:r.ordered, Received:r.received, Open:r.open, Details:r.comment, CheckedIn:s.checked?"YES":"NO", Notes:s.notes||"" };
+        return { Week:rec.label, Vendor:r.vendor, "Item Description":r.desc, "PO Number":r.po, Ordered:r.ordered, Received:r.received, Open:r.open, Details:r.comment, CheckedIn:s.checked?"YES":"NO", Notes:s.notes||"" };
       });
-      downloadCSV("order-checkin.csv", rows, ["Vendor","Item Description","PO Number","Ordered","Received","Open","Details","CheckedIn","Notes"]);
+      downloadCSV(`order-checkin_${rec.label.replace(/\s+/g,"-")}.csv`, rows, ["Week","Vendor","Item Description","PO Number","Ordered","Received","Open","Details","CheckedIn","Notes"]);
     });
 
-    function checkinSummaryHTML(po, done){
-      const when = new Date(po.importedAt).toLocaleString();
-      return `Imported <strong>${escapeHtml(po.fileName)}</strong> · ${po.rows.length} line(s) · <strong>${done}</strong> checked in · ${escapeHtml(when)}`;
+    function checkinSummaryHTML(){
+      const hist = loadHist(); const active = loadActive(); const rec = hist[active];
+      if(!rec) return 'Import the weekly <strong>PO Analysis</strong> spreadsheet, then check items in as they arrive and add notes per line.';
+      const st = stateForWeek(active);
+      const done = rec.rows.filter(r => (st[poRowKey(r)] || {}).checked).length;
+      const nWeeks = Object.keys(hist).length;
+      const when = new Date(rec.importedAt).toLocaleString();
+      return `<strong>${escapeHtml(rec.label)}</strong> · ${escapeHtml(rec.fileName)} · ${rec.rows.length} line(s) · <strong>${done}</strong> checked in · imported ${escapeHtml(when)} · ${nWeeks} week(s) in history`;
+    }
+    function refreshCheckinWeeks(){
+      const hist = loadHist();
+      const keys = Object.keys(hist).sort((a,b) => weekNumKey(b) - weekNumKey(a));
+      checkinWeekSelect.innerHTML = keys.map(k => `<option value="${escapeHtml(k)}">${escapeHtml(hist[k].label)}</option>`).join("");
+      checkinWeekSelect.style.display = keys.length ? "" : "none";
+      const active = loadActive();
+      if(active && hist[active]) checkinWeekSelect.value = active;
+      else if(keys.length){ saveActive(keys[0]); checkinWeekSelect.value = keys[0]; }
     }
     function renderCheckIn(){
-      const po = loadPO();
+      migratePOHistory();
+      refreshCheckinWeeks();
       const note = document.getElementById("checkinNote");
+      const hist = loadHist(); const active = loadActive(); const rec = hist[active];
       checkinWrap.innerHTML = "";
-      if(!po){
-        note.innerHTML = 'Import the weekly <strong>PO Analysis</strong> spreadsheet, then check items in as they arrive and add notes per line.';
-        checkinWrap.innerHTML = '<div class="linkCard"><div class="linkCardIcon">📥</div><div><div class="linkCardTitle">No PO Analysis imported</div><div class="note">Click <strong>⬆ Import PO Analysis</strong> and choose your weekly <em>WK_##_PO_ANALYSIS.xlsx</em>. Every line becomes a check-in row with a checkbox and a notes field.</div></div></div>';
+      note.innerHTML = checkinSummaryHTML();
+      if(!rec){
+        checkinWrap.innerHTML = '<div class="linkCard"><div class="linkCardIcon">📥</div><div><div class="linkCardTitle">No PO Analysis imported</div><div class="note">Click <strong>⬆ Import PO Analysis</strong> and choose your weekly <em>WK_##_PO_ANALYSIS.xlsx</em>. Each week you import is kept in history — use the week dropdown to switch between them.</div></div></div>';
         return;
       }
       const vFilter = (document.getElementById("checkinVendorFilter").value || "").trim().toLowerCase();
       const iFilter = (document.getElementById("checkinItemFilter").value || "").trim().toLowerCase();
-      let rows = po.rows.slice();
+      let rows = rec.rows.slice();
       if(vFilter) rows = rows.filter(r => r.vendor.toLowerCase().includes(vFilter));
       if(iFilter) rows = rows.filter(r => (r.desc + " " + r.comment + " " + r.po).toLowerCase().includes(iFilter));
-      const st = loadPOState();
-      const done = po.rows.filter(r => (st[poRowKey(r)] || {}).checked).length;
-      note.innerHTML = checkinSummaryHTML(po, done);
+      const st = stateForWeek(active);
 
+      const scroll = document.createElement("div");
+      scroll.className = "poTableScroll";
       const table = document.createElement("table");
       table.className = "poTable";
       table.innerHTML = `
@@ -3250,18 +3318,18 @@
           <td><textarea class="poNotes" placeholder="Notes...">${escapeHtml(s.notes || "")}</textarea></td>`;
         const chk = tr.querySelector(".poChk");
         const notesEl = tr.querySelector(".poNotes");
-        const persist = () => { const all = loadPOState(); all[key] = { checked: chk.checked, notes: notesEl.value }; savePOState(all); };
+        const persist = () => { const obj = stateForWeek(active); obj[key] = { checked: chk.checked, notes: notesEl.value }; setStateForWeek(active, obj); };
         chk.addEventListener("change", () => {
           tr.classList.toggle("poChecked", chk.checked);
           persist();
-          const d = po.rows.filter(x => (loadPOState()[poRowKey(x)] || {}).checked).length;
-          note.innerHTML = checkinSummaryHTML(po, d);
+          note.innerHTML = checkinSummaryHTML();
           markTabChanged("checkin");
         });
         notesEl.addEventListener("input", persist);
         tb.appendChild(tr);
       });
-      checkinWrap.appendChild(table);
+      scroll.appendChild(table);
+      checkinWrap.appendChild(scroll);
     }
 
     /*********************************************************
@@ -3504,8 +3572,8 @@
           a:"The Photo Library has two tabs: Plant Catalog (houseplant reference) and Order Photos (your tagged order pictures). On Order Photos, drag-and-drop or click \u201c+ Add Photos\u201d and tag by week, vendor, truck and item." },
         { k:["import","po analysis","import po","upload spreadsheet","import spreadsheet","load po","po file","import button"],
           a:"On Order Check-In, click \u201c\u2b06 Import PO Analysis\u201d and choose your weekly WK_##_PO_ANALYSIS.xlsx. Every PO line becomes a row \u2014 Vendor, Item Description, PO #, Ordered, Received, Open and the full PO Line Comment \u2014 each with a check box and a notes field that save automatically. \u201cClear Import\u201d removes it; \u201cExport CSV\u201d saves your checked/notes." },
-        { k:["check-in","checkin","check in","verify","receiving","received","order check"],
-          a:"Order Check-In is driven by the imported PO Analysis. Hit \u201c\u2b06 Import PO Analysis\u201d to load the week's spreadsheet, then tick each line in as it arrives and type notes \u2014 both save instantly. Use the vendor/item filters to focus and \u201cExport CSV\u201d to share progress." },
+        { k:["check-in","checkin","check in","verify","receiving","received","order check","history","past week","previous week"],
+          a:"Order Check-In runs off the imported PO Analysis. Hit \u201c\u2b06 Import PO Analysis\u201d to load a week's spreadsheet, then tick each line in as it arrives and type notes \u2014 both save instantly. Every week you import is kept in history: use the week dropdown in the toolbar to flip between past weeks. Filter by vendor/item, \u201cExport CSV\u201d to share, or \u201cClear This Week\u201d to drop just that one." },
         { k:["issue","issues","issue tracker","problem","pest","spec","quality","shortage","damage","delivery"],
           a:"The Issue Tracker logs problems against orders. Types include Pest and Spec/Quality (plus Shortage, Damage, Delivery, Other). On a new issue you can attach an existing Library photo or upload a brand-new photo right there." },
         { k:["issue photo","upload issue","attach photo","photo issue","issue picture"],
@@ -3731,6 +3799,152 @@
     })();
 
     /*********************************************************
+     * Team Sync (Firebase Firestore) — optional live shared data
+     *  - localStorage stays the local cache (app works offline)
+     *  - each synced key is mirrored to hubs/{team}/keys/{key}
+     *  - last write wins; large blobs (photos) stay local-only
+     *********************************************************/
+    const FIREBASE_CONFIG = {
+      apiKey: "AIzaSyCS-vj-hmcQ7k9xFk0dWTx4r6s6KoTmp8g",
+      authDomain: "hpa-hub-b8d2b.firebaseapp.com",
+      projectId: "hpa-hub-b8d2b",
+      storageBucket: "hpa-hub-b8d2b.firebasestorage.app",
+      messagingSenderId: "971980325280",
+      appId: "1:971980325280:web:16fa23ee87c8eda59524c5",
+      measurementId: "G-BXV7P9HJ9J"
+    };
+    // Operational, team-relevant data. Photos/thumbs are intentionally excluded
+    // (too large for Firestore's 1MB/doc limit — they'd need Firebase Storage).
+    const SYNC_KEYS = [
+      LS.trucksKey, LS.issuesKey, LS.poHistKey, LS.poStateKey, LS.poActiveKey,
+      LS.trainingKey, LS.availLinkKey, LS.catalogKey, LS.checkinKey,
+      LS.availKey, LS.availOrdersKey
+    ];
+    const MAX_SYNC_BYTES = 900000; // stay under Firestore's ~1MB document cap
+
+    const Sync = {
+      ready:false, starting:false, fs:null, db:null, col:null,
+      clientId: Math.random().toString(36).slice(2),
+      user:"someone", _t:{}, _seeded:false, _warned:{},
+      teamCode(){ return (LS.get(LS.teamKey, "") || "main"); },
+      setStatus(state, text){
+        const el = document.getElementById("syncChip");
+        if(!el) return;
+        const dot = state==="on" ? "🟢 " : state==="connecting" ? "🟡 " : "⚪ ";
+        el.textContent = dot + (text || ("Sync: " + state));
+        el.dataset.state = state;
+      },
+      async init(user){
+        if(this.ready || this.starting) return;
+        if(user && user.name) this.user = user.name;
+        if(location.protocol === "file:"){ this.setStatus("off", "Sync: off (open the hosted link)"); return; }
+        this.starting = true;
+        this.setStatus("connecting", "Sync: connecting…");
+        try{
+          const appMod = await import("https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js");
+          const fs = await import("https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js");
+          const app = appMod.initializeApp(FIREBASE_CONFIG);
+          let db;
+          try {
+            db = fs.initializeFirestore(app, { localCache: fs.persistentLocalCache({ tabManager: fs.persistentMultipleTabManager() }) });
+          } catch(e){ db = fs.getFirestore(app); }
+          this.fs = fs; this.db = db;
+          this.col = fs.collection(db, "hubs", this.teamCode(), "keys");
+          this.ready = true; this._seeded = false;
+          this.subscribe();
+          this.setStatus("on", "Sync: on · " + this.teamCode());
+        } catch(err){
+          this.setStatus("off", "Sync: offline");
+        } finally { this.starting = false; }
+      },
+      subscribe(){
+        const { onSnapshot } = this.fs;
+        if(this._unsub){ try{ this._unsub(); }catch(e){} }
+        this._unsub = onSnapshot(this.col, (snap) => {
+          snap.docChanges().forEach(ch => {
+            if(ch.type === "removed") return;
+            this.applyRemote(ch.doc.id, ch.doc.data());
+          });
+          if(!this._seeded){ this._seeded = true; this.seedMissing(snap); }
+        }, (err) => { this.setStatus("off", "Sync: error"); });
+      },
+      seedMissing(snap){
+        const present = new Set(); snap.forEach(d => present.add(d.id));
+        SYNC_KEYS.forEach(key => {
+          if(!present.has(key) && localStorage.getItem(key) != null) this.push(key);
+        });
+      },
+      applyRemote(key, data){
+        if(!data || typeof data.value !== "string") return;
+        if(SYNC_KEYS.indexOf(key) === -1) return;
+        const local = localStorage.getItem(key);
+        if(local === data.value) return;          // already in sync — no loop
+        try { localStorage.setItem(key, data.value); } catch(e){ return; } // direct write: no re-push
+        this.rerender(key);
+      },
+      onLocalSet(key){ this.push(key); },
+      push(key){
+        if(!this.ready) return;
+        if(SYNC_KEYS.indexOf(key) === -1) return;
+        clearTimeout(this._t[key]);
+        this._t[key] = setTimeout(() => this._pushNow(key), 600);
+      },
+      async _pushNow(key){
+        if(!this.ready) return;
+        try{
+          const val = localStorage.getItem(key);
+          if(val == null) return;
+          if(val.length > MAX_SYNC_BYTES){
+            if(!this._warned[key]){ this._warned[key] = true; console.warn("Sync: '"+key+"' too large to sync; kept local only."); }
+            return;
+          }
+          const { doc, setDoc } = this.fs;
+          await setDoc(doc(this.col, key), { value: val, updatedAt: Date.now(), by: this.user, client: this.clientId });
+        } catch(e){ /* offline: Firestore queues and retries from its cache */ }
+      },
+      rerender(key){
+        try { if(typeof refreshNotifDots === "function") refreshNotifDots(); } catch(e){}
+        const k = (typeof currentPage !== "undefined") ? currentPage : null;
+        try {
+          if(k === "order" && (key === LS.trucksKey)) renderOrder();
+          else if(k === "issues" && key === LS.issuesKey) renderIssues();
+          else if(k === "checkin" && [LS.poHistKey,LS.poStateKey,LS.poActiveKey].indexOf(key) !== -1) renderCheckIn();
+          else if(k === "training" && key === LS.trainingKey) renderTraining();
+          else if(k === "photos" && key === LS.catalogKey) renderPhotosTab();
+          else if(k === "avail" && key === LS.availLinkKey) refreshAvailLinkUI();
+        } catch(e){}
+      },
+      async changeTeam(){
+        const cur = this.teamCode();
+        const code = prompt("Team code — everyone who enters the same code shares the same live data:", cur);
+        if(code === null) return;
+        const clean = code.trim().replace(/[^A-Za-z0-9_-]/g, "") || "main";
+        LS.set(LS.teamKey, clean);
+        // restart sync against the new team
+        this.ready = false; this._seeded = false;
+        if(this._unsub){ try{ this._unsub(); }catch(e){} this._unsub = null; }
+        this.starting = false;
+        this.init({ name: this.user });
+      }
+    };
+    window.HPASync = Sync;
+    (function wireSyncChip(){
+      const el = document.getElementById("syncChip");
+      if(!el) return;
+      el.addEventListener("click", () => Sync.changeTeam());
+      el.addEventListener("keydown", (e) => { if(e.key === "Enter" || e.key === " "){ e.preventDefault(); Sync.changeTeam(); } });
+    })();
+
+    /*********************************************************
+     * Service worker (offline + installable when hosted over https)
+     *********************************************************/
+    if("serviceWorker" in navigator && location.protocol === "https:"){
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("sw.js").catch(() => {});
+      });
+    }
+
+    /*********************************************************
      * Boot
      *********************************************************/
     (function boot(){
@@ -3743,6 +3957,7 @@
         showPage("order");
         refreshAvailLinkUI();
         ensureNotifyPermission();
+        Sync.init(u);
         if(window.IGGY){ window.IGGY.show(); window.IGGY.schedule(); }
       } else {
         showScreen(splash);
