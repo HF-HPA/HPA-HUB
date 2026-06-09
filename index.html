@@ -119,6 +119,103 @@
     .grain{ display:none; }
 
     /* =========================================================
+       IGGY — the sassy background iguana
+       ========================================================= */
+    #iggy{
+      position:fixed;
+      left:0; top:0;
+      width:150px; height:70px;
+      z-index:25;                /* above panels so he's fully visible; pointer-events off so he never blocks clicks */
+      pointer-events:none;
+      opacity:0;                 /* hidden until JS sends him out */
+      transform:translate(-200px, 200px);
+      will-change:transform, opacity;
+    }
+    #iggy.visible{ opacity:1; }
+    /* facing direction: flip horizontally when walking left */
+    #iggy.flip .iggyBody{ transform:scaleX(-1); }
+
+    .iggyBody{
+      width:100%; height:100%;
+      display:block;
+      filter:drop-shadow(0 6px 8px rgba(0,0,0,.35));
+      transform-origin:center;
+    }
+
+    /* gentle body bob while walking */
+    #iggy.walking .iggyBody{ animation:igBob .42s ease-in-out infinite; }
+    @keyframes igBob{
+      0%,100%{ transform:translateY(0) scaleX(var(--igdir,1)); }
+      50%{ transform:translateY(-2px) scaleX(var(--igdir,1)); }
+    }
+    /* flip handling via CSS var so bob keeps the facing */
+    #iggy.flip{ --igdir:-1; }
+    #iggy:not(.flip){ --igdir:1; }
+    #iggy.flip .iggyBody{ transform:scaleX(-1); }
+
+    /* legs shuffle */
+    #iggy.walking .ig-leg-front{ animation:igStepA .42s ease-in-out infinite; transform-origin:185px 86px; }
+    #iggy.walking .ig-leg-back{ animation:igStepB .42s ease-in-out infinite; transform-origin:135px 86px; }
+    @keyframes igStepA{ 0%,100%{ transform:rotate(-12deg); } 50%{ transform:rotate(12deg); } }
+    @keyframes igStepB{ 0%,100%{ transform:rotate(12deg); } 50%{ transform:rotate(-12deg); } }
+
+    /* tail sway, always alive */
+    .ig-tail{ transform-origin:70px 64px; animation:igTail 1.4s ease-in-out infinite; }
+    @keyframes igTail{ 0%,100%{ transform:rotate(-6deg); } 50%{ transform:rotate(7deg); } }
+    #iggy.sassy .ig-tail{ animation:igTailFlick .5s ease-in-out 2; }
+    @keyframes igTailFlick{ 0%,100%{ transform:rotate(-6deg); } 30%{ transform:rotate(-22deg); } 60%{ transform:rotate(10deg); } }
+
+    /* blink / heavy-lidded sass */
+    .ig-lid{ transform-origin:234px 60px; transform:scaleY(0); animation:igBlink 5.5s ease-in-out infinite; }
+    @keyframes igBlink{ 0%,92%,100%{ transform:scaleY(0); } 95%{ transform:scaleY(1.3); } }
+    #iggy.sassy .ig-lid{ animation:igSideEye 1.6s ease-in-out 1; }
+    @keyframes igSideEye{ 0%,100%{ transform:scaleY(0); } 25%,75%{ transform:scaleY(.7); } }
+
+    /* head tilt when looking around */
+    .ig-head{ transform-origin:212px 64px; }
+    #iggy.looking .ig-head{ animation:igTilt 1.6s ease-in-out 1; }
+    @keyframes igTilt{ 0%,100%{ transform:rotate(0); } 35%{ transform:rotate(-12deg); } 70%{ transform:rotate(6deg); } }
+
+    /* dewlap throb when sassy */
+    #iggy.sassy .ig-dewlap{ animation:igDewlap .4s ease-in-out 2; transform-origin:228px 80px; }
+    @keyframes igDewlap{ 0%,100%{ transform:scaleY(1); } 50%{ transform:scaleY(1.5); } }
+
+    /* thought bubble */
+    .iggyBubble{
+      position:absolute;
+      left:60%; bottom:74%;
+      min-width:90px; max-width:200px;
+      padding:8px 12px;
+      background:#fffdf6;
+      color:#19261f;
+      border:1.5px solid #1a2b22;
+      border-radius:14px;
+      font-family:var(--sans, system-ui);
+      font-size:13px; font-weight:600;
+      line-height:1.3;
+      text-align:center;
+      white-space:normal;
+      opacity:0; transform:translateY(6px) scale(.9);
+      transition:opacity .25s ease, transform .25s ease;
+      box-shadow:0 6px 16px rgba(0,0,0,.25);
+    }
+    .iggyBubble::after{   /* little tail of the bubble */
+      content:""; position:absolute; left:18px; bottom:-8px;
+      width:0; height:0;
+      border:7px solid transparent;
+      border-top-color:#fffdf6;
+      filter:drop-shadow(0 1.5px 0 #1a2b22);
+    }
+    .iggyBubble.show{ opacity:1; transform:translateY(0) scale(1); }
+    /* when Iggy faces left, bubble sits on the other side */
+    #iggy.flip .iggyBubble{ left:auto; right:60%; }
+    #iggy.flip .iggyBubble::after{ left:auto; right:18px; }
+
+    @media (prefers-reduced-motion: reduce){
+      #iggy{ display:none !important; }
+    }
+
+    /* =========================================================
        SCREENS
        ========================================================= */
     .screen{ position:absolute; inset:0; display:none; align-items:center; justify-content:center; padding:22px; z-index:1; }
@@ -663,6 +760,45 @@
   <div class="grain" aria-hidden="true"></div>
   <div class="mist" aria-hidden="true"></div>
   <div class="rays" aria-hidden="true"></div>
+
+  <!-- Iggy the sassy iguana — roams the background -->
+  <div id="iggy" aria-hidden="true">
+    <div class="iggyBubble" id="iggyBubble"></div>
+    <svg class="iggyBody" viewBox="0 0 260 120" xmlns="http://www.w3.org/2000/svg">
+      <!-- tail -->
+      <path class="ig-tail" d="M70 70 Q30 70 18 52 Q8 38 24 34 Q34 32 36 44 Q38 56 70 58 Z"
+            fill="#3a9d5d"/>
+      <!-- back legs -->
+      <g class="ig-leg ig-leg-back">
+        <path d="M150 86 q6 16 -2 26 q-3 4 -8 1 q-3 -2 -1 -7 l4 -18 z" fill="#2f7d4a"/>
+        <path d="M118 88 q5 16 -3 25 q-3 4 -8 1 q-3 -2 -1 -7 l5 -17 z" fill="#2f7d4a"/>
+      </g>
+      <!-- body -->
+      <path class="ig-body" d="M70 58 Q72 40 110 38 L176 40 Q210 42 214 64 Q214 86 176 88 L110 90 Q72 88 70 70 Z"
+            fill="#46b06a"/>
+      <!-- dorsal crest spikes -->
+      <path class="ig-crest" d="M96 39 l5 -12 l5 12 z M112 38 l5 -13 l5 13 z M130 38 l5 -12 l5 12 z M148 39 l5 -11 l5 11 z M166 40 l4 -10 l5 10 z"
+            fill="#2f7d4a"/>
+      <!-- front legs -->
+      <g class="ig-leg ig-leg-front">
+        <path d="M196 86 q6 16 -2 26 q-3 4 -8 1 q-3 -2 -1 -7 l4 -18 z" fill="#3a9d5d"/>
+        <path d="M168 88 q5 16 -3 25 q-3 4 -8 1 q-3 -2 -1 -7 l5 -17 z" fill="#3a9d5d"/>
+      </g>
+      <!-- head -->
+      <g class="ig-head">
+        <path d="M210 50 Q244 46 252 62 Q254 72 244 78 Q224 86 210 78 Q202 64 210 50 Z" fill="#54c178"/>
+        <!-- dewlap (throat flap) -->
+        <path class="ig-dewlap" d="M222 80 Q224 96 234 98 Q240 98 238 90 Q236 82 230 80 Z" fill="#3a9d5d"/>
+        <!-- eye: heavy-lidded, unimpressed -->
+        <circle cx="234" cy="60" r="6.5" fill="#fff"/>
+        <circle class="ig-pupil" cx="236" cy="61" r="3.4" fill="#1a2b22"/>
+        <path class="ig-lid" d="M227 57 Q234 52 241 57 L241 60 Q234 56 227 60 Z" fill="#46b06a"/>
+        <!-- nostril + mouth -->
+        <circle cx="249" cy="64" r="1.4" fill="#1a2b22"/>
+        <path d="M240 72 Q248 74 252 71" stroke="#2f7d4a" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+      </g>
+    </svg>
+  </div>
 
   <div class="topbar">
     <div id="statusChip" class="chip subtle">Cinematic Jungle</div>
@@ -1315,6 +1451,7 @@
       showScreen(app);
       renderAll();
       showPage("order");
+      if(window.IGGY) window.IGGY.schedule();
     });
 
     document.getElementById("logoutBtn").addEventListener("click", () => {
@@ -3406,6 +3543,137 @@
     }
 
     /*********************************************************
+     * IGGY — sassy background iguana
+     *********************************************************/
+    (function(){
+      const iggy = document.getElementById("iggy");
+      const bubble = document.getElementById("iggyBubble");
+      if(!iggy) return;
+
+      const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if(reduce) return;
+
+      // Sassy one-liners — pulled at random during a stroll.
+      const LINES = [
+        "ugh, paperwork again?",
+        "you call THAT a rack count?",
+        "I run this jungle, btw.",
+        "mmm, warm screen. cozy.",
+        "another truck? groundbreaking.",
+        "did someone say snacks?",
+        "I'm not lazy, I'm solar-powered.",
+        "Apopka again? bold choice.",
+        "checking inventory… nope, still fabulous.",
+        "tell PID I said hi.",
+        "10 outta 10 would bask again.",
+        "this dock doesn't run itself, people.",
+        "I've seen those numbers. concerning.",
+        "excuse me, VIP iguana coming through.",
+        "where are my bromeliads??",
+        "don't mind me, just judging silently."
+      ];
+
+      const W = () => window.innerWidth;
+      const H = () => window.innerHeight;
+      let busy = false;
+
+      function setPos(x, y){ iggy.style.transform = `translate(${x}px, ${y}px)`; }
+
+      function say(text, ms){
+        bubble.textContent = text;
+        bubble.classList.add("show");
+        clearTimeout(say._t);
+        say._t = setTimeout(() => bubble.classList.remove("show"), ms || 2600);
+      }
+
+      function pickY(){
+        // crawl along the bottom edge of the window like a lizard on a sill —
+        // fully visible, and low enough that it doesn't sit over the data you're reading.
+        const h = H();
+        return h - 78 - Math.random() * 14;
+      }
+
+      // A stroll: enter from one side, do a couple of personality beats, exit.
+      function stroll(){
+        if(busy || document.hidden) { schedule(); return; }
+        // only roam when the app screen is active
+        if(!document.getElementById("app").classList.contains("active")){ schedule(); return; }
+        busy = true;
+
+        const leftToRight = Math.random() < 0.5;
+        const y = pickY();
+        const startX = leftToRight ? -180 : W() + 30;
+        const endX   = leftToRight ? W() + 30 : -180;
+        const midX   = leftToRight ? W() * (0.35 + Math.random()*0.3) : W() * (0.35 + Math.random()*0.3);
+
+        iggy.classList.toggle("flip", !leftToRight); // face travel direction
+        setPos(startX, y);
+        iggy.classList.add("visible");
+
+        const speed = 90; // px/sec-ish feel via transition durations
+        const seg1 = Math.abs(midX - startX) / speed;
+        const seg2 = Math.abs(endX - midX) / speed;
+
+        // walk to midpoint
+        iggy.classList.add("walking");
+        iggy.style.transition = `transform ${seg1.toFixed(2)}s linear`;
+        requestAnimationFrame(() => setPos(midX, y));
+
+        // at midpoint: stop, look around, maybe get sassy + speak
+        setTimeout(() => {
+          iggy.classList.remove("walking");
+          iggy.style.transition = "transform .3s ease";
+          iggy.classList.add("looking");
+
+          const beSassy = Math.random() < 0.85;
+          if(beSassy){
+            setTimeout(() => {
+              iggy.classList.add("sassy");
+              say(LINES[Math.floor(Math.random()*LINES.length)], 2800);
+              setTimeout(() => iggy.classList.remove("sassy"), 1800);
+            }, 500);
+          }
+          iggy.classList.remove("looking");
+          void iggy.offsetWidth;
+          iggy.classList.add("looking");
+
+          // pause, then continue to exit
+          const pause = beSassy ? 3200 : 1200;
+          setTimeout(() => {
+            iggy.classList.remove("looking");
+            iggy.classList.add("walking");
+            iggy.style.transition = `transform ${seg2.toFixed(2)}s linear`;
+            setPos(endX, y);
+            setTimeout(() => {
+              iggy.classList.remove("walking");
+              iggy.classList.remove("visible");
+              busy = false;
+              schedule();
+            }, seg2 * 1000 + 100);
+          }, pause);
+        }, seg1 * 1000 + 60);
+      }
+
+      function schedule(){
+        // ~ every 30s, with a little randomness so he feels spontaneous
+        const delay = 26000 + Math.random() * 9000;
+        clearTimeout(schedule._t);
+        schedule._t = setTimeout(stroll, delay);
+      }
+
+      // first appearance shortly after the app opens
+      iggy._kickoff = () => { clearTimeout(iggy._kt); iggy._kt = setTimeout(stroll, 6000); };
+
+      // pause his timers when tab is hidden, resume when back
+      document.addEventListener("visibilitychange", () => {
+        if(document.hidden){ clearTimeout(schedule._t); }
+        else if(!busy){ schedule(); }
+      });
+
+      window.IGGY = { stroll, schedule };  // expose for boot to kick off
+    })();
+
+    /*********************************************************
      * Boot
      *********************************************************/
     const user = getUser();
@@ -3415,6 +3683,7 @@
       statusChip.textContent = "Ready";
       renderAll();
       showPage("order");
+      if(window.IGGY) window.IGGY.schedule();
     } else {
       showScreen(splash);
       statusChip.textContent = "Cinematic Jungle";
