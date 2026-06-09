@@ -1390,6 +1390,11 @@
     truckModal.addEventListener("click", (e) => { if(e.target === truckModal) closeTruckModal(); });
     addVendorBtn.addEventListener("click", () => addVendorBlock());
 
+    // Changing location or order type re-renders the item columns
+    // (Apopka adds a Shelves column; CC Racks/Pallets & Pallets add a unit dropdown).
+    document.getElementById("t_region").addEventListener("change", rebuildItemColumns);
+    document.getElementById("t_type").addEventListener("change", rebuildItemColumns);
+
     function normalizeOrderType(truck){
       const note = (truck?.notes || "").toLowerCase();
       if(note.includes("floor")) return "FLOOR STACK";
@@ -1426,7 +1431,9 @@
             racks: x.racks,
             cases: x.cases ?? "",
             qty: x.qty,
-            notes: x.notes
+            notes: x.notes,
+            unit: x.unit ?? "",
+            shelves: x.shelves ?? ""
           }))
         }));
       } else {
@@ -1442,6 +1449,33 @@
       truckModal.classList.remove("active");
       truckModal.setAttribute("aria-hidden","true");
       editingTruckId = null;
+    }
+
+    // Read current order context (affects which item columns show)
+    function currentOrderType(){ return document.getElementById("t_type").value; }
+    function currentRegion(){ return document.getElementById("t_region").value; }
+    function typeUsesUnitChoice(){
+      const t = currentOrderType();
+      return t === "CC RACKS/PALLETS" || t === "PALLETS";
+    }
+    function regionUsesShelves(){ return currentRegion() === "Apopka"; }
+
+    // Build the items-table header to match the current context.
+    function itemsHeaderHTML(){
+      const rackCol = typeUsesUnitChoice()
+        ? `<th style="width:16%;">Unit / Count</th>`
+        : `<th style="width:12%;">CC Rack Count</th>`;
+      const shelvesCol = regionUsesShelves() ? `<th style="width:10%;">Shelves</th>` : ``;
+      return `
+        <tr>
+          <th style="width:32%;">Item</th>
+          ${rackCol}
+          ${shelvesCol}
+          <th style="width:11%;">Case Count</th>
+          <th style="width:11%;">Plant Qty</th>
+          <th>Notes</th>
+          <th style="width:1%;"></th>
+        </tr>`;
     }
 
     function addVendorBlock(vendorObj = { name:"", po:"", status:"Confirmed", items:[{ item:"", racks:"", cases:"", qty:"", notes:"" }] }){
@@ -1465,16 +1499,7 @@
         </div>
 
         <table class="itemsTable">
-          <thead>
-            <tr>
-              <th style="width:36%;">Item</th>
-              <th style="width:12%;">CC Rack Count</th>
-              <th style="width:12%;">Case Count</th>
-              <th style="width:12%;">Plant Qty</th>
-              <th>Notes</th>
-              <th style="width:1%;"></th>
-            </tr>
-          </thead>
+          <thead>${itemsHeaderHTML()}</thead>
           <tbody></tbody>
         </table>
       `;
@@ -1500,16 +1525,77 @@
       recalcTotals();
     }
 
+    // Rebuild every vendor block's header + rows to match the current context,
+    // preserving whatever the user has typed so far.
+    function rebuildItemColumns(){
+      const blocks = Array.from(vendorWrap.querySelectorAll(".vendorBlock"));
+      const data = blocks.map(readVendorBlock);
+      vendorWrap.innerHTML = "";
+      if(data.length === 0){ addVendorBlock(); return; }
+      data.forEach(vb => addVendorBlock(vb));
+      recalcTotals();
+    }
+
+    // Pull current values out of a vendor block (used when rebuilding columns/saving)
+    function readVendorBlock(block){
+      const name = block.querySelector(".v_name").value.trim();
+      const po = block.querySelector(".v_po").value.trim();
+      const status = block.querySelector(".v_status").value;
+      const items = [];
+      block.querySelectorAll("tbody tr").forEach(tr => {
+        const item = tr.querySelector(".it_item").value.trim();
+        const racks = Number(tr.querySelector(".it_racks")?.value || 0);
+        const cases = Number(tr.querySelector(".it_cases").value || 0);
+        const qty = Number(tr.querySelector(".it_qty").value || 0);
+        const lineNotes = tr.querySelector(".it_notes").value.trim();
+        const unitSel = tr.querySelector(".it_unit");
+        const unit = unitSel ? unitSel.value : "";
+        const shelvesEl = tr.querySelector(".it_shelves");
+        const shelves = shelvesEl ? Number(shelvesEl.value || 0) : undefined;
+        items.push({ item, racks, cases, qty, notes: lineNotes, unit, shelves });
+      });
+      return { name, po, status, items };
+    }
+
     function addItemRowToVendor(tbody, itemObj){
       const tr = document.createElement("tr");
+
+      // Rack/Unit cell: either a plain rack count, or a unit dropdown + count.
+      let rackCell;
+      if(typeUsesUnitChoice()){
+        const unit = itemObj.unit || "CC Rack";
+        rackCell = `
+          <td>
+            <select class="it_unit" style="margin-bottom:4px;">
+              <option ${unit==="CC Rack"?"selected":""}>CC Rack</option>
+              <option ${unit==="Pallet"?"selected":""}>Pallet</option>
+            </select>
+            <input class="it_racks" type="number" step="1" placeholder="0" value="${escapeHtml(itemObj.racks ?? "")}">
+          </td>`;
+      } else {
+        rackCell = `<td><input class="it_racks" type="number" step="1" placeholder="0" value="${escapeHtml(itemObj.racks ?? "")}"></td>`;
+      }
+
+      // Shelves cell (Apopka only): manual shelves + auto-posts readout.
+      let shelvesCell = "";
+      if(regionUsesShelves()){
+        shelvesCell = `
+          <td>
+            <input class="it_shelves" type="number" step="1" placeholder="0" value="${escapeHtml(itemObj.shelves ?? "")}">
+            <div class="autoPosts" style="font-size:11px; color:var(--ink-2); margin-top:3px;">Posts: 0</div>
+          </td>`;
+      }
+
       tr.innerHTML = `
         <td><input class="it_item" placeholder='e.g., 6" MONSTERA' value="${escapeHtml(itemObj.item ?? "")}"></td>
-        <td><input class="it_racks" type="number" step="1" placeholder="0" value="${escapeHtml(itemObj.racks ?? "")}"></td>
+        ${rackCell}
+        ${shelvesCell}
         <td><input class="it_cases" type="number" step="1" placeholder="0" value="${escapeHtml(itemObj.cases ?? "")}"></td>
         <td><input class="it_qty" type="number" step="1" placeholder="0" value="${escapeHtml(itemObj.qty ?? "")}"></td>
         <td><input class="it_notes" placeholder="Line notes (optional)" value="${escapeHtml(itemObj.notes ?? "")}"></td>
         <td><button class="tinyBtn danger" title="Remove item">✕</button></td>
       `;
+
       tr.querySelector("button").addEventListener("click", () => {
         tr.remove();
         if(tbody.children.length === 0){
@@ -1517,10 +1603,22 @@
         }
         recalcTotals();
       });
-      tr.querySelectorAll("input").forEach(inp => {
-        inp.addEventListener("input", recalcTotals);
-        inp.addEventListener("change", recalcTotals);
+
+      // Keep the auto-posts readout (4 × racks) live on Apopka rows.
+      const updateAutoPosts = () => {
+        const postsEl = tr.querySelector(".autoPosts");
+        if(postsEl){
+          const racks = Number(tr.querySelector(".it_racks")?.value || 0);
+          postsEl.textContent = `Posts: ${racks * 4}`;
+        }
+      };
+      updateAutoPosts();
+
+      tr.querySelectorAll("input, select").forEach(inp => {
+        inp.addEventListener("input", () => { updateAutoPosts(); recalcTotals(); });
+        inp.addEventListener("change", () => { updateAutoPosts(); recalcTotals(); });
       });
+
       tbody.appendChild(tr);
     }
 
@@ -1528,7 +1626,7 @@
       let racks = 0, cases = 0, qty = 0;
       vendorWrap.querySelectorAll(".vendorBlock").forEach(block => {
         block.querySelectorAll("tbody tr").forEach(tr => {
-          racks += Number(tr.querySelector(".it_racks").value || 0);
+          racks += Number(tr.querySelector(".it_racks")?.value || 0);
           cases += Number(tr.querySelector(".it_cases").value || 0);
           qty   += Number(tr.querySelector(".it_qty").value || 0);
         });
@@ -1558,12 +1656,19 @@
         const items = [];
         block.querySelectorAll("tbody tr").forEach(tr => {
           const item = tr.querySelector(".it_item").value.trim();
-          const racks = Number(tr.querySelector(".it_racks").value || 0);
+          const racks = Number(tr.querySelector(".it_racks")?.value || 0);
           const cases = Number(tr.querySelector(".it_cases").value || 0);
           const qty = Number(tr.querySelector(".it_qty").value || 0);
           const lineNotes = tr.querySelector(".it_notes").value.trim();
-          if(item || racks || cases || qty || lineNotes){
-            items.push({ item, racks, cases, qty, notes: lineNotes });
+          const unitSel = tr.querySelector(".it_unit");
+          const unit = unitSel ? unitSel.value : "";          // "CC Rack" / "Pallet" or ""
+          const shelvesEl = tr.querySelector(".it_shelves");
+          const shelves = shelvesEl ? Number(shelvesEl.value || 0) : undefined;
+          if(item || racks || cases || qty || lineNotes || shelves){
+            const rec = { item, racks, cases, qty, notes: lineNotes };
+            if(unit) rec.unit = unit;
+            if(shelves !== undefined) rec.shelves = shelves;
+            items.push(rec);
           }
         });
 
@@ -2089,18 +2194,26 @@
     function truckLineDesc(it){
       const racks = Number(it.racks || 0);
       const qty   = Number(it.qty || 0);
-      if(racks)  return `${racks.toLocaleString()} CC RACKS`;
+      if(racks){
+        // honor the per-item unit when present (CC Racks/Pallets & Pallets order types)
+        const unit = (it.unit === "Pallet") ? "PALLETS" : "CC RACKS";
+        return `${racks.toLocaleString()} ${unit}`;
+      }
       const item = (it.item || "").trim();
       if(qty)    return `${qty.toLocaleString()} ${item}`.trim();
       return item;
     }
 
+    // Locations that do NOT belong in the Truck/CC export guides.
+    const EXPORT_EXCLUDED_REGIONS = ["Canada", "New Jersey"];
+    function includedInExports(t){ return !EXPORT_EXCLUDED_REGIONS.includes((t.region||"").trim()); }
+
     // =================== TRUCK ORDER ===================
     document.getElementById("exportTruckBtn").addEventListener("click", async () => {
       const wk = weekKeyFromDate(weekAnchor);
-      const trucks = loadTrucks().filter(t => t.weekKey === wk)
+      const trucks = loadTrucks().filter(t => t.weekKey === wk && includedInExports(t))
         .slice().sort((a,b) => (a.pickupDate||"").localeCompare(b.pickupDate||""));
-      if(!trucks.length){ alert("No orders in this week to export."); return; }
+      if(!trucks.length){ alert("No Homestead/Apopka orders in this week to export.\n(Canada and New Jersey are excluded from the guides.)"); return; }
 
       let ExcelJS;
       try { ExcelJS = await loadExcelJS(); }
@@ -2118,6 +2231,7 @@
       trucks.forEach((t, i) => {
         const fill = locationFill(t.region);
         const headerText = `TRUCK ${i+1}: ${(t.region||"").toUpperCase()} - ${weekdayShort(t.pickupDate)}`;
+        const blockStart = r;   // remember where this order begins for the outer border
 
         // header row (merged across 3 cols)
         ws.mergeCells(r, 1, r, 3);
@@ -2130,30 +2244,22 @@
         ws.getRow(r).height = 22;
         r++;
 
-        // vendor lines
+        // one condensed line per vendor
         (t.vendorBlocks||[]).forEach(vb => {
           const vendor = (vb.name||"").trim();
           const po = (vb.po||"").trim();
-          // one display row per item line (matches the sample: each line its own row)
           const items = (vb.items||[]);
-          if(items.length === 0){
-            const row = ws.getRow(r);
-            row.getCell(1).value = vendor;
-            row.getCell(2).value = "";
-            row.getCell(3).value = po ? `PO# ${po}` : "";
-            styleTruckRow(ws, r);
-            r++;
-          } else {
-            items.forEach(it => {
-              const row = ws.getRow(r);
-              row.getCell(1).value = vendor;
-              row.getCell(2).value = truckLineDesc(it);
-              row.getCell(3).value = po ? `PO# ${po}` : "";
-              styleTruckRow(ws, r);
-              r++;
-            });
-          }
+
+          const row = ws.getRow(r);
+          row.getCell(1).value = vendor;
+          row.getCell(2).value = items.length ? vendorLineDesc(items) : "";
+          row.getCell(3).value = po ? `PO# ${po}` : "";
+          styleTruckRow(ws, r);
+          r++;
         });
+
+        const blockEnd = r - 1;   // last row of this order
+        outlineBlock(ws, blockStart, blockEnd, 1, 3);
 
         // spacer row between trucks
         r++;
@@ -2161,6 +2267,47 @@
 
       await downloadWorkbook(wb, `truck-order_${wk}.xlsx`);
     });
+
+    // Combine a vendor's item lines into a single description for the truck guide.
+    // - Sums counts by unit (CC RACKS vs PALLETS) and shows the totals.
+    // - Any non-rack lines (plant-qty items like "2600 10\" TROPICALS") are listed after.
+    function vendorLineDesc(items){
+      let ccRacks = 0, pallets = 0;
+      const others = [];
+      for(const it of items){
+        const racks = Number(it.racks || 0);
+        if(racks){
+          if(it.unit === "Pallet") pallets += racks;
+          else ccRacks += racks;
+        } else {
+          const qty = Number(it.qty || 0);
+          const name = (it.item || "").trim();
+          if(qty) others.push(`${qty.toLocaleString()} ${name}`.trim());
+          else if(name) others.push(name);
+        }
+      }
+      const parts = [];
+      if(ccRacks) parts.push(`${ccRacks.toLocaleString()} CC RACKS`);
+      if(pallets) parts.push(`${pallets.toLocaleString()} PALLETS`);
+      parts.push(...others);
+      return parts.join(", ");
+    }
+
+    // Draw a medium black border around the outside edge of an order block.
+    function outlineBlock(ws, r1, r2, c1, c2){
+      const med = { style:"medium", color:{argb:"FF000000"} };
+      for(let r=r1; r<=r2; r++){
+        for(let c=c1; c<=c2; c++){
+          const cell = ws.getCell(r,c);
+          const b = Object.assign({}, cell.border || thinBox());
+          if(r === r1) b.top = med;
+          if(r === r2) b.bottom = med;
+          if(c === c1) b.left = med;
+          if(c === c2) b.right = med;
+          cell.border = b;
+        }
+      }
+    }
 
     function styleTruckRow(ws, r){
       const v = ws.getCell(r,1), q = ws.getCell(r,2), p = ws.getCell(r,3);
@@ -2174,8 +2321,8 @@
     // =================== CC ORDER ===================
     document.getElementById("exportCCBtn").addEventListener("click", async () => {
       const wk = weekKeyFromDate(weekAnchor);
-      const trucks = loadTrucks().filter(t => t.weekKey === wk);
-      if(!trucks.length){ alert("No orders in this week to export."); return; }
+      const trucks = loadTrucks().filter(t => t.weekKey === wk && includedInExports(t));
+      if(!trucks.length){ alert("No Homestead/Apopka orders in this week to export.\n(Canada and New Jersey are excluded from the guides.)"); return; }
 
       // Aggregate by location → vendor; collect unmatched lines to report.
       const byLocation = new Map();   // loc -> { vendors: Map<vendor,{racks,shelves,posts,ext}>, truckIds:Set }
@@ -2183,6 +2330,7 @@
 
       for(const t of trucks){
         const loc = (t.region || "—").trim() || "—";
+        const isApopka = loc === "Apopka";
         if(!byLocation.has(loc)) byLocation.set(loc, { vendors:new Map(), truckIds:new Set() });
         const L = byLocation.get(loc);
         L.truckIds.add(t.id);
@@ -2192,16 +2340,30 @@
           for(const it of (vb.items||[])){
             const racks = Number(it.racks||0);
             if(!racks) continue;
-            const rule = ccRuleFor(it.item);
-            if(!rule){
-              unmatched.push(`${loc} • ${vendor} • ${(it.item||"(no name)")} (${racks} racks)`);
-              continue;
+
+            let shelves, posts, ext;
+            if(isApopka){
+              // Apopka: use the manually-entered shelves; posts auto = 4 per rack; no extenders.
+              shelves = Number(it.shelves || 0);
+              posts   = racks * 4;
+              ext     = 0;
+            } else {
+              // Homestead (and other included locations): keyword rules.
+              const rule = ccRuleFor(it.item);
+              if(!rule){
+                unmatched.push(`${loc} • ${vendor} • ${(it.item||"(no name)")} (${racks} racks)`);
+                continue;
+              }
+              shelves = racks * rule.shelves;
+              posts   = racks * rule.posts;
+              ext     = racks * rule.extenders;
             }
+
             const cur = L.vendors.get(vendor) || { racks:0, shelves:0, posts:0, ext:0 };
-            cur.racks    += racks;
-            cur.shelves  += racks * rule.shelves;
-            cur.posts    += racks * rule.posts;
-            cur.ext      += racks * rule.extenders;
+            cur.racks   += racks;
+            cur.shelves += shelves;
+            cur.posts   += posts;
+            cur.ext     += ext;
             L.vendors.set(vendor, cur);
           }
         }
