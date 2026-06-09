@@ -470,6 +470,71 @@
     .statusChip{ padding:4px 10px; border-radius:999px; font-size:11.5px; border:1px solid var(--line); background:var(--paper-2); display:inline-flex; align-items:center; gap:6px; white-space:nowrap; font-weight:600; color:var(--moss); }
     .statusResolved{ border-color:rgba(43,212,154,.45); background:rgba(43,212,154,.14); color:#0d7a55; }
 
+    /* ---- Availability ---- */
+    .availTabs{
+      display:flex; gap:6px; flex-wrap:wrap;
+      margin:6px 0 14px; padding-bottom:12px;
+      border-bottom:1px solid var(--line);
+    }
+    .availTab{
+      padding:9px 14px; border-radius:999px;
+      border:1px solid var(--line); background:var(--paper-2);
+      color:var(--moss); cursor:pointer;
+      font-family:var(--sans); font-weight:600; font-size:13px;
+      display:flex; align-items:center; gap:7px;
+      transition:background .15s, border-color .15s, color .15s;
+    }
+    .availTab:hover{ background:var(--rowHover); }
+    .availTab.active{
+      background:var(--moss); border-color:var(--moss); color:#eafff5;
+    }
+    .availTab .count{
+      font-size:11px; font-weight:700;
+      background:rgba(255,255,255,.22); color:inherit;
+      padding:1px 7px; border-radius:999px;
+    }
+    .availTab:not(.active) .count{ background:var(--paper-3); color:var(--moss); }
+
+    .availVendor{
+      border:1px solid var(--line); background:var(--paper-2);
+      border-radius:var(--radius-sm); margin-top:12px;
+      box-shadow:var(--shadow-sm); overflow:hidden;
+    }
+    .availVendorHead{
+      display:flex; justify-content:space-between; align-items:center;
+      gap:10px; flex-wrap:wrap; padding:11px 13px;
+      background:#edf4ec; border-bottom:1px solid var(--line-soft);
+    }
+    .availVendorName{ font-family:var(--display); font-weight:600; font-size:16px; color:var(--ink); }
+    .availRow{
+      display:grid;
+      grid-template-columns:36px 1.6fr 1.2fr 90px auto;
+      gap:10px; align-items:center;
+      padding:11px 13px; border-top:1px solid var(--line-soft);
+    }
+    .availRow:first-of-type{ border-top:none; }
+    .availRow.checked{ background:rgba(43,212,154,.10); }
+    .availRow input[type="checkbox"]{ width:20px; height:20px; accent-color:var(--mint-deep); cursor:pointer; }
+    .availItemName{ font-weight:600; color:var(--ink); }
+    .availSpec{ color:var(--ink-2); font-size:13px; }
+    .availAmt{ font-weight:700; color:var(--ink); font-variant-numeric:tabular-nums; text-align:right; }
+    .availRowActions{ display:flex; gap:6px; justify-content:flex-end; flex-wrap:wrap; }
+    .availColHead{
+      display:grid; grid-template-columns:36px 1.6fr 1.2fr 90px auto;
+      gap:10px; padding:8px 13px;
+      color:var(--moss); font-size:11.5px; font-weight:600;
+      text-transform:uppercase; letter-spacing:.04em;
+      background:var(--thead); border-bottom:1px solid var(--line);
+    }
+    .availColHead .availAmt{ color:var(--moss); font-weight:600; }
+    @media (max-width:560px){
+      .availRow, .availColHead{ grid-template-columns:32px 1fr auto; }
+      .availColHead > span:nth-child(3), .availColHead > span:nth-child(4){ display:none; }
+      .availRow > .availSpec{ grid-column:2; font-size:12px; }
+      .availRow > .availAmt{ grid-column:3; }
+      .availRow > .availRowActions{ grid-column:2 / 4; justify-content:flex-start; }
+    }
+
     .checkVendor{ border:1px solid var(--line); background:var(--paper-2); border-radius:var(--radius-sm); padding:14px; margin-top:12px; box-shadow:var(--shadow-sm); }
     .checkVendorHead{ display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:10px; }
     .checkVendorHead h3{ margin:0; font-family:var(--display); font-size:17px; color:var(--ink); font-weight:600; }
@@ -481,14 +546,74 @@
     .checkNotes{ min-height:44px; padding:9px 10px; border-radius:var(--radius-sm); border:1px solid var(--line); background:#fff; color:var(--ink); resize:vertical; width:100%; outline:none; }
     .checkItemTitle{ font-weight:600; margin-bottom:4px; color:var(--ink); }
 
+    /* ---- Tablet / small laptop ---- */
     @media (max-width:980px){
-      .appShell{ grid-template-columns:1fr; height:calc(100vh - 86px); }
-      .side{ flex-direction:row; flex-wrap:wrap; align-items:center; }
-      .navTitle, .navSub{ width:100%; }
-      .navBtn{ width:auto; }
+      .appShell{
+        grid-template-columns:1fr;
+        height:auto;            /* let the page scroll naturally on touch */
+        min-height:calc(100vh - 92px);
+        margin-top:60px;        /* clear the fixed topbar chips */
+      }
+      html, body{ overflow:auto; }
+      .main, .side{ overflow:visible; }
+      .side{
+        flex-direction:row; flex-wrap:wrap; align-items:center;
+        padding:12px 12px; gap:6px;
+        position:sticky; top:54px; z-index:8;   /* sit below the fixed topbar */
+      }
+      .navTitle{ width:auto; font-size:17px; margin:0 8px 0 2px; }
+      .navSub{ display:none; }               /* drop the eyebrow to save a row */
+      .navBtn{ width:auto; margin:2px; padding:9px 11px; font-size:13px; }
       .navSpacer{ display:none; }
       .checkRow{ grid-template-columns:42px 1fr; }
       .checkRow > div:nth-child(3), .checkRow > div:nth-child(4), .checkRow > div:nth-child(5){ grid-column:span 2; }
+    }
+
+    /* ---- Phone ---- */
+    @media (max-width:560px){
+      html, body{ overflow:auto; }          /* page scrolls; inner panels no longer fixed-height */
+      .topbar{ display:none; }               /* nav bar already shows who's signed in via Log out; frees the top */
+      .appShell{ width:96vw; margin-top:10px; gap:10px; }
+      .main{ padding:14px 12px; overflow:visible; }
+      .side{ overflow:visible; }
+
+      .toolbar{ gap:6px; margin-bottom:12px; }
+      .toolbar h2{ font-size:20px; width:100%; }
+      .tools{ gap:6px; }
+      .btnGhost{ padding:8px 10px; font-size:12px; }
+
+      .weekHeader{ gap:8px; }
+      .filterBar{ width:100%; }
+      .filterInput{ min-width:0; width:100%; }
+
+      /* the important fix: let wide data tables scroll inside their card
+         instead of overflowing the screen */
+      .vendorBlockXL{
+        overflow-x:auto; -webkit-overflow-scrolling:touch;
+        /* right-edge fade hints there's more to swipe to */
+        background:
+          linear-gradient(to right, var(--paper-2) 30%, transparent),
+          linear-gradient(to right, transparent, var(--paper-2) 70%) 100% 0,
+          radial-gradient(farthest-side at 100% 50%, rgba(0,0,0,.10), transparent) 100% 0;
+        background-repeat:no-repeat;
+        background-size:40px 100%, 40px 100%, 14px 100%;
+        background-attachment:local, local, scroll;
+      }
+      .vendorBlockXL .sheetTable{ min-width:520px; }   /* keeps columns readable; card scrolls */
+
+      /* modal item-entry table also scrolls rather than squishing */
+      .modalCard{ padding:14px; }
+      .vendorBlock{ overflow-x:auto; }
+      .itemsTable{ min-width:560px; }
+      .v_name, .v_po, .v_status{ width:100%; min-width:0; }
+
+      /* tighten section/pickup headers so chips wrap cleanly */
+      .sectionHeader, .pickupHead{ padding:10px; }
+      .pickupTitle, .sectionTitle{ font-size:14px; }
+      .pillMini{ font-size:11px; padding:4px 8px; }
+
+      /* full-width primary actions are easier to tap */
+      .pickupRight{ width:100%; justify-content:flex-start; }
     }
 
     @media (prefers-reduced-motion: reduce){
@@ -637,26 +762,16 @@
             <h2>Availability</h2>
             <div class="tools">
               <select id="availWeekSelect"></select>
-              <input id="availVendorFilter" placeholder="Vendor filter (optional)" />
-              <input id="availItemFilter" placeholder="Item filter (optional)" />
+              <input id="availSearch" placeholder="Search vendor or item (optional)" />
+              <button id="availAddBtn" class="btnGhost">＋ Add Availability</button>
               <button id="availExportBtn" class="btnGhost">Export CSV</button>
             </div>
           </div>
 
-          <div class="note">Built from Order Tracker item lines — vendor and item totals for the selected week.</div>
+          <div class="note">Manually entered availability for the selected week, grouped by vendor. Check an item to flag it to order this week.</div>
 
-          <table class="table" id="availTable">
-            <thead>
-              <tr>
-                <th>Vendor</th>
-                <th>Item</th>
-                <th>Total CC Racks</th>
-                <th>Total Plant Qty</th>
-                <th>Trucks</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
+          <div class="availTabs" id="availTabs"></div>
+          <div id="availWrap"></div>
         </div>
 
         <!-- ORDER CHECK-IN -->
@@ -927,6 +1042,48 @@
     </div>
   </div>
 
+  <!-- AVAILABILITY MODAL -->
+  <div id="availModal" class="modal" aria-hidden="true">
+    <div class="modalCard">
+      <div class="modalHead">
+        <div>
+          <h3 id="availModalTitle">Add Availability</h3>
+          <div class="note" id="availModalSub">Entry will be added to the selected week and category.</div>
+        </div>
+        <button id="availCloseBtn" class="closeX">Close ✕</button>
+      </div>
+
+      <div class="row">
+        <label>
+          <span class="lbl">Category</span>
+          <select id="a_category"></select>
+        </label>
+        <label>
+          <span class="lbl">Vendor</span>
+          <input id="a_vendor" placeholder="e.g., ANCHOR"/>
+        </label>
+      </div>
+
+      <label>
+        <span class="lbl">Item Available</span>
+        <input id="a_item" placeholder='e.g., Monstera Deliciosa'/>
+      </label>
+
+      <div class="row">
+        <label>
+          <span class="lbl">Spec</span>
+          <input id="a_spec" placeholder='e.g., 6" / 10 per case'/>
+        </label>
+        <label>
+          <span class="lbl">Amount Available</span>
+          <input id="a_amount" placeholder="e.g., 200"/>
+        </label>
+      </div>
+
+      <button id="availSaveBtn" class="btn">Save Availability</button>
+    </div>
+  </div>
+
   <!-- LIGHTBOX -->
   <div id="lightbox" class="lightbox" aria-hidden="true">
     <img id="lightboxImg" alt="Photo preview" />
@@ -941,6 +1098,8 @@
       issuesKey: "hpa_issues_v1",
       userKey:   "hpa_user_v1",
       checkinKey:"hpa_checkin_v1",
+      availKey:  "hpa_avail_v1",
+      availOrdersKey:"hpa_avail_orders_v1",
       ccRulesKey:"hpa_cc_component_rules_v1",
       get(key, fallback){
         try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; }
@@ -1028,6 +1187,76 @@
         reader.onerror = reject;
         reader.readAsDataURL(file);
       });
+    }
+
+    /* Resize + recompress an image file in the browser before saving.
+       Tuned for "smaller files": scales the long edge down to MAX_EDGE
+       and re-encodes as JPEG at QUALITY. Returns { dataUrl, width, height,
+       bytes } so callers can store image + metadata separately (this maps
+       cleanly onto Firebase Storage + a metadata record later).
+       Non-images (or anything that fails) fall back to the original file. */
+    const PHOTO_MAX_EDGE = 1280;   // px on the longest side
+    const PHOTO_QUALITY  = 0.6;    // JPEG quality 0..1
+
+    function approxBytesFromDataURL(dataUrl){
+      // base64 payload is ~4/3 the byte size; strip the header first
+      const comma = dataUrl.indexOf(",");
+      const b64 = comma >= 0 ? dataUrl.slice(comma + 1) : dataUrl;
+      return Math.round(b64.length * 3 / 4);
+    }
+
+    function shrinkImage(file, { maxEdge = PHOTO_MAX_EDGE, quality = PHOTO_QUALITY } = {}){
+      return new Promise(async (resolve) => {
+        // Not an image we can process — keep the original untouched.
+        if(!file.type.startsWith("image/")){
+          const dataUrl = await fileToDataURL(file);
+          resolve({ dataUrl, width:0, height:0, bytes: file.size, resized:false });
+          return;
+        }
+
+        const srcUrl = await fileToDataURL(file);
+        const img = new Image();
+        img.onload = () => {
+          let { width:w, height:h } = img;
+          const longest = Math.max(w, h);
+          const scale = longest > maxEdge ? maxEdge / longest : 1;
+          const outW = Math.round(w * scale);
+          const outH = Math.round(h * scale);
+
+          const canvas = document.createElement("canvas");
+          canvas.width = outW;
+          canvas.height = outH;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, outW, outH);
+
+          let outUrl;
+          try {
+            outUrl = canvas.toDataURL("image/jpeg", quality);
+          } catch {
+            outUrl = srcUrl; // some formats can taint the canvas; fall back
+          }
+          // If recompression somehow grew the file, keep the smaller original.
+          if(approxBytesFromDataURL(outUrl) >= approxBytesFromDataURL(srcUrl)){
+            outUrl = srcUrl;
+          }
+          resolve({
+            dataUrl: outUrl,
+            width: outW,
+            height: outH,
+            bytes: approxBytesFromDataURL(outUrl),
+            resized: scale < 1
+          });
+        };
+        img.onerror = () => resolve({ dataUrl: srcUrl, width:0, height:0, bytes: file.size, resized:false });
+        img.src = srcUrl;
+      });
+    }
+
+    function fmtBytes(n){
+      if(!n) return "—";
+      if(n < 1024) return n + " B";
+      if(n < 1024*1024) return (n/1024).toFixed(0) + " KB";
+      return (n/1024/1024).toFixed(1) + " MB";
     }
     function fileListFromArray(files){
       const dt = new DataTransfer();
@@ -1730,10 +1959,13 @@
     function getAllWeeks(){
       const trucks = loadTrucks();
       const photos = loadPhotos();
+      const avail  = (LS.get(LS.availKey, []) || []);
       const set = new Set();
       trucks.forEach(t => set.add(t.weekKey));
       photos.forEach(p => set.add(p.week));
+      avail.forEach(a => set.add(a.week));
       set.add(weekKeyFromDate(new Date()));
+      set.add(weekKeyFromDate(weekAnchor)); // the week currently navigated to
       return Array.from(set).filter(Boolean).sort().reverse();
     }
 
@@ -2015,23 +2247,61 @@
         return;
       }
 
-      const photos = loadPhotos();
-      for(const f of files){
-        const dataUrl = await fileToDataURL(f);
-        photos.push({
+      const saveBtn = document.getElementById("photoSaveBtn");
+      const origLabel = saveBtn.textContent;
+      saveBtn.disabled = true;
+
+      let savedCount = 0;
+      let savedBytes = 0;
+      let stoppedEarly = false;
+
+      for(let idx = 0; idx < files.length; idx++){
+        const f = files[idx];
+        saveBtn.textContent = `Processing ${idx+1} of ${files.length}…`;
+
+        const shrunk = await shrinkImage(f);
+
+        // Photo record kept in two logical parts so the move to Firebase is easy:
+        //   metadata (everything except dataUrl) → database document
+        //   dataUrl (the image bytes)            → Firebase Storage, replaced by a URL
+        const record = {
           id: cryptoRandomId(),
           week, vendor,
           truckId: truckId || "",
           item,
           createdAt: new Date().toISOString(),
           name: f.name,
-          dataUrl
-        });
+          width: shrunk.width,
+          height: shrunk.height,
+          bytes: shrunk.bytes,
+          dataUrl: shrunk.dataUrl
+        };
+
+        // Save one at a time so a storage-limit hit doesn't lose everything.
+        const current = loadPhotos();
+        current.push(record);
+        try {
+          savePhotos(current);
+          savedCount++;
+          savedBytes += shrunk.bytes || 0;
+        } catch {
+          stoppedEarly = true;
+          break; // savePhotos already alerted about the limit
+        }
       }
-      savePhotos(photos);
+
+      saveBtn.disabled = false;
+      saveBtn.textContent = origLabel;
+
       closePhotoModal();
       renderPhotos();
       populateIssuePhotoOptions();
+
+      if(savedCount > 0){
+        const msg = `Saved ${savedCount} photo${savedCount===1?"":"s"} (${fmtBytes(savedBytes)} total).`;
+        statusChip.textContent = stoppedEarly ? "Storage full — some skipped" : msg;
+        setTimeout(() => { statusChip.textContent = "Ready"; }, 4000);
+      }
     });
 
     document.getElementById("photoWeekFilter").addEventListener("change", renderPhotos);
@@ -2068,6 +2338,7 @@
             <span class="pillMini">${escapeHtml(p.vendor || "Vendor —")}</span>
             <span class="pillMini">${escapeHtml(p.item || "Item —")}</span>
             <span class="pillMini">${escapeHtml(t?.pickupDate ? ("PU "+t.pickupDate) : "Truck —")}</span>
+            ${p.bytes ? `<span class="pillMini">${fmtBytes(p.bytes)}</span>` : ``}
           </div>
           <div class="row" style="margin-top:10px;">
             <button class="tinyBtn">View</button>
@@ -2093,81 +2364,227 @@
     }
 
     /*********************************************************
-     * Availability
+     * Availability (manual entry, tabbed by category)
      *********************************************************/
-    function buildAvailabilityRows(){
-      const week = document.getElementById("availWeekSelect").value;
-      const vFilter = document.getElementById("availVendorFilter").value.trim().toLowerCase();
-      const iFilter = document.getElementById("availItemFilter").value.trim().toLowerCase();
+    const AVAIL_CATEGORIES = ['4" Foliage', '6" Foliage', '10" Foliage', "Hanging Baskets", "Bromeliads"];
+    let availActiveCat = AVAIL_CATEGORIES[0];
 
-      const trucks = loadTrucks().filter(t => !week || t.weekKey === week);
-      const map = new Map();
+    function loadAvail(){ return LS.get(LS.availKey, []); }
+    function saveAvail(list){ LS.set(LS.availKey, list); }
 
-      for(const t of trucks){
-        const truckLabel = `PU ${t.pickupDate||"—"} (${t.region||"—"} ${t.orderType||"CC"})`;
+    // Order-checkbox state, stored per week so each week starts unchecked
+    // while past weeks keep their checks: { "2026-W24": { entryId: true } }
+    function loadAvailOrders(){ return LS.get(LS.availOrdersKey, {}); }
+    function saveAvailOrders(obj){ LS.set(LS.availOrdersKey, obj); }
 
-        for(const vb of (t.vendorBlocks || [])){
-          const vendor = (vb.name || "—").trim() || "—";
-          if(vFilter && !vendor.toLowerCase().includes(vFilter)) continue;
+    function availWeek(){ return document.getElementById("availWeekSelect").value || weekKeyFromDate(weekAnchor); }
 
-          for(const it of (vb.items || [])){
-            const itemName = (it.item || "—").trim() || "—";
-            if(iFilter && !itemName.toLowerCase().includes(iFilter)) continue;
+    // ----- Add / Edit modal -----
+    const availModal = document.getElementById("availModal");
+    let editingAvailId = null;
 
-            const key = vendor + "||" + itemName;
-            const cur = map.get(key) || { Vendor:vendor, Item:itemName, racks:0, qty:0, trucks:new Set() };
+    document.getElementById("availAddBtn").addEventListener("click", () => openAvailModal(null));
+    document.getElementById("availCloseBtn").addEventListener("click", closeAvailModal);
+    availModal.addEventListener("click", (e) => { if(e.target === availModal) closeAvailModal(); });
 
-            cur.racks += Number(it.racks||0);
-            cur.qty   += Number(it.qty||0);
-            cur.trucks.add(truckLabel);
-
-            map.set(key, cur);
-          }
-        }
-      }
-
-      return Array.from(map.values())
-        .sort((a,b) => (a.Vendor+a.Item).localeCompare(b.Vendor+b.Item))
-        .map(x => ({
-          Vendor: x.Vendor,
-          Item: x.Item,
-          "Total CC Racks": x.racks,
-          "Total Plant Qty": x.qty,
-          Trucks: x.trucks.size
-        }));
+    function fillAvailCategoryOptions(selected){
+      const sel = document.getElementById("a_category");
+      sel.innerHTML = AVAIL_CATEGORIES.map(c => `<option ${c===selected?"selected":""}>${escapeHtml(c)}</option>`).join("");
     }
 
-    document.getElementById("availWeekSelect").addEventListener("change", renderAvailability);
-    document.getElementById("availVendorFilter").addEventListener("input", renderAvailability);
-    document.getElementById("availItemFilter").addEventListener("input", renderAvailability);
+    function openAvailModal(entry){
+      editingAvailId = entry?.id ?? null;
+      document.getElementById("availModalTitle").textContent = editingAvailId ? "Edit Availability" : "Add Availability";
+      const wk = availWeek();
+      document.getElementById("availModalSub").textContent =
+        `Entry saves to week ${wk}.`;
 
-    document.getElementById("availExportBtn").addEventListener("click", () => {
-      const rows = buildAvailabilityRows();
-      downloadCSV("availability.csv", rows, ["Vendor","Item","Total CC Racks","Total Plant Qty","Trucks"]);
-    });
+      fillAvailCategoryOptions(entry?.category || availActiveCat);
+      document.getElementById("a_vendor").value = entry?.vendor ?? "";
+      document.getElementById("a_item").value   = entry?.item ?? "";
+      document.getElementById("a_spec").value   = entry?.spec ?? "";
+      document.getElementById("a_amount").value = entry?.amount ?? "";
 
-    function renderAvailability(){
-      refreshWeekSelectors();
-      const tbody = document.querySelector("#availTable tbody");
-      const rows = buildAvailabilityRows();
+      availModal.classList.add("active");
+      availModal.setAttribute("aria-hidden","false");
+    }
+    function closeAvailModal(){
+      availModal.classList.remove("active");
+      availModal.setAttribute("aria-hidden","true");
+      editingAvailId = null;
+    }
 
-      tbody.innerHTML = "";
-      if(rows.length === 0){
-        tbody.innerHTML = `<tr><td colspan="5" style="color:var(--ink-2); font-weight:600;">No availability data for this week yet. Add orders and items in Order Tracker.</td></tr>`;
+    document.getElementById("availSaveBtn").addEventListener("click", () => {
+      const category = document.getElementById("a_category").value;
+      const vendor = document.getElementById("a_vendor").value.trim();
+      const item   = document.getElementById("a_item").value.trim();
+      const spec   = document.getElementById("a_spec").value.trim();
+      const amount = document.getElementById("a_amount").value.trim();
+
+      if(!vendor || !item){
+        alert("Vendor and Item Available are required.");
         return;
       }
 
-      for(const r of rows){
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${escapeHtml(r.Vendor)}</td>
-          <td>${escapeHtml(r.Item)}</td>
-          <td class="num">${Number(r["Total CC Racks"]).toLocaleString()}</td>
-          <td class="num">${Number(r["Total Plant Qty"]).toLocaleString()}</td>
-          <td class="num">${Number(r.Trucks).toLocaleString()}</td>
-        `;
-        tbody.appendChild(tr);
+      const list = loadAvail();
+      if(editingAvailId){
+        const idx = list.findIndex(e => e.id === editingAvailId);
+        if(idx >= 0){
+          list[idx] = { ...list[idx], category, vendor, item, spec, amount };
+        }
+      } else {
+        list.push({
+          id: cryptoRandomId(),
+          week: availWeek(),
+          category, vendor, item, spec, amount,
+          createdAt: new Date().toISOString()
+        });
+        availActiveCat = category; // jump to the tab we just added to
       }
+      saveAvail(list);
+      closeAvailModal();
+      renderAvailability();
+    });
+
+    // ----- Tabs, search, week -----
+    document.getElementById("availWeekSelect").addEventListener("change", renderAvailability);
+    document.getElementById("availSearch").addEventListener("input", renderAvailability);
+
+    document.getElementById("availExportBtn").addEventListener("click", () => {
+      const wk = availWeek();
+      const orders = loadAvailOrders()[wk] || {};
+      const rows = loadAvail()
+        .filter(e => e.week === wk)
+        .sort((a,b) => (a.category+a.vendor+a.item).localeCompare(b.category+b.vendor+b.item))
+        .map(e => ({
+          Week: wk,
+          Category: e.category,
+          Vendor: e.vendor,
+          Item: e.item,
+          Spec: e.spec || "",
+          Amount: e.amount || "",
+          Ordering: orders[e.id] ? "YES" : "NO"
+        }));
+      if(!rows.length){ alert("No availability for this week to export."); return; }
+      downloadCSV(`availability_${wk}.csv`, rows, ["Week","Category","Vendor","Item","Spec","Amount","Ordering"]);
+    });
+
+    function renderAvailTabs(weekEntries){
+      const tabsEl = document.getElementById("availTabs");
+      tabsEl.innerHTML = "";
+      AVAIL_CATEGORIES.forEach(cat => {
+        const count = weekEntries.filter(e => e.category === cat).length;
+        const btn = document.createElement("button");
+        btn.className = "availTab" + (cat === availActiveCat ? " active" : "");
+        btn.innerHTML = `<span>${escapeHtml(cat)}</span><span class="count">${count}</span>`;
+        btn.addEventListener("click", () => { availActiveCat = cat; renderAvailability(); });
+        tabsEl.appendChild(btn);
+      });
+    }
+
+    function renderAvailability(){
+      refreshWeekSelectors();
+      const wk = availWeek();
+      const search = (document.getElementById("availSearch").value || "").trim().toLowerCase();
+
+      const weekEntries = loadAvail().filter(e => e.week === wk);
+      renderAvailTabs(weekEntries);
+
+      const wrap = document.getElementById("availWrap");
+      wrap.innerHTML = "";
+
+      // entries in the active category, optionally filtered by search
+      let entries = weekEntries.filter(e => e.category === availActiveCat);
+      if(search){
+        entries = entries.filter(e =>
+          (e.vendor||"").toLowerCase().includes(search) ||
+          (e.item||"").toLowerCase().includes(search)
+        );
+      }
+
+      if(entries.length === 0){
+        wrap.innerHTML = `<div class="note">No ${escapeHtml(availActiveCat)} availability for ${escapeHtml(wk)} yet. Click “＋ Add Availability”.</div>`;
+        return;
+      }
+
+      // group by vendor
+      const byVendor = new Map();
+      for(const e of entries){
+        const v = (e.vendor || "—").trim() || "—";
+        if(!byVendor.has(v)) byVendor.set(v, []);
+        byVendor.get(v).push(e);
+      }
+
+      const orders = loadAvailOrders();
+      const weekOrders = orders[wk] || {};
+
+      Array.from(byVendor.keys()).sort((a,b)=>a.localeCompare(b)).forEach(vendor => {
+        const items = byVendor.get(vendor).sort((a,b)=>(a.item||"").localeCompare(b.item||""));
+        const checkedCount = items.filter(e => weekOrders[e.id]).length;
+
+        const box = document.createElement("div");
+        box.className = "availVendor";
+        box.innerHTML = `
+          <div class="availVendorHead">
+            <span class="availVendorName">${escapeHtml(vendor)}</span>
+            <span class="sectionMeta">
+              <span class="pillMini">${items.length} item(s)</span>
+              <span class="pillMini">${checkedCount} to order</span>
+            </span>
+          </div>
+          <div class="availColHead">
+            <span></span><span>Item</span><span>Spec</span>
+            <span class="availAmt">Amount</span><span></span>
+          </div>
+        `;
+
+        items.forEach(e => {
+          const checked = !!weekOrders[e.id];
+          const row = document.createElement("div");
+          row.className = "availRow" + (checked ? " checked" : "");
+          row.innerHTML = `
+            <div><input type="checkbox" ${checked ? "checked" : ""} title="Mark to order this week"/></div>
+            <div class="availItemName">${escapeHtml(e.item || "—")}</div>
+            <div class="availSpec">${escapeHtml(e.spec || "")}</div>
+            <div class="availAmt">${escapeHtml(e.amount || "")}</div>
+            <div class="availRowActions">
+              <button class="tinyBtn av_edit">Edit</button>
+              <button class="tinyBtn danger av_del">Delete</button>
+            </div>
+          `;
+
+          row.querySelector('input[type="checkbox"]').addEventListener("change", (ev) => {
+            const all = loadAvailOrders();
+            all[wk] = all[wk] || {};
+            if(ev.target.checked) all[wk][e.id] = true;
+            else delete all[wk][e.id];
+            saveAvailOrders(all);
+            row.classList.toggle("checked", ev.target.checked);
+            // update the vendor's "to order" count without a full re-render
+            const head = box.querySelector(".availVendorHead .sectionMeta .pillMini:last-child");
+            const n = box.querySelectorAll('input[type="checkbox"]:checked').length;
+            if(head) head.textContent = `${n} to order`;
+          });
+
+          row.querySelector(".av_edit").addEventListener("click", () => {
+            openAvailModal(e);
+          });
+
+          row.querySelector(".av_del").addEventListener("click", () => {
+            if(!confirm(`Delete "${e.item}" from ${vendor}?`)) return;
+            saveAvail(loadAvail().filter(x => x.id !== e.id));
+            // also clear any order-check for it across weeks
+            const all = loadAvailOrders();
+            for(const k of Object.keys(all)){ if(all[k]) delete all[k][e.id]; }
+            saveAvailOrders(all);
+            renderAvailability();
+          });
+
+          box.appendChild(row);
+        });
+
+        wrap.appendChild(box);
+      });
     }
 
     /*********************************************************
