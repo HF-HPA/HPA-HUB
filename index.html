@@ -146,33 +146,49 @@
     #iggy:not(.flip){ --igdir:1; }
 
     /* idle breathing — gentle, always alive */
-    #iggy:not(.walking) .iggyBody{ animation:igBreathe 3.4s ease-in-out infinite; }
+    #iggy:not(.walking) .iggyBody{ animation:igBreathe 3.4s ease-in-out infinite; transform-origin:50% 85%; }
     @keyframes igBreathe{
-      0%,100%{ transform:scaleX(var(--igdir,1)) scaleY(1) translateY(0); }
-      50%{ transform:scaleX(var(--igdir,1)) scaleY(1.012) translateY(-0.5px); }
+      0%,100%{ transform:scaleX(var(--igdir,1)) scale(1,1) translateY(0); }
+      50%{ transform:scaleX(var(--igdir,1)) scale(1.006,1.014) translateY(-0.5px); }
     }
 
-    /* walk cycle — body rises/falls and rocks subtly with each step,
-       like a lizard's gait shifting weight side to side */
-    #iggy.walking .iggyBody{ animation:igWalk .5s ease-in-out infinite; }
-    @keyframes igWalk{
-      0%   { transform:scaleX(var(--igdir,1)) translateY(0)    rotate(0deg); }
-      25%  { transform:scaleX(var(--igdir,1)) translateY(-2.5px) rotate(-1deg); }
-      50%  { transform:scaleX(var(--igdir,1)) translateY(0)    rotate(0deg); }
-      75%  { transform:scaleX(var(--igdir,1)) translateY(-2.5px) rotate(1deg); }
-      100% { transform:scaleX(var(--igdir,1)) translateY(0)    rotate(0deg); }
+    /* ===== CRAWL =====
+       A lizard's walk is a push-and-glide: it plants its legs, the body
+       lurches forward and dips (stretch), then it rises and gathers (squash)
+       before the next push. We sell that with synced stretch-squash +
+       a forward surge + a gait rock + a head dip. Pivot sits low/rear so the
+       body rocks over the hind legs like the real thing. */
+    #iggy.walking .iggyBody{
+      animation:igCrawl 0.66s cubic-bezier(.5,.05,.5,.95) infinite,
+                igCrawlRock 1.32s ease-in-out infinite;
+      transform-origin:38% 88%;     /* low and toward the hips */
+    }
+    /* main push-glide-gather, drives forward surge + stretch/squash + head dip */
+    @keyframes igCrawl{
+      0%   { transform:scaleX(var(--igdir,1)) translateX(0)    translateY(0)     scale(1,1)        rotate(0deg); }
+      18%  { transform:scaleX(var(--igdir,1)) translateX(-1px) translateY(1px)   scale(0.985,1.02) rotate(-1deg); } /* gather/coil, dip down */
+      42%  { transform:scaleX(var(--igdir,1)) translateX(4px)  translateY(-2.5px) scale(1.03,0.975) rotate(1.5deg); } /* push: lurch forward, stretch, rise */
+      70%  { transform:scaleX(var(--igdir,1)) translateX(2px)  translateY(-1px)   scale(1.005,1)    rotate(0.4deg); } /* glide */
+      100% { transform:scaleX(var(--igdir,1)) translateX(0)    translateY(0)     scale(1,1)        rotate(0deg); }
+    }
+    /* slower side-to-side gait rock layered on top (diagonal leg cadence) */
+    @keyframes igCrawlRock{
+      0%,100%{ margin-top:0; }
+      25%{ margin-top:-1.5px; }
+      50%{ margin-top:0.5px; }
+      75%{ margin-top:-1.5px; }
     }
 
-    /* looking-around: a little head-cock via whole-body tilt + pause */
-    #iggy.looking .iggyBody{ animation:igLook 1.8s ease-in-out 1; }
+    /* looking-around: head-cock via tilt pivoting near the head */
+    #iggy.looking .iggyBody{ animation:igLook 1.8s ease-in-out 1; transform-origin:18% 35%; }
     @keyframes igLook{
       0%,100%{ transform:scaleX(var(--igdir,1)) rotate(0deg); }
-      30%{ transform:scaleX(var(--igdir,1)) rotate(-4deg); }
-      65%{ transform:scaleX(var(--igdir,1)) rotate(2.5deg); }
+      30%{ transform:scaleX(var(--igdir,1)) rotate(-5deg); }
+      65%{ transform:scaleX(var(--igdir,1)) rotate(3deg); }
     }
 
     /* sassy: a confident little bounce + wiggle */
-    #iggy.sassy .iggyBody{ animation:igSassy .5s ease-in-out 3; }
+    #iggy.sassy .iggyBody{ animation:igSassy .5s ease-in-out 3; transform-origin:50% 80%; }
     @keyframes igSassy{
       0%,100%{ transform:scaleX(var(--igdir,1)) rotate(0deg) translateY(0); }
       25%{ transform:scaleX(var(--igdir,1)) rotate(-2deg) translateY(-3px); }
@@ -3521,22 +3537,81 @@
 
       // Sassy one-liners — pulled at random during a stroll.
       const LINES = [
+        // ---- general sass & attitude ----
         "ugh, paperwork again?",
-        "you call THAT a rack count?",
         "I run this jungle, btw.",
-        "mmm, warm screen. cozy.",
-        "another truck? groundbreaking.",
-        "did someone say snacks?",
+        "don't mind me, just judging silently.",
+        "excuse me, VIP iguana coming through.",
         "I'm not lazy, I'm solar-powered.",
-        "Apopka again? bold choice.",
+        "mmm, warm screen. cozy.",
+        "10 outta 10 would bask again.",
+        "I woke up flawless. as usual.",
+        "this is my app now. you just work here.",
+        "be right back, being fabulous.",
+        "I have opinions. many opinions.",
+        "trust me, I'm basically management.",
+        "I didn't choose the thug life, the thug life chose me.",
+        "yes, the tail is real. stop staring.",
+        "I could do your job. with my eyes closed. napping.",
+        "less talky, more snacky.",
+        "I'm the employee of the month. every month.",
+        "scales? flawless. attitude? unmatched.",
+        "I'm not slow, I'm dramatic.",
+        "respectfully… no.",
+        "ugh, Mondays. and also every other day.",
+        "I'd help, but then I'd have to care.",
+        "you're doing great. probably. I wasn't watching.",
+        "sigh… the things I tolerate.",
+        "I'm surrounded by amateurs.",
+        "another day, another reason to nap.",
+        "I heard that. I have opinions about it.",
+        "is it 5 o'clock yet? asking for a lizard.",
+        "I'm built different. literally, I'm a reptile.",
+        "deep breaths. count the racks. don't bite anyone.",
+
+        // ---- plant / logistics specific ----
+        "you call THAT a rack count?",
+        "another truck? groundbreaking.",
         "checking inventory… nope, still fabulous.",
         "tell PID I said hi.",
-        "10 outta 10 would bask again.",
         "this dock doesn't run itself, people.",
         "I've seen those numbers. concerning.",
-        "excuse me, VIP iguana coming through.",
         "where are my bromeliads??",
-        "don't mind me, just judging silently."
+        "Apopka again? bold choice.",
+        "Homestead trucks slap, just sayin'.",
+        "who approved this PO? we need to talk.",
+        "47 CC racks? in THIS economy?",
+        "did you double-check the shelves? …didn't think so.",
+        "those pallets aren't gonna count themselves.",
+        "more foliage. always more foliage.",
+        "I inspected the plants. they're plants. you're welcome.",
+        "the truck's late. I'm not surprised.",
+        "is that a hanging basket or modern art?",
+        "vendor said 'confirmed.' I'll believe it when I see it.",
+        "shrink the photos, save the storage, thank me later.",
+        "we movin' product or we movin' SLOW today?",
+        "extenders, posts, shelves… I dream in CC racks.",
+        "real iguanas check the pickup date. just sayin'.",
+        "that order's giving… unconfirmed energy.",
+        "two pallets short. I counted. with my tongue.",
+        "log the issue. don't be shy. I'll judge it later.",
+        "every bromeliad deserves a good rack. it's science.",
+        "the availability tab misses you. just sayin'.",
+        "Canada order? not my department. literally excluded.",
+        "I'd unionize the plants but they're rooted to the spot.",
+        "somebody's behind on check-ins… 👀",
+
+        // ---- lizard life ----
+        "did someone say snacks?",
+        "leaf me alone, I'm working.",
+        "I bask, therefore I am.",
+        "cold-blooded and proud of it.",
+        "one does not simply rush an iguana.",
+        "I'd run, but cardio isn't very reptile of me.",
+        "is it warm in here or is it just me?",
+        "stretch break. very important. legally required.",
+        "I flicked my tongue at your spreadsheet. it's fine.",
+        "nap now, sass later."
       ];
 
       const W = () => window.innerWidth;
