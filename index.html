@@ -437,7 +437,8 @@
     .iggyWebBtnWrap{ align-self:flex-start; }
 
     /* ----- Iggy: realistic sprite perched on the page ----- */
-    #iggy{ position:fixed; right:20px; bottom:0; width:150px; height:auto; z-index:30; pointer-events:none; opacity:0; transition:opacity .5s ease, transform .35s ease; }
+    #iggy{ position:fixed; right:20px; bottom:6px; width:76px; height:auto; z-index:30; pointer-events:none; opacity:0; transition:opacity .5s ease, transform .35s ease; }
+    #iggyChat{ bottom:96px; }
     #iggy.visible{ opacity:1; }
     #iggy::after{ content:""; position:absolute; left:14%; right:6%; bottom:6px; height:14px; border-radius:50%; background:radial-gradient(ellipse at center, rgba(4,16,11,.45), rgba(4,16,11,0) 70%); filter:blur(1px); z-index:-1; pointer-events:none; }
     .iggyBody{ width:100%; height:auto; display:block; pointer-events:auto; cursor:pointer; filter:drop-shadow(0 8px 12px rgba(0,0,0,.45)); transform-origin:60% 100%; animation:igBreathe 5s ease-in-out infinite; transition:transform .25s ease; }
@@ -445,7 +446,7 @@
     @keyframes igBreathe{ 0%,100%{ transform:translateY(0) scale(1,1); } 50%{ transform:translateY(-2px) scale(1.012,1.016); } }
     #iggy.peeking .iggyBody{ animation:igPeek 3.6s ease-in-out 1; }
     @keyframes igPeek{ 0%{ transform:translateY(18px); } 16%{ transform:translateY(-6px) scale(1.05); } 80%{ transform:translateY(-6px) scale(1.05); } 100%{ transform:translateY(0); } }
-    @media (max-width:560px){ #iggy{ width:104px; right:8px; } }
+    @media (max-width:560px){ #iggy{ width:58px; right:10px; } #iggyChat{ bottom:74px; } }
     @media (prefers-reduced-motion: reduce){ .iggyBody, #iggy.peeking .iggyBody{ animation:none !important; } }
   </style>
 </head>
@@ -3449,16 +3450,18 @@
 
       // Rotating peek hints (shown in the little speech bubble)
       const LINES = [
-        "Psst — need a hand? Tap me!",
-        "Tip: click a month to jump weeks.",
-        "Click a vendor's status to flip Open ↔ Confirmed.",
-        "Click an item in a saved truck to log a substitution.",
-        "You can add several trucks in one order now.",
-        "Pick an exact week & year with 📅 Pick Week / Year.",
-        "Click a trucking name or price to edit it inline.",
-        "Check out the Plant Catalog in the Photo Library!",
-        "Use Duplicate to clone a truck onto a new date.",
-        "Questions about the Hub? Just ask me."
+        "Psst. I'm a lizard who knows logistics. Tap me.",
+        "Click a month to time-travel. Weeks, anyway.",
+        "Tap a vendor's status to flip Open ↔ Confirmed. Power move.",
+        "Click an item in a saved truck to swap it. I won't tell.",
+        "Several trucks in one order? Flex. Hit + Add Truck.",
+        "📅 Pick Week / Year — for when scrolling is beneath you.",
+        "Click a trucking name or price to edit it. No menus, no mercy.",
+        "Plant Catalog's in the Photo Library. I'm basically in there.",
+        "Duplicate clones a truck. Copy-paste, but make it logistics.",
+        "I know every button in here. Try me. I dare you.",
+        "Imported the PO Analysis yet? The check-in tab is lonely.",
+        "I bask, therefore I am. Also, ask me stuff."
       ];
 
       // Quick-tap suggestion chips
@@ -3475,8 +3478,8 @@
 
       // ---- Knowledge base: each entry has trigger keywords + an answer ----
       const KB = [
-        { k:["who are you","what can you do","what do you do","what is this app","about you","help me","what are you","your name"],
-          a:"I'm Iggy 🦎 — your in-app guide to the HPA Jungle Hub. I can explain any feature (orders, trucks, substitutions, the plant catalog, check-in, issues, training docs, availability) and, for general questions, I can look things up on the web too. Just ask!" },
+        { k:["who are you","what can you do","what do you do","what is this app","about you","what are you","your name"],
+          a:"I'm Iggy 🦎 — part iguana, part filing cabinet. I run on sunbeams and your purchase orders. I can explain anything in the Hub (orders, trucks, substitutions, the plant catalog, check-in, issues, training docs, availability) and, for the off-topic stuff, I'll go dig it up online. Try me." },
         { k:["month","months","month bar","jump month","12 month","calendar bar","timeline"],
           a:"The month bar sits right under the toolbar buttons on the Order Tracker. It shows all 12 months of the year you're viewing — tap any month and the tracker jumps to the first week of that month. The current month is highlighted in gold." },
         { k:["pick week","specific week","exact week","week year","choose week","jump to week","go to week","pick year","date picker","calendar button"],
@@ -3528,9 +3531,9 @@
         { k:["login","log in","password","sign in","account","user"],
           a:"Login is a local session only \u2014 any username/password gets you in; it's stored just on this device. \u201cLog out\u201d clears it." },
         { k:["hello","hi","hey","yo","sup","hiya","howdy"],
-          a:"Hey there! \ud83e\udd8e I'm Iggy. Ask me about orders, check-in, training docs, the plant catalog \u2014 or any general question and I'll search the web." },
+          a:"Oh good, a human. 🦎 Hey. Ask me about orders, check-in, training docs, the plant catalog — or literally anything and I'll go look it up." },
         { k:["thanks","thank you","thx","cheers","ty"],
-          a:"Anytime! \ud83c\udf3f Tap me again whenever you need a hand." }
+          a:"You're welcome. I'll be over here, photosynthesizing. 🌿 Tap me whenever." }
       ];
 
       const OVERVIEW =
@@ -3634,14 +3637,14 @@
         let res = null;
         try { res = await webSearch(q); } catch(e){ res = null; }
         if(res && res.extract){
-          thinking.textContent = "Here's what I found on the web (via Wikipedia):";
+          thinking.textContent = "Off-topic, but I'm a giver. Here's what the web says:";
           addMsg(res.extract, "iggy");
           const link = addMsg(res.title + " \u2014 " + res.url, "iggy");
           link.style.cursor = "pointer";
           link.style.textDecoration = "underline";
           link.addEventListener("click", () => window.open(res.url, "_blank", "noopener"));
         } else {
-          thinking.textContent = "I couldn't find that in the Hub, and my quick web lookup came up empty \u2014 here's an overview, or open a full search below.";
+          thinking.textContent = "Drew a blank in the Hub AND on the web. Rare. Here's the lay of the land, or search it yourself below:";
           addMsg(local.text, "iggy");
         }
         addWebButton(q);
@@ -3697,7 +3700,7 @@
         chat.setAttribute("aria-hidden", "false");
         if(!greeted){
           greeted = true;
-          addMsg("Hi! I'm Iggy 🦎 — your jungle helper. Ask me anything about the Hub, or tap a suggestion below.", "iggy");
+          addMsg("Well, well. You tapped the iguana. 🦎 I'm Iggy — I know every corner of this Hub. Ask away, or poke a suggestion below.", "iggy");
           renderChips();
         }
         setTimeout(() => { try{ input.focus(); }catch(e){} }, 60);
