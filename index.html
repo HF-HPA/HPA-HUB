@@ -727,7 +727,6 @@
 
               <button id="exportTruckBtn" class="btnGhost">Export Truck Order</button>
               <button id="exportCCBtn" class="btnGhost">Export CC Order</button>
-              <button id="ccRulesBtn" class="btnGhost">CC Rules</button>
 
               <button id="printBtn" class="btnGhost">Print</button>
             </div>
@@ -917,43 +916,6 @@
 
       <div class="row" style="margin-top:12px;">
         <button id="saveTruckBtn" class="btn">Save Order</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- CC RULES MODAL -->
-  <div id="ccRulesModal" class="modal" aria-hidden="true">
-    <div class="modalCard">
-      <div class="modalHead">
-        <div>
-          <h3>CC Rules</h3>
-          <div class="note">Per item → per‑rack components. Top rule wins. Match supports a keyword or /regex/flags.</div>
-        </div>
-        <button id="ccRulesCloseBtn" class="closeX">Close ✕</button>
-      </div>
-
-      <div class="row" style="margin-bottom:10px; align-items:center;">
-        <button id="addRuleBtn" class="tinyBtn">＋ Add Rule</button>
-        <button id="resetRulesBtn" class="tinyBtn danger">Reset Defaults</button>
-      </div>
-
-      <table class="itemsTable" id="rulesTable">
-        <thead>
-          <tr>
-            <th style="width:28%;">Match (keyword or /regex/)</th>
-            <th style="width:14%;">Base / Rack</th>
-            <th style="width:14%;">Shelves / Rack</th>
-            <th style="width:14%;">Poles / Rack</th>
-            <th style="width:14%;">Extenders / Rack</th>
-            <th style="width:14%;">Notes</th>
-            <th style="width:1%;"></th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-
-      <div class="row" style="margin-top:12px;">
-        <button id="saveRulesBtn" class="btn">Save Rules</button>
       </div>
     </div>
   </div>
@@ -2025,191 +1987,338 @@
     }
 
     /*********************************************************
-     * Exports + CC Rules
+     * Exports (styled .xlsx via ExcelJS, loaded on demand)
      *********************************************************/
-    const DEFAULT_CC_RULES = [
-      { match: '/\\b6"\\b/i', basePerRack: 1, shelvesPerRack: 0, polesPerRack: 0, extendersPerRack: 0, notes: '6" only (edit me)' },
-      { match: '/monstera/i', basePerRack: 1, shelvesPerRack: 0, polesPerRack: 0, extendersPerRack: 0, notes: "Monstera override (edit me)" },
-      { match: '', basePerRack: 1, shelvesPerRack: 0, polesPerRack: 0, extendersPerRack: 0, notes: "Fallback (edit me)" },
-    ];
 
-    function loadCCRules(){
-      const rules = LS.get(LS.ccRulesKey, null);
-      return Array.isArray(rules) && rules.length ? rules : DEFAULT_CC_RULES;
-    }
-    function saveCCRules(rules){ LS.set(LS.ccRulesKey, rules); }
+    // ---- Hard-coded CC component rules (per rack) ----
+    // Matched from the item's text by keyword. First match wins, and the
+    // checks are ordered so bromeliads are caught before plain foliage.
+    // Returns null when the line is NOT a CC item (e.g. 8"/10"/12" foliage),
+    // so it simply won't appear in the CC order.
+    function ccRuleFor(itemText){
+      const s = (itemText || "").toLowerCase();
 
-    function ruleMatches(ruleMatch, itemName){
-      const s = (itemName || "").toLowerCase();
-      const m = (ruleMatch || "").trim();
-      if(!m) return true;
+      const has = (...words) => words.some(w => s.includes(w));
+      // size detector: matches 2", 4", 6", 8", 10", 12" (straight or curly quote, or none)
+      const hasSize = (n) => new RegExp(`(^|[^0-9])${n}\\s*["”']?`).test(s);
 
-      if(m.startsWith("/") && m.lastIndexOf("/") > 0){
-        const last = m.lastIndexOf("/");
-        const pattern = m.slice(1, last);
-        const flags = m.slice(last+1) || "i";
-        try{
-          const re = new RegExp(pattern, flags);
-          return re.test(itemName || "");
-        } catch {
-          return s.includes(m.replaceAll("/","").toLowerCase());
-        }
+      const isBrom = has("bromeliad", "brom", "guzmania", "guzania", "neoregelia", "aechmea");
+      const isHanging = has("hanging", "hb", "basket");
+
+      // Bromeliads first (size-sensitive)
+      if(isBrom){
+        if(hasSize(10) || hasSize(8) || hasSize(6)) return { shelves:3, posts:4, extenders:4, label:"Bromeliad (6\"/8\"/10\")" };
+        if(hasSize(4)) return { shelves:4, posts:4, extenders:0, label:"4\" Bromeliad" };
+        if(hasSize(2) || has("mini")) return { shelves:6, posts:4, extenders:0, label:"2\"/Mini Bromeliad" };
+        // bromeliad with no recognizable size — flag it
+        return null;
       }
-      return s.includes(m.toLowerCase());
+
+      // Hanging baskets
+      if(isHanging) return { shelves:4, posts:4, extenders:0, label:"Hanging Baskets" };
+
+      // Plain foliage by size (only 4" and 6" go on CC racks)
+      if(hasSize(4)) return { shelves:6, posts:4, extenders:0, label:"4\" Foliage" };
+      if(hasSize(6)) return { shelves:4, posts:4, extenders:0, label:"6\" Foliage" };
+
+      // Anything else (8"/10"/12" foliage, unknown) is not a CC item
+      return null;
     }
 
-    function ccMultipliersFor(itemName){
-      const rules = loadCCRules();
-      for(const r of rules){
-        if(ruleMatches(r.match, itemName)){
-          return {
-            basePerRack: Number(r.basePerRack || 0),
-            shelvesPerRack: Number(r.shelvesPerRack || 0),
-            polesPerRack: Number(r.polesPerRack || 0),
-            extendersPerRack: Number(r.extendersPerRack || 0),
-          };
-        }
-      }
-      return { basePerRack:0, shelvesPerRack:0, polesPerRack:0, extendersPerRack:0 };
+    // ---- ExcelJS loader (cached after first use) ----
+    let _exceljsPromise = null;
+    function loadExcelJS(){
+      if(window.ExcelJS) return Promise.resolve(window.ExcelJS);
+      if(_exceljsPromise) return _exceljsPromise;
+      _exceljsPromise = new Promise((resolve, reject) => {
+        const s = document.createElement("script");
+        s.src = "https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js";
+        s.onload = () => resolve(window.ExcelJS);
+        s.onerror = () => reject(new Error("Could not load the Excel library. Check your internet connection and try again."));
+        document.head.appendChild(s);
+      });
+      return _exceljsPromise;
     }
 
-    document.getElementById("exportTruckBtn").addEventListener("click", () => {
+    async function downloadWorkbook(wb, filename){
+      const buf = await wb.xlsx.writeBuffer();
+      const blob = new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = filename;
+      document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    // Color palette to match the sample sheets
+    const XL = {
+      green: "FFD6E8C8",   // Homestead header
+      blue:  "FFBEE3F8",   // Apopka header (truck sheet) / totals fill
+      pink:  "FFEBD6F0",   // Apopka header (CC sheet)
+      grey:  "FFBFBFBF",   // column header
+      totals:"FFBEE3F8",   // totals row
+      white: "FFFFFFFF",
+      border:"FF000000"
+    };
+    function locationFill(loc){
+      const l = (loc||"").toLowerCase();
+      if(l.includes("apopka")) return XL.blue;
+      if(l.includes("homestead")) return XL.green;
+      return XL.green;
+    }
+    function ccLocationFill(loc){
+      const l = (loc||"").toLowerCase();
+      if(l.includes("apopka")) return XL.pink;
+      if(l.includes("homestead")) return XL.green;
+      return XL.green;
+    }
+    function thinBox(){
+      return {
+        top:{style:"thin",color:{argb:XL.border}}, bottom:{style:"thin",color:{argb:XL.border}},
+        left:{style:"thin",color:{argb:XL.border}}, right:{style:"thin",color:{argb:XL.border}}
+      };
+    }
+    function weekdayShort(dateStr){
+      const d = parseDate(dateStr);
+      if(!d) return "";
+      const wd = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][d.getDay()];
+      return `${wd} ${d.getMonth()+1}/${d.getDate()}`;
+    }
+
+    // ---- middle-column description for the Truck Order ----
+    function truckLineDesc(it){
+      const racks = Number(it.racks || 0);
+      const qty   = Number(it.qty || 0);
+      if(racks)  return `${racks.toLocaleString()} CC RACKS`;
+      const item = (it.item || "").trim();
+      if(qty)    return `${qty.toLocaleString()} ${item}`.trim();
+      return item;
+    }
+
+    // =================== TRUCK ORDER ===================
+    document.getElementById("exportTruckBtn").addEventListener("click", async () => {
       const wk = weekKeyFromDate(weekAnchor);
-      const trucks = loadTrucks().filter(t => t.weekKey === wk);
+      const trucks = loadTrucks().filter(t => t.weekKey === wk)
+        .slice().sort((a,b) => (a.pickupDate||"").localeCompare(b.pickupDate||""));
       if(!trucks.length){ alert("No orders in this week to export."); return; }
 
-      const rows = [];
-      for(const t of trucks){
-        for(const vb of (t.vendorBlocks||[])){
-          for(const it of (vb.items||[])){
-            rows.push({
-              Week: wk,
-              PickupDate: t.pickupDate || "",
-              Location: t.region || "",
-              OrderType: t.orderType || "CC",
-              TruckingCompany: t.trucking || "",
-              TruckPrice: Number(t.price||0),
-              Vendor: vb.name || "",
-              VendorPO: vb.po || "",
-              VendorStatus: vb.status || "",
-              Item: it.item || "",
-              CCRackCount: Number(it.racks||0),
-              CaseCount: Number(it.cases||0),
-              PlantQty: Number(it.qty||0),
-              ItemNotes: it.notes || "",
-              TruckNotes: t.notes || ""
+      let ExcelJS;
+      try { ExcelJS = await loadExcelJS(); }
+      catch(e){ alert(e.message); return; }
+
+      const wb = new ExcelJS.Workbook();
+      const ws = wb.addWorksheet("Truck Order");
+      ws.columns = [
+        { width: 30 },  // vendor
+        { width: 26 },  // qty/desc
+        { width: 16 },  // PO
+      ];
+
+      let r = 1;
+      trucks.forEach((t, i) => {
+        const fill = locationFill(t.region);
+        const headerText = `TRUCK ${i+1}: ${(t.region||"").toUpperCase()} - ${weekdayShort(t.pickupDate)}`;
+
+        // header row (merged across 3 cols)
+        ws.mergeCells(r, 1, r, 3);
+        const hCell = ws.getCell(r, 1);
+        hCell.value = headerText;
+        hCell.font = { bold:true, size:13 };
+        hCell.alignment = { horizontal:"center", vertical:"middle" };
+        hCell.fill = { type:"pattern", pattern:"solid", fgColor:{argb:fill} };
+        for(let c=1;c<=3;c++) ws.getCell(r,c).border = thinBox();
+        ws.getRow(r).height = 22;
+        r++;
+
+        // vendor lines
+        (t.vendorBlocks||[]).forEach(vb => {
+          const vendor = (vb.name||"").trim();
+          const po = (vb.po||"").trim();
+          // one display row per item line (matches the sample: each line its own row)
+          const items = (vb.items||[]);
+          if(items.length === 0){
+            const row = ws.getRow(r);
+            row.getCell(1).value = vendor;
+            row.getCell(2).value = "";
+            row.getCell(3).value = po ? `PO# ${po}` : "";
+            styleTruckRow(ws, r);
+            r++;
+          } else {
+            items.forEach(it => {
+              const row = ws.getRow(r);
+              row.getCell(1).value = vendor;
+              row.getCell(2).value = truckLineDesc(it);
+              row.getCell(3).value = po ? `PO# ${po}` : "";
+              styleTruckRow(ws, r);
+              r++;
             });
           }
-        }
-      }
+        });
 
-      downloadCSV(
-        `truck-order_${wk}.csv`,
-        rows,
-        ["Week","PickupDate","Location","OrderType","TruckingCompany","TruckPrice","Vendor","VendorPO","VendorStatus","Item","CCRackCount","CaseCount","PlantQty","ItemNotes","TruckNotes"]
-      );
+        // spacer row between trucks
+        r++;
+      });
+
+      await downloadWorkbook(wb, `truck-order_${wk}.xlsx`);
     });
 
-    document.getElementById("exportCCBtn").addEventListener("click", () => {
+    function styleTruckRow(ws, r){
+      const v = ws.getCell(r,1), q = ws.getCell(r,2), p = ws.getCell(r,3);
+      v.font = { bold:true }; v.alignment = { horizontal:"center", vertical:"middle" };
+      q.alignment = { horizontal:"center", vertical:"middle" }; q.font = { color:{argb:"FF555555"} };
+      p.font = { bold:true }; p.alignment = { horizontal:"center", vertical:"middle" };
+      [v,q,p].forEach(c => c.border = thinBox());
+      ws.getRow(r).height = 20;
+    }
+
+    // =================== CC ORDER ===================
+    document.getElementById("exportCCBtn").addEventListener("click", async () => {
       const wk = weekKeyFromDate(weekAnchor);
       const trucks = loadTrucks().filter(t => t.weekKey === wk);
       if(!trucks.length){ alert("No orders in this week to export."); return; }
 
-      const map = new Map();
-      for(const t of trucks){
-        for(const vb of (t.vendorBlocks||[])){
-          const vendor = (vb.name || "—").trim() || "—";
-          const cur = map.get(vendor) || { Vendor: vendor, base:0, shelves:0, poles:0, extenders:0 };
+      // Aggregate by location → vendor; collect unmatched lines to report.
+      const byLocation = new Map();   // loc -> { vendors: Map<vendor,{racks,shelves,posts,ext}>, truckIds:Set }
+      const unmatched = [];
 
+      for(const t of trucks){
+        const loc = (t.region || "—").trim() || "—";
+        if(!byLocation.has(loc)) byLocation.set(loc, { vendors:new Map(), truckIds:new Set() });
+        const L = byLocation.get(loc);
+        L.truckIds.add(t.id);
+
+        for(const vb of (t.vendorBlocks||[])){
+          const vendor = (vb.name||"—").trim() || "—";
           for(const it of (vb.items||[])){
-            const itemName = (it.item || "").trim();
-            const racks = Number(it.racks || 0);
+            const racks = Number(it.racks||0);
             if(!racks) continue;
-            const m = ccMultipliersFor(itemName);
-            cur.base      += racks * m.basePerRack;
-            cur.shelves   += racks * m.shelvesPerRack;
-            cur.poles     += racks * m.polesPerRack;
-            cur.extenders += racks * m.extendersPerRack;
+            const rule = ccRuleFor(it.item);
+            if(!rule){
+              unmatched.push(`${loc} • ${vendor} • ${(it.item||"(no name)")} (${racks} racks)`);
+              continue;
+            }
+            const cur = L.vendors.get(vendor) || { racks:0, shelves:0, posts:0, ext:0 };
+            cur.racks    += racks;
+            cur.shelves  += racks * rule.shelves;
+            cur.posts    += racks * rule.posts;
+            cur.ext      += racks * rule.extenders;
+            L.vendors.set(vendor, cur);
           }
-          map.set(vendor, cur);
         }
       }
 
-      const rows = Array.from(map.values())
-        .sort((a,b) => a.Vendor.localeCompare(b.Vendor))
-        .map(x => ({
-          Vendor: x.Vendor,
-          "CC Base #": Math.round(x.base),
-          "CC Shelves": Math.round(x.shelves),
-          "CC Poles": Math.round(x.poles),
-          "CC Extenders": Math.round(x.extenders)
-        }));
-
-      downloadCSV(`cc-order_${wk}.csv`, rows, ["Vendor","CC Base #","CC Shelves","CC Poles","CC Extenders"]);
-    });
-
-    // CC Rules UI
-    const ccRulesModal = document.getElementById("ccRulesModal");
-    const rulesTbody = document.querySelector("#rulesTable tbody");
-    document.getElementById("ccRulesBtn").addEventListener("click", openRulesModal);
-    document.getElementById("ccRulesCloseBtn").addEventListener("click", closeRulesModal);
-    ccRulesModal.addEventListener("click", (e) => { if(e.target === ccRulesModal) closeRulesModal(); });
-
-    document.getElementById("addRuleBtn").addEventListener("click", () => addRuleRow({
-      match:"", basePerRack:1, shelvesPerRack:0, polesPerRack:0, extendersPerRack:0, notes:""
-    }));
-    document.getElementById("resetRulesBtn").addEventListener("click", () => {
-      const ok = confirm("Reset CC rules to defaults?");
-      if(!ok) return;
-      saveCCRules(DEFAULT_CC_RULES);
-      openRulesModal();
-    });
-    document.getElementById("saveRulesBtn").addEventListener("click", () => {
-      const rules = [];
-      rulesTbody.querySelectorAll("tr").forEach(tr => {
-        const match = tr.querySelector(".r_match").value.trim();
-        const basePerRack = Number(tr.querySelector(".r_base").value || 0);
-        const shelvesPerRack = Number(tr.querySelector(".r_shelves").value || 0);
-        const polesPerRack = Number(tr.querySelector(".r_poles").value || 0);
-        const extendersPerRack = Number(tr.querySelector(".r_extenders").value || 0);
-        const notes = tr.querySelector(".r_notes").value.trim();
-        if(match || basePerRack || shelvesPerRack || polesPerRack || extendersPerRack || notes){
-          rules.push({ match, basePerRack, shelvesPerRack, polesPerRack, extendersPerRack, notes });
-        }
-      });
-      if(!rules.length){
-        alert("Add at least one rule (or reset defaults).");
+      // anything to export?
+      const anyRows = Array.from(byLocation.values()).some(L => L.vendors.size > 0);
+      if(!anyRows){
+        alert("No CC-rack items found for this week.\n\n(8\"/10\"/12\" foliage and unrecognized lines aren't CC items.)");
         return;
       }
-      saveCCRules(rules);
-      closeRulesModal();
-      alert("CC rules saved.");
+
+      let ExcelJS;
+      try { ExcelJS = await loadExcelJS(); }
+      catch(e){ alert(e.message); return; }
+
+      const wb = new ExcelJS.Workbook();
+      const ws = wb.addWorksheet("CC Order");
+      ws.columns = [
+        { width: 24 }, { width: 12 }, { width: 12 }, { width: 12 }, { width: 12 }
+      ];
+
+      const prefer = ["Homestead","Apopka","New Jersey","Canada"];
+      const locs = Array.from(byLocation.keys()).sort((a,b) => {
+        const ai = prefer.indexOf(a), bi = prefer.indexOf(b);
+        return (ai===-1?99:ai) - (bi===-1?99:bi) || a.localeCompare(b);
+      });
+
+      let r = 1;
+      for(const loc of locs){
+        const L = byLocation.get(loc);
+        if(L.vendors.size === 0) continue;
+
+        // section title (merged across 5)
+        ws.mergeCells(r,1,r,5);
+        const title = ws.getCell(r,1);
+        title.value = loc;
+        title.font = { bold:true, size:16 };
+        title.alignment = { horizontal:"center", vertical:"middle" };
+        title.fill = { type:"pattern", pattern:"solid", fgColor:{argb:ccLocationFill(loc)} };
+        for(let c=1;c<=5;c++) ws.getCell(r,c).border = thinBox();
+        ws.getRow(r).height = 26;
+        r++;
+
+        // column header
+        const heads = ["Vendor","Racks","Shelves","Posts","Extenders"];
+        heads.forEach((h,c) => {
+          const cell = ws.getCell(r, c+1);
+          cell.value = h;
+          cell.font = { bold:true };
+          cell.alignment = { horizontal:"center", vertical:"middle" };
+          cell.fill = { type:"pattern", pattern:"solid", fgColor:{argb:XL.grey} };
+          cell.border = thinBox();
+        });
+        ws.getRow(r).height = 20;
+        r++;
+
+        // vendor rows + running totals
+        const totals = { racks:0, shelves:0, posts:0, ext:0 };
+        Array.from(L.vendors.keys()).sort((a,b)=>a.localeCompare(b)).forEach(vendor => {
+          const x = L.vendors.get(vendor);
+          totals.racks+=x.racks; totals.shelves+=x.shelves; totals.posts+=x.posts; totals.ext+=x.ext;
+          const vals = [vendor, x.racks, x.shelves, x.posts, x.ext];
+          vals.forEach((v,c) => {
+            const cell = ws.getCell(r, c+1);
+            cell.value = v;
+            cell.alignment = { horizontal:"center", vertical:"middle" };
+            cell.border = thinBox();
+          });
+          r++;
+        });
+
+        // Totals row (blue)
+        const totRow = ["Totals", totals.racks, totals.shelves, totals.posts, totals.ext];
+        totRow.forEach((v,c) => {
+          const cell = ws.getCell(r, c+1);
+          cell.value = v;
+          cell.font = { bold:true };
+          cell.alignment = { horizontal:"center", vertical:"middle" };
+          cell.fill = { type:"pattern", pattern:"solid", fgColor:{argb:XL.totals} };
+          cell.border = thinBox();
+        });
+        r++;
+
+        // Total Trucks row
+        const tt = ws.getCell(r,1);
+        tt.value = "Total Trucks";
+        tt.alignment = { horizontal:"center", vertical:"middle" };
+        tt.border = thinBox();
+        const ttv = ws.getCell(r,2);
+        ttv.value = L.truckIds.size;
+        ttv.alignment = { horizontal:"center", vertical:"middle" };
+        ttv.border = thinBox();
+        for(let c=3;c<=5;c++){ ws.getCell(r,c).border = thinBox(); }
+        r++;
+
+        // spacer
+        r++;
+      }
+
+      // If some lines didn't match a rule, note them on a second sheet.
+      if(unmatched.length){
+        const ws2 = wb.addWorksheet("Not on CC");
+        ws2.columns = [{ width: 60 }];
+        ws2.getCell(1,1).value = "These lines had racks but no CC rule (not added to the CC order):";
+        ws2.getCell(1,1).font = { bold:true };
+        unmatched.forEach((line, i) => { ws2.getCell(i+3, 1).value = line; });
+      }
+
+      await downloadWorkbook(wb, `cc-order_${wk}.xlsx`);
+
+      if(unmatched.length){
+        statusChip.textContent = `${unmatched.length} line(s) not on CC — see “Not on CC” tab`;
+        setTimeout(()=>{ statusChip.textContent = "Ready"; }, 5000);
+      }
     });
 
-    function openRulesModal(){
-      rulesTbody.innerHTML = "";
-      loadCCRules().forEach(addRuleRow);
-      ccRulesModal.classList.add("active");
-      ccRulesModal.setAttribute("aria-hidden","false");
-    }
-    function closeRulesModal(){
-      ccRulesModal.classList.remove("active");
-      ccRulesModal.setAttribute("aria-hidden","true");
-    }
-    function addRuleRow(rule){
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td><input class="r_match" placeholder='e.g., 6" or /monstera/i' value="${escapeHtml(rule.match||"")}"></td>
-        <td><input class="r_base" type="number" step="1" placeholder="1" value="${escapeHtml(rule.basePerRack ?? "")}"></td>
-        <td><input class="r_shelves" type="number" step="1" placeholder="0" value="${escapeHtml(rule.shelvesPerRack ?? "")}"></td>
-        <td><input class="r_poles" type="number" step="1" placeholder="0" value="${escapeHtml(rule.polesPerRack ?? "")}"></td>
-        <td><input class="r_extenders" type="number" step="1" placeholder="0" value="${escapeHtml(rule.extendersPerRack ?? "")}"></td>
-        <td><input class="r_notes" placeholder="Notes (optional)" value="${escapeHtml(rule.notes||"")}"></td>
-        <td><button class="tinyBtn danger" title="Remove rule">✕</button></td>
-      `;
-      tr.querySelector("button").addEventListener("click", () => tr.remove());
-      rulesTbody.appendChild(tr);
-    }
 
     /*********************************************************
      * Photos
