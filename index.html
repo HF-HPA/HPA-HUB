@@ -145,55 +145,63 @@
     #iggy.flip{ --igdir:-1; }
     #iggy:not(.flip){ --igdir:1; }
 
-    /* idle breathing — gentle, always alive */
-    #iggy:not(.walking) .iggyBody{ animation:igBreathe 3.4s ease-in-out infinite; transform-origin:50% 85%; }
-    @keyframes igBreathe{
-      0%,100%{ transform:scaleX(var(--igdir,1)) scale(1,1) translateY(0); }
-      50%{ transform:scaleX(var(--igdir,1)) scale(1.006,1.014) translateY(-0.5px); }
+    /* idle — breathing + a slow, living look-around with a real head turn.
+       The head turn is faked in 3D: rotateY swings his front toward the viewer
+       around a pivot at the head, so it reads as him turning to look. */
+    #iggy:not(.walking):not(.sassy) .iggyBody{
+      animation:igIdle 7s ease-in-out infinite;
+      transform-origin:20% 45%;       /* pivot near the head */
+    }
+    @keyframes igIdle{
+      0%,100%{ transform:scaleX(var(--igdir,1)) perspective(340px) rotateY(0deg) rotate(0deg) scale(1,1); }
+      14%{ transform:scaleX(var(--igdir,1)) perspective(340px) rotateY(0deg) rotate(0deg) scale(1.006,1.016); }      /* breathe in */
+      28%{ transform:scaleX(var(--igdir,1)) perspective(340px) rotateY(0deg) rotate(0deg) scale(1,1); }
+      44%{ transform:scaleX(var(--igdir,1)) perspective(340px) rotateY(26deg) rotate(-2deg) scale(1,1); }            /* turn head toward viewer */
+      56%{ transform:scaleX(var(--igdir,1)) perspective(340px) rotateY(26deg) rotate(-2deg) scale(1,1); }            /* hold the look */
+      70%{ transform:scaleX(var(--igdir,1)) perspective(340px) rotateY(-6deg) rotate(1deg) scale(1,1); }             /* glance back */
+      85%{ transform:scaleX(var(--igdir,1)) perspective(340px) rotateY(0deg) rotate(0deg) scale(1,1); }
     }
 
     /* ===== CRAWL =====
-       A lizard's walk is a push-and-glide: it plants its legs, the body
-       lurches forward and dips (stretch), then it rises and gathers (squash)
-       before the next push. We sell that with synced stretch-squash +
-       a forward surge + a gait rock + a head dip. Pivot sits low/rear so the
-       body rocks over the hind legs like the real thing. */
+       Whole-body push-glide-gather + a spine wave (skewX) so the body
+       undulates like a real lizard, a head-lead surge, deeper stretch/squash,
+       and a 3D head sway. Pivot low/rear so he rocks over his hind legs. */
     #iggy.walking .iggyBody{
-      animation:igCrawl 0.66s cubic-bezier(.5,.05,.5,.95) infinite,
-                igCrawlRock 1.32s ease-in-out infinite;
-      transform-origin:38% 88%;     /* low and toward the hips */
+      animation:igCrawl 0.62s cubic-bezier(.45,.05,.55,.95) infinite,
+                igCrawlSway 1.24s ease-in-out infinite;
+      transform-origin:36% 90%;
     }
-    /* main push-glide-gather, drives forward surge + stretch/squash + head dip */
     @keyframes igCrawl{
-      0%   { transform:scaleX(var(--igdir,1)) translateX(0)    translateY(0)     scale(1,1)        rotate(0deg); }
-      18%  { transform:scaleX(var(--igdir,1)) translateX(-1px) translateY(1px)   scale(0.985,1.02) rotate(-1deg); } /* gather/coil, dip down */
-      42%  { transform:scaleX(var(--igdir,1)) translateX(4px)  translateY(-2.5px) scale(1.03,0.975) rotate(1.5deg); } /* push: lurch forward, stretch, rise */
-      70%  { transform:scaleX(var(--igdir,1)) translateX(2px)  translateY(-1px)   scale(1.005,1)    rotate(0.4deg); } /* glide */
-      100% { transform:scaleX(var(--igdir,1)) translateX(0)    translateY(0)     scale(1,1)        rotate(0deg); }
+      0%   { transform:scaleX(var(--igdir,1)) perspective(360px) rotateY(0deg)  translateX(0)    translateY(0)     scale(1,1)        skewX(0deg)    rotate(0deg); }
+      16%  { transform:scaleX(var(--igdir,1)) perspective(360px) rotateY(4deg)  translateX(-2px) translateY(1.5px) scale(0.97,1.035) skewX(2.5deg)  rotate(-1.6deg); } /* coil & gather, dip */
+      40%  { transform:scaleX(var(--igdir,1)) perspective(360px) rotateY(-3deg) translateX(6px)  translateY(-3.5px) scale(1.05,0.955) skewX(-3deg)  rotate(2.2deg); }  /* big push: lurch forward, stretch, rise */
+      66%  { transform:scaleX(var(--igdir,1)) perspective(360px) rotateY(0deg)  translateX(3px)  translateY(-1px)   scale(1.01,1)     skewX(-1deg)   rotate(0.6deg); }  /* glide */
+      100% { transform:scaleX(var(--igdir,1)) perspective(360px) rotateY(0deg)  translateX(0)    translateY(0)     scale(1,1)        skewX(0deg)    rotate(0deg); }
     }
-    /* slower side-to-side gait rock layered on top (diagonal leg cadence) */
-    @keyframes igCrawlRock{
+    /* slower lateral gait sway layered on (uses margin so it doesn't fight transform) */
+    @keyframes igCrawlSway{
       0%,100%{ margin-top:0; }
-      25%{ margin-top:-1.5px; }
-      50%{ margin-top:0.5px; }
-      75%{ margin-top:-1.5px; }
+      25%{ margin-top:-2px; }
+      50%{ margin-top:1px; }
+      75%{ margin-top:-2px; }
     }
 
-    /* looking-around: head-cock via tilt pivoting near the head */
-    #iggy.looking .iggyBody{ animation:igLook 1.8s ease-in-out 1; transform-origin:18% 35%; }
-    @keyframes igLook{
-      0%,100%{ transform:scaleX(var(--igdir,1)) rotate(0deg); }
-      30%{ transform:scaleX(var(--igdir,1)) rotate(-5deg); }
-      65%{ transform:scaleX(var(--igdir,1)) rotate(3deg); }
+    /* explicit look-around (during the mid-stroll pause) — pronounced head turn */
+    #iggy.looking .iggyBody{ animation:igLookTurn 1.9s ease-in-out 1; transform-origin:20% 42%; }
+    @keyframes igLookTurn{
+      0%,100%{ transform:scaleX(var(--igdir,1)) perspective(340px) rotateY(0deg) rotate(0deg); }
+      28%{ transform:scaleX(var(--igdir,1)) perspective(340px) rotateY(34deg) rotate(-3deg); }   /* turn to face viewer */
+      55%{ transform:scaleX(var(--igdir,1)) perspective(340px) rotateY(34deg) rotate(-3deg); }
+      78%{ transform:scaleX(var(--igdir,1)) perspective(340px) rotateY(-10deg) rotate(2deg); }   /* look the other way */
     }
 
-    /* sassy: a confident little bounce + wiggle */
+    /* sassy: confident bounce + head bob + wiggle */
     #iggy.sassy .iggyBody{ animation:igSassy .5s ease-in-out 3; transform-origin:50% 80%; }
     @keyframes igSassy{
-      0%,100%{ transform:scaleX(var(--igdir,1)) rotate(0deg) translateY(0); }
-      25%{ transform:scaleX(var(--igdir,1)) rotate(-2deg) translateY(-3px); }
-      50%{ transform:scaleX(var(--igdir,1)) rotate(0deg) translateY(0); }
-      75%{ transform:scaleX(var(--igdir,1)) rotate(2deg) translateY(-2px); }
+      0%,100%{ transform:scaleX(var(--igdir,1)) perspective(360px) rotateY(0deg)  rotate(0deg)  translateY(0); }
+      25%{ transform:scaleX(var(--igdir,1)) perspective(360px) rotateY(12deg) rotate(-3deg) translateY(-4px); }
+      50%{ transform:scaleX(var(--igdir,1)) perspective(360px) rotateY(0deg)  rotate(0deg)  translateY(0); }
+      75%{ transform:scaleX(var(--igdir,1)) perspective(360px) rotateY(8deg)  rotate(3deg)  translateY(-2px); }
     }
 
     /* thought bubble */
@@ -3647,7 +3655,9 @@
         const endX   = leftToRight ? W() + 30 : -180;
         const midX   = leftToRight ? W() * (0.35 + Math.random()*0.3) : W() * (0.35 + Math.random()*0.3);
 
-        iggy.classList.toggle("flip", !leftToRight); // face travel direction
+        // Sprite faces LEFT by default. Flip (mirror) only when traveling RIGHT
+        // so he always faces the way he's walking.
+        iggy.classList.toggle("flip", leftToRight);
         setPos(startX, y);
         iggy.classList.add("visible");
 
