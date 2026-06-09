@@ -124,66 +124,91 @@
     #iggy{
       position:fixed;
       left:0; top:0;
-      width:158px; height:78px;
+      width:188px; height:100px;
       z-index:25;                /* above panels so he's fully visible; pointer-events off so he never blocks clicks */
       pointer-events:none;
       opacity:0;                 /* hidden until JS sends him out */
-      transform:translate(-200px, 200px);
+      transform:translate(-220px, 200px);
       will-change:transform, opacity;
     }
     #iggy.visible{ opacity:1; }
-    /* facing direction: flip horizontally when walking left */
     #iggy.flip .iggyBody{ transform:scaleX(-1); }
 
     .iggyBody{
       width:100%; height:100%;
       display:block;
-      filter:drop-shadow(0 6px 8px rgba(0,0,0,.35));
       transform-origin:center;
     }
 
+    /* subtle constant breathing of the whole body */
+    .ig-body{ transform-origin:184px 78px; animation:igBreathe 3.6s ease-in-out infinite; }
+    @keyframes igBreathe{ 0%,100%{ transform:scale(1,1); } 50%{ transform:scale(1.01,1.035); } }
+
     /* gentle body bob while walking */
-    #iggy.walking .iggyBody{ animation:igBob .42s ease-in-out infinite; }
+    #iggy.walking .iggyBody{ animation:igBob .5s ease-in-out infinite; }
     @keyframes igBob{
       0%,100%{ transform:translateY(0) scaleX(var(--igdir,1)); }
-      50%{ transform:translateY(-2px) scaleX(var(--igdir,1)); }
+      25%{ transform:translateY(-1.5px) scaleX(var(--igdir,1)); }
+      50%{ transform:translateY(0) scaleX(var(--igdir,1)); }
+      75%{ transform:translateY(-1.5px) scaleX(var(--igdir,1)); }
     }
-    /* flip handling via CSS var so bob keeps the facing */
     #iggy.flip{ --igdir:-1; }
     #iggy:not(.flip){ --igdir:1; }
-    #iggy.flip .iggyBody{ transform:scaleX(-1); }
 
-    /* legs shuffle */
-    #iggy.walking .ig-leg-front{ animation:igStepA .42s ease-in-out infinite; transform-origin:185px 86px; }
-    #iggy.walking .ig-leg-back{ animation:igStepB .42s ease-in-out infinite; transform-origin:135px 86px; }
-    @keyframes igStepA{ 0%,100%{ transform:rotate(-12deg); } 50%{ transform:rotate(12deg); } }
-    @keyframes igStepB{ 0%,100%{ transform:rotate(12deg); } 50%{ transform:rotate(-12deg); } }
+    /* four-leg diagonal gait (near front & near back step together, offset from far pair) */
+    #iggy.walking .ig-leg-front{ animation:igStepA .5s ease-in-out infinite; transform-origin:218px 108px; }
+    #iggy.walking .ig-leg-back{ animation:igStepB .5s ease-in-out infinite; transform-origin:122px 112px; }
+    @keyframes igStepA{ 0%,100%{ transform:rotate(-14deg); } 50%{ transform:rotate(14deg); } }
+    @keyframes igStepB{ 0%,100%{ transform:rotate(14deg); } 50%{ transform:rotate(-14deg); } }
 
-    /* tail sway, always alive */
-    .ig-tail{ transform-origin:70px 64px; animation:igTail 1.4s ease-in-out infinite; }
-    @keyframes igTail{ 0%,100%{ transform:rotate(-6deg); } 50%{ transform:rotate(7deg); } }
-    #iggy.sassy .ig-tail{ animation:igTailFlick .5s ease-in-out 2; }
-    @keyframes igTailFlick{ 0%,100%{ transform:rotate(-6deg); } 30%{ transform:rotate(-22deg); } 60%{ transform:rotate(10deg); } }
+    /* tail: living undulation that flows, plus a sharp flick when sassy */
+    .ig-tail{ transform-origin:104px 75px; animation:igTail 2.2s ease-in-out infinite; }
+    @keyframes igTail{ 0%,100%{ transform:rotate(-5deg); } 50%{ transform:rotate(6deg); } }
+    #iggy.sassy .ig-tail{ animation:igTailFlick .45s ease-in-out 3; }
+    @keyframes igTailFlick{ 0%,100%{ transform:rotate(-5deg); } 30%{ transform:rotate(-24deg); } 65%{ transform:rotate(12deg); } }
 
-    /* blink / heavy-lidded sass */
-    .ig-lid{ transform-origin:234px 60px; transform:scaleY(0); animation:igBlink 5.5s ease-in-out infinite; }
-    @keyframes igBlink{ 0%,92%,100%{ transform:scaleY(0); } 95%{ transform:scaleY(1.3); } }
-    #iggy.sassy .ig-lid{ animation:igSideEye 1.6s ease-in-out 1; }
-    @keyframes igSideEye{ 0%,100%{ transform:scaleY(0); } 25%,75%{ transform:scaleY(.7); } }
+    /* crest spines breathe/quiver subtly, bristle when sassy */
+    .ig-crest{ transform-origin:180px 60px; animation:igCrest 4s ease-in-out infinite; }
+    @keyframes igCrest{ 0%,100%{ transform:scaleY(1); } 50%{ transform:scaleY(1.04); } }
+    #iggy.sassy .ig-crest{ animation:igBristle .5s ease-in-out 2; }
+    @keyframes igBristle{ 0%,100%{ transform:scaleY(1); } 50%{ transform:scaleY(1.22); } }
+
+    /* nictitating blink — horizontal membrane sweeps across the eye */
+    .ig-lid{ transform-origin:301px 70px; transform:scaleX(0); animation:igBlink 5s ease-in-out infinite; }
+    @keyframes igBlink{ 0%,90%,100%{ transform:scaleX(0); } 94%{ transform:scaleX(1); } 97%{ transform:scaleX(1); } }
+    #iggy.sassy .ig-lid{ animation:igSideEye 1.8s ease-in-out 1; }
+    @keyframes igSideEye{ 0%,100%{ transform:scaleX(0); } 30%,70%{ transform:scaleX(.55); } }
+
+    /* pupil drifts a touch — alive, watchful */
+    .ig-pupil{ animation:igLook 6s ease-in-out infinite; }
+    @keyframes igLook{ 0%,100%{ transform:translate(0,0); } 40%{ transform:translate(-1.2px,.6px); } 70%{ transform:translate(1px,-.4px); } }
 
     /* head tilt when looking around */
-    .ig-head{ transform-origin:212px 64px; }
-    #iggy.looking .ig-head{ animation:igTilt 1.6s ease-in-out 1; }
-    @keyframes igTilt{ 0%,100%{ transform:rotate(0); } 35%{ transform:rotate(-12deg); } 70%{ transform:rotate(6deg); } }
+    .ig-head{ transform-origin:262px 78px; }
+    #iggy.looking .ig-head{ animation:igTilt 1.8s ease-in-out 1; }
+    @keyframes igTilt{ 0%,100%{ transform:rotate(0); } 35%{ transform:rotate(-13deg); } 70%{ transform:rotate(7deg); } }
 
-    /* dewlap throb when sassy */
-    #iggy.sassy .ig-dewlap{ animation:igDewlap .4s ease-in-out 2; transform-origin:228px 80px; }
-    @keyframes igDewlap{ 0%,100%{ transform:scaleY(1); } 50%{ transform:scaleY(1.5); } }
+    /* throat/dewlap pulses gently always; throbs hard when sassy */
+    .ig-dewlap{ transform-origin:272px 96px; animation:igThroat 2.8s ease-in-out infinite; }
+    @keyframes igThroat{ 0%,100%{ transform:scaleY(1); } 50%{ transform:scaleY(1.08) scaleX(1.02); } }
+    #iggy.sassy .ig-dewlap{ animation:igDewlap .4s ease-in-out 3; }
+    @keyframes igDewlap{ 0%,100%{ transform:scaleY(1); } 50%{ transform:scaleY(1.6) scaleX(1.08); } }
+
+    /* tongue flick — only when sassy */
+    .ig-tongue{ transform-origin:313px 84px; }
+    #iggy.sassy .ig-tongue{ animation:igTongue 1.4s ease-in-out 1; }
+    @keyframes igTongue{
+      0%,100%{ opacity:0; transform:scaleX(0); }
+      20%{ opacity:1; transform:scaleX(1); }
+      40%{ opacity:1; transform:scaleX(.6); }
+      60%{ opacity:1; transform:scaleX(1); }
+      80%{ opacity:0; transform:scaleX(0); }
+    }
 
     /* thought bubble */
     .iggyBubble{
       position:absolute;
-      left:60%; bottom:74%;
+      left:62%; bottom:78%;
       min-width:90px; max-width:200px;
       padding:8px 12px;
       background:#fffdf6;
@@ -199,7 +224,7 @@
       transition:opacity .25s ease, transform .25s ease;
       box-shadow:0 6px 16px rgba(0,0,0,.25);
     }
-    .iggyBubble::after{   /* little tail of the bubble */
+    .iggyBubble::after{
       content:""; position:absolute; left:18px; bottom:-8px;
       width:0; height:0;
       border:7px solid transparent;
@@ -207,8 +232,7 @@
       filter:drop-shadow(0 1.5px 0 #1a2b22);
     }
     .iggyBubble.show{ opacity:1; transform:translateY(0) scale(1); }
-    /* when Iggy faces left, bubble sits on the other side */
-    #iggy.flip .iggyBubble{ left:auto; right:60%; }
+    #iggy.flip .iggyBubble{ left:auto; right:62%; }
     #iggy.flip .iggyBubble::after{ left:auto; right:18px; }
 
     @media (prefers-reduced-motion: reduce){
@@ -764,110 +788,238 @@
   <!-- Iggy the sassy iguana — roams the background -->
   <div id="iggy" aria-hidden="true">
     <div class="iggyBubble" id="iggyBubble"></div>
-    <svg class="iggyBody" viewBox="0 0 260 128" xmlns="http://www.w3.org/2000/svg">
+    <svg class="iggyBody" viewBox="0 0 320 170" xmlns="http://www.w3.org/2000/svg">
       <defs>
-        <linearGradient id="igBodyGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="#7fae54"/>
-          <stop offset="0.45" stop-color="#5f9440"/>
-          <stop offset="1" stop-color="#3f6b2c"/>
+        <linearGradient id="igBody" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#9cc46a"/>
+          <stop offset="0.4" stop-color="#6fa343"/>
+          <stop offset="0.8" stop-color="#4d7a30"/>
+          <stop offset="1" stop-color="#37591f"/>
         </linearGradient>
-        <linearGradient id="igHeadGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="#8cb85f"/>
-          <stop offset="1" stop-color="#4f7d36"/>
+        <linearGradient id="igHead" x1="0" y1="0" x2="0.2" y2="1">
+          <stop offset="0" stop-color="#a9cd76"/>
+          <stop offset="0.6" stop-color="#6fa343"/>
+          <stop offset="1" stop-color="#4a7330"/>
         </linearGradient>
-        <linearGradient id="igTailGrad" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0" stop-color="#3a5f29"/>
-          <stop offset="1" stop-color="#5f9440"/>
+        <linearGradient id="igLimb" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#79a64b"/>
+          <stop offset="1" stop-color="#3c5f24"/>
         </linearGradient>
-        <radialGradient id="igEye" cx="0.4" cy="0.4" r="0.7">
-          <stop offset="0" stop-color="#f4d06a"/>
-          <stop offset="0.7" stop-color="#c8922f"/>
-          <stop offset="1" stop-color="#8a5e16"/>
+        <linearGradient id="igTailG" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stop-color="#33531c"/>
+          <stop offset="0.5" stop-color="#557f33"/>
+          <stop offset="1" stop-color="#7aa84d"/>
+        </linearGradient>
+        <radialGradient id="igEyeBall" cx="0.38" cy="0.36" r="0.75">
+          <stop offset="0" stop-color="#ffe39a"/>
+          <stop offset="0.45" stop-color="#e0a83c"/>
+          <stop offset="0.8" stop-color="#a9701c"/>
+          <stop offset="1" stop-color="#6e470f"/>
+        </radialGradient>
+        <radialGradient id="igBelly" cx="0.5" cy="0.2" r="0.9">
+          <stop offset="0" stop-color="#d8e3a4"/>
+          <stop offset="1" stop-color="#d8e3a4" stop-opacity="0"/>
+        </radialGradient>
+        <filter id="igShadow" x="-20%" y="-20%" width="140%" height="160%">
+          <feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#0c2013" flood-opacity="0.4"/>
+        </filter>
+        <!-- pebbled skin texture -->
+        <filter id="igSkin" x="-10%" y="-10%" width="120%" height="120%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="7" result="n"/>
+          <feColorMatrix in="n" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.5 0" result="na"/>
+          <feComposite in="na" in2="SourceGraphic" operator="in" result="tex"/>
+          <feBlend in="SourceGraphic" in2="tex" mode="multiply"/>
+        </filter>
+        <radialGradient id="igScaleHi" cx="0.35" cy="0.3" r="0.8">
+          <stop offset="0" stop-color="#ffffff" stop-opacity="0.35"/>
+          <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
         </radialGradient>
       </defs>
 
-      <!-- TAIL: long, tapering, faintly banded -->
-      <g class="ig-tail">
-        <path d="M86 66 Q44 70 24 60 Q6 50 6 44 Q6 40 12 41 Q26 44 40 50 Q58 58 86 58 Z"
-              fill="url(#igTailGrad)"/>
-        <!-- tail bands -->
-        <g stroke="#33531f" stroke-width="1.4" opacity="0.5" fill="none">
-          <path d="M40 50 Q42 58 41 64"/>
-          <path d="M52 53 Q54 60 53 65"/>
-          <path d="M64 55 Q66 61 65 66"/>
-          <path d="M76 57 Q78 62 77 66"/>
+      <g filter="url(#igShadow)">
+
+        <!-- ===================== TAIL ===================== -->
+        <g class="ig-tail">
+          <path d="M104 80 Q60 86 34 80 Q14 75 8 64 Q4 56 12 56 Q22 57 30 62
+                   Q40 68 56 70 Q80 73 104 70 Z" fill="url(#igTailG)" stroke="#2c4a18" stroke-width="1"/>
+          <!-- overlapping tail scale rings / bands -->
+          <g fill="none" stroke="#2c4a18" stroke-width="1.2" opacity="0.55">
+            <path d="M30 62 Q33 71 31 78"/>
+            <path d="M44 66 Q47 73 45 79"/>
+            <path d="M58 69 Q61 75 59 80"/>
+            <path d="M72 70 Q75 76 73 80"/>
+            <path d="M88 71 Q91 76 89 80"/>
+          </g>
+          <!-- whip-tip keeled scales -->
+          <g fill="#2c4a18" opacity="0.6">
+            <path d="M12 56 l-5 -2 l5 4 z"/>
+          </g>
         </g>
-      </g>
 
-      <!-- BACK LEGS (drawn behind body) -->
-      <g class="ig-leg ig-leg-back" fill="#3c5f2a">
-        <path d="M150 84 q9 14 6 28 q-1 6 -6 6 q-5 0 -5 -6 l-1 -16 q-1 -8 1 -12 z"/>
-        <!-- foot + claws -->
-        <path d="M148 116 l-9 5 m9 -5 l-4 8 m4 -8 l3 8 m-3 -8 l8 4" stroke="#2c451f" stroke-width="2" stroke-linecap="round"/>
-        <path d="M118 86 q8 13 6 26 q-1 6 -6 6 q-5 0 -5 -6 l-1 -14 q-1 -8 2 -12 z"/>
-        <path d="M116 116 l-8 5 m8 -5 l-4 8 m4 -8 l3 8 m-3 -8 l8 4" stroke="#2c451f" stroke-width="2" stroke-linecap="round"/>
-      </g>
-
-      <!-- DORSAL CREST: row of spines tapering front-to-back -->
-      <path class="ig-crest" fill="#3a5f29" d="
-        M212 46 l3 -13 l4 13 z
-        M198 44 l3 -15 l4 15 z
-        M183 43 l4 -16 l4 16 z
-        M167 43 l4 -15 l4 15 z
-        M151 44 l4 -13 l4 13 z
-        M135 45 l3 -12 l4 12 z
-        M120 47 l3 -10 l4 10 z
-        M105 49 l3 -8 l3 8 z
-        M92 52 l2 -6 l3 6 z"/>
-
-      <!-- BODY: scaled torso with shading -->
-      <path class="ig-body" fill="url(#igBodyGrad)" stroke="#33531f" stroke-width="1" d="
-        M86 58 Q88 46 120 44 L196 46 Q216 48 220 64 Q218 84 196 86 L120 88 Q88 86 86 66 Z"/>
-      <!-- belly highlight -->
-      <path d="M96 82 Q140 90 198 84 Q150 92 100 86 Z" fill="#cfd98f" opacity="0.35"/>
-      <!-- scale texture (subtle dotted rows) -->
-      <g fill="#33531f" opacity="0.28">
-        <circle cx="120" cy="56" r="1.3"/><circle cx="134" cy="55" r="1.3"/><circle cx="148" cy="55" r="1.3"/>
-        <circle cx="162" cy="56" r="1.3"/><circle cx="176" cy="57" r="1.3"/><circle cx="190" cy="59" r="1.3"/>
-        <circle cx="127" cy="64" r="1.2"/><circle cx="141" cy="64" r="1.2"/><circle cx="155" cy="64" r="1.2"/>
-        <circle cx="169" cy="65" r="1.2"/><circle cx="183" cy="66" r="1.2"/>
-        <circle cx="120" cy="72" r="1.1"/><circle cx="134" cy="73" r="1.1"/><circle cx="148" cy="73" r="1.1"/>
-        <circle cx="162" cy="73" r="1.1"/><circle cx="176" cy="73" r="1.1"/>
-      </g>
-
-      <!-- FRONT LEGS (in front of body) -->
-      <g class="ig-leg ig-leg-front" fill="#4f7d36">
-        <path d="M200 84 q9 14 6 28 q-1 6 -6 6 q-5 0 -5 -6 l-1 -16 q-1 -8 1 -12 z"/>
-        <path d="M198 116 l-9 5 m9 -5 l-4 8 m4 -8 l3 8 m-3 -8 l8 4" stroke="#33531f" stroke-width="2" stroke-linecap="round"/>
-        <path d="M172 86 q8 13 6 26 q-1 6 -6 6 q-5 0 -5 -6 l-1 -14 q-1 -8 2 -12 z"/>
-        <path d="M170 116 l-8 5 m8 -5 l-4 8 m4 -8 l3 8 m-3 -8 l8 4" stroke="#33531f" stroke-width="2" stroke-linecap="round"/>
-      </g>
-
-      <!-- HEAD -->
-      <g class="ig-head">
-        <!-- skull/jaw shape -->
-        <path fill="url(#igHeadGrad)" stroke="#33531f" stroke-width="1" d="
-          M214 50 Q236 44 250 50 Q258 53 258 60 Q258 70 250 74 Q236 82 218 78 Q210 72 210 62 Q210 54 214 50 Z"/>
-        <!-- jowl / cheek line -->
-        <path d="M222 70 Q236 76 250 72" stroke="#33531f" stroke-width="1.1" fill="none" opacity="0.6"/>
-        <!-- subtympanic shield (big round cheek scale) -->
-        <circle cx="226" cy="70" r="5" fill="#9bbf66" stroke="#33531f" stroke-width="0.9"/>
-        <!-- DEWLAP (throat flap) -->
-        <path class="ig-dewlap" fill="#4f7d36" stroke="#33531f" stroke-width="0.8" d="
-          M220 78 Q220 98 234 102 Q244 102 242 92 Q240 82 232 79 Z"/>
-        <!-- eye: amber iguana eye, heavy lid -->
-        <circle cx="238" cy="58" r="6" fill="url(#igEye)" stroke="#33531f" stroke-width="1"/>
-        <circle class="ig-pupil" cx="239" cy="58" r="2.4" fill="#10180d"/>
-        <circle cx="237.4" cy="56.6" r="0.9" fill="#fff" opacity="0.8"/>
-        <path class="ig-lid" d="M231 55 Q238 50 245 55 L245 58 Q238 53.5 231 58 Z" fill="#5f9440"/>
-        <!-- nostril -->
-        <ellipse cx="253" cy="57" rx="1.6" ry="1.1" fill="#10180d"/>
-        <!-- mouth line -->
-        <path d="M246 67 Q252 69 257 66" stroke="#2c451f" stroke-width="1.4" fill="none" stroke-linecap="round"/>
-        <!-- a few head scales -->
-        <g fill="#33531f" opacity="0.3">
-          <circle cx="224" cy="54" r="1"/><circle cx="230" cy="52" r="1"/><circle cx="236" cy="51" r="1"/>
+        <!-- ===================== BACK LEGS (behind) ===================== -->
+        <g class="ig-leg ig-leg-back">
+          <!-- far back leg -->
+          <g opacity="0.92">
+            <path d="M150 108 q12 16 9 34 q-1 7 -8 7 q-6 0 -6 -7 l-2 -20 q-1 -10 7 -14 z" fill="#3c5f24" stroke="#2c4a18" stroke-width="0.8"/>
+            <!-- foot -->
+            <path d="M150 148 q-3 6 -10 8" stroke="#345220" stroke-width="3" fill="none" stroke-linecap="round"/>
+            <g stroke="#27401a" stroke-width="2" stroke-linecap="round">
+              <path d="M150 150 l-11 7"/><path d="M150 150 l-6 10"/><path d="M150 150 l1 11"/><path d="M150 150 l8 8"/>
+            </g>
+          </g>
+          <!-- near back leg -->
+          <path d="M118 110 q12 16 9 34 q-1 7 -8 7 q-6 0 -6 -7 l-2 -20 q-1 -10 7 -14 z" fill="url(#igLimb)" stroke="#2c4a18" stroke-width="0.9"/>
+          <!-- thigh scales -->
+          <g fill="#345220" opacity="0.4"><circle cx="120" cy="116" r="1.4"/><circle cx="124" cy="122" r="1.3"/><circle cx="119" cy="126" r="1.2"/><circle cx="123" cy="132" r="1.1"/></g>
+          <path d="M118 150 q-3 6 -10 8" stroke="#2c4a18" stroke-width="3" fill="none" stroke-linecap="round"/>
+          <g stroke="#27401a" stroke-width="2.2" stroke-linecap="round">
+            <path d="M118 152 l-12 7"/><path d="M118 152 l-6 11"/><path d="M118 152 l1 12"/><path d="M118 152 l9 9"/>
+          </g>
         </g>
+
+        <!-- ===================== DORSAL CREST ===================== -->
+        <g class="ig-crest" fill="#33531c" stroke="#27401a" stroke-width="0.6">
+          <path d="M250 60 l3 -16 l5 16 z"/>
+          <path d="M236 56 l4 -20 l5 20 z"/>
+          <path d="M220 54 l4 -23 l5 23 z"/>
+          <path d="M203 53 l5 -24 l5 24 z"/>
+          <path d="M186 53 l5 -23 l5 23 z"/>
+          <path d="M169 54 l5 -21 l5 21 z"/>
+          <path d="M152 56 l4 -18 l5 18 z"/>
+          <path d="M136 59 l4 -15 l5 15 z"/>
+          <path d="M121 62 l3 -12 l4 12 z"/>
+          <path d="M107 66 l3 -9 l4 9 z"/>
+          <path d="M95 70 l2 -7 l3 7 z"/>
+        </g>
+
+        <!-- ===================== BODY ===================== -->
+        <path class="ig-body" fill="url(#igBody)" stroke="#2c4a18" stroke-width="1.2" d="
+          M104 70 Q104 56 138 52 Q180 49 230 54 Q258 57 264 76 Q262 100 232 104
+          Q180 108 138 104 Q104 102 104 80 Z" filter="url(#igSkin)"/>
+        <!-- belly sheen -->
+        <ellipse cx="180" cy="98" rx="70" ry="14" fill="url(#igBelly)" opacity="0.6"/>
+
+        <!-- overlapping scale rows on the body -->
+        <g class="ig-scales" stroke="#2c4a18" stroke-width="0.5">
+          <!-- row 1 (upper) -->
+          <g fill="#5d8a39">
+            <path d="M132 60 q5 -3 10 0 q-1 5 -5 5 q-4 0 -5 -5 z"/>
+            <path d="M146 58 q5 -3 10 0 q-1 5 -5 5 q-4 0 -5 -5 z"/>
+            <path d="M160 57 q5 -3 10 0 q-1 5 -5 5 q-4 0 -5 -5 z"/>
+            <path d="M174 57 q5 -3 10 0 q-1 5 -5 5 q-4 0 -5 -5 z"/>
+            <path d="M188 57 q5 -3 10 0 q-1 5 -5 5 q-4 0 -5 -5 z"/>
+            <path d="M202 58 q5 -3 10 0 q-1 5 -5 5 q-4 0 -5 -5 z"/>
+            <path d="M216 60 q5 -3 10 0 q-1 5 -5 5 q-4 0 -5 -5 z"/>
+            <path d="M230 63 q5 -3 10 0 q-1 5 -5 5 q-4 0 -5 -5 z"/>
+          </g>
+          <!-- row 2 (middle) -->
+          <g fill="#6fa343">
+            <path d="M126 70 q5 -3 10 0 q-1 5 -5 5 q-4 0 -5 -5 z"/>
+            <path d="M140 69 q5 -3 10 0 q-1 5 -5 5 q-4 0 -5 -5 z"/>
+            <path d="M154 68 q5 -3 10 0 q-1 5 -5 5 q-4 0 -5 -5 z"/>
+            <path d="M168 68 q5 -3 10 0 q-1 5 -5 5 q-4 0 -5 -5 z"/>
+            <path d="M182 68 q5 -3 10 0 q-1 5 -5 5 q-4 0 -5 -5 z"/>
+            <path d="M196 68 q5 -3 10 0 q-1 5 -5 5 q-4 0 -5 -5 z"/>
+            <path d="M210 69 q5 -3 10 0 q-1 5 -5 5 q-4 0 -5 -5 z"/>
+            <path d="M224 71 q5 -3 10 0 q-1 5 -5 5 q-4 0 -5 -5 z"/>
+            <path d="M238 74 q5 -3 10 0 q-1 5 -5 5 q-4 0 -5 -5 z"/>
+          </g>
+          <!-- row 3 (lower, smaller) -->
+          <g fill="#7fae54" opacity="0.85">
+            <path d="M134 81 q4 -2 8 0 q-1 4 -4 4 q-3 0 -4 -4 z"/>
+            <path d="M148 81 q4 -2 8 0 q-1 4 -4 4 q-3 0 -4 -4 z"/>
+            <path d="M162 81 q4 -2 8 0 q-1 4 -4 4 q-3 0 -4 -4 z"/>
+            <path d="M176 81 q4 -2 8 0 q-1 4 -4 4 q-3 0 -4 -4 z"/>
+            <path d="M190 81 q4 -2 8 0 q-1 4 -4 4 q-3 0 -4 -4 z"/>
+            <path d="M204 81 q4 -2 8 0 q-1 4 -4 4 q-3 0 -4 -4 z"/>
+            <path d="M218 81 q4 -2 8 0 q-1 4 -4 4 q-3 0 -4 -4 z"/>
+          </g>
+        </g>
+
+        <!-- ===================== FRONT LEGS (in front) ===================== -->
+        <g class="ig-leg ig-leg-front">
+          <!-- far front leg -->
+          <g opacity="0.92">
+            <path d="M244 104 q12 16 9 34 q-1 7 -8 7 q-6 0 -6 -7 l-2 -20 q-1 -10 7 -14 z" fill="#456a2a" stroke="#2c4a18" stroke-width="0.8"/>
+            <path d="M244 144 q-3 6 -10 8" stroke="#345220" stroke-width="3" fill="none" stroke-linecap="round"/>
+            <g stroke="#27401a" stroke-width="2" stroke-linecap="round">
+              <path d="M244 146 l-11 7"/><path d="M244 146 l-6 10"/><path d="M244 146 l1 11"/><path d="M244 146 l8 8"/>
+            </g>
+          </g>
+          <!-- near front leg -->
+          <path d="M214 106 q12 16 9 34 q-1 7 -8 7 q-6 0 -6 -7 l-2 -20 q-1 -10 7 -14 z" fill="url(#igLimb)" stroke="#2c4a18" stroke-width="0.9"/>
+          <g fill="#345220" opacity="0.4"><circle cx="216" cy="112" r="1.4"/><circle cx="220" cy="118" r="1.3"/><circle cx="215" cy="122" r="1.2"/><circle cx="219" cy="128" r="1.1"/></g>
+          <path d="M214 146 q-3 6 -10 8" stroke="#2c4a18" stroke-width="3" fill="none" stroke-linecap="round"/>
+          <g stroke="#27401a" stroke-width="2.2" stroke-linecap="round">
+            <path d="M214 148 l-12 7"/><path d="M214 148 l-6 11"/><path d="M214 148 l1 12"/><path d="M214 148 l9 9"/>
+          </g>
+        </g>
+
+        <!-- ===================== NECK SCALES (tuberculate) ===================== -->
+        <g fill="#5d8a39" stroke="#2c4a18" stroke-width="0.5">
+          <circle cx="256" cy="66" r="2.4"/><circle cx="262" cy="72" r="2.2"/>
+          <circle cx="258" cy="78" r="2"/><circle cx="264" cy="84" r="1.8"/>
+          <circle cx="252" cy="84" r="1.7"/>
+        </g>
+
+        <!-- ===================== HEAD ===================== -->
+        <g class="ig-head">
+          <!-- skull -->
+          <path fill="url(#igHead)" stroke="#2c4a18" stroke-width="1.2" d="
+            M258 60 Q284 52 304 60 Q316 65 316 76 Q316 90 304 95
+            Q286 104 264 98 Q252 92 252 78 Q252 66 258 60 Z" filter="url(#igSkin)"/>
+          <!-- head scale plates -->
+          <g fill="none" stroke="#2c4a18" stroke-width="0.7" opacity="0.55">
+            <path d="M268 62 Q280 58 294 62"/>
+            <path d="M266 70 Q284 66 300 70"/>
+            <path d="M270 80 Q286 78 302 80"/>
+          </g>
+          <g fill="#7fae54" opacity="0.5">
+            <circle cx="272" cy="66" r="1.6"/><circle cx="280" cy="64" r="1.6"/><circle cx="288" cy="64" r="1.6"/><circle cx="296" cy="66" r="1.5"/>
+            <circle cx="274" cy="74" r="1.5"/><circle cx="284" cy="73" r="1.5"/><circle cx="294" cy="74" r="1.4"/>
+          </g>
+
+          <!-- jaw / lip line -->
+          <path d="M266 90 Q288 98 308 90" stroke="#2c4a18" stroke-width="1.1" fill="none" opacity="0.7"/>
+          <!-- labial (lip) scales -->
+          <g fill="#cdd8a0" stroke="#2c4a18" stroke-width="0.4" opacity="0.85">
+            <rect x="270" y="89" width="6" height="4" rx="1.4"/>
+            <rect x="278" y="91" width="6" height="4" rx="1.4"/>
+            <rect x="286" y="92" width="6" height="4" rx="1.4"/>
+            <rect x="294" y="91" width="6" height="4" rx="1.4"/>
+          </g>
+
+          <!-- subtympanic shield (large round cheek scale) -->
+          <circle cx="268" cy="86" r="6.5" fill="#b4d181" stroke="#2c4a18" stroke-width="1"/>
+          <circle cx="268" cy="86" r="6.5" fill="url(#igScaleHi)"/>
+          <!-- tympanum (ear) -->
+          <ellipse cx="262" cy="74" rx="3" ry="4" fill="#4a7330" stroke="#2c4a18" stroke-width="0.7" opacity="0.8"/>
+
+          <!-- DEWLAP -->
+          <path class="ig-dewlap" fill="url(#igLimb)" stroke="#2c4a18" stroke-width="0.9" d="
+            M262 96 Q260 124 282 130 Q296 130 293 116 Q289 100 276 96 Z"/>
+          <!-- dewlap serrations + striations -->
+          <path d="M262 100 Q266 116 280 126" stroke="#2c4a18" stroke-width="0.7" fill="none" opacity="0.5"/>
+          <path d="M268 98 Q272 114 284 124" stroke="#2c4a18" stroke-width="0.6" fill="none" opacity="0.4"/>
+
+          <!-- EYE socket ridge -->
+          <path d="M286 64 Q296 60 304 66 Q300 62 292 62 Q288 62 286 64 Z" fill="#4a7330"/>
+          <!-- eye ring scales -->
+          <circle cx="294" cy="70" r="8.5" fill="#4a7330" stroke="#2c4a18" stroke-width="0.8"/>
+          <!-- eyeball -->
+          <circle cx="294" cy="70" r="6.5" fill="url(#igEyeBall)" stroke="#2c4a18" stroke-width="0.8"/>
+          <circle class="ig-pupil" cx="295" cy="70" r="2.6" fill="#0c140a"/>
+          <circle cx="292.6" cy="68" r="1.1" fill="#fff" opacity="0.85"/>
+          <!-- nictitating membrane (horizontal blink) -->
+          <rect class="ig-lid" x="287" y="63.5" width="14" height="13" rx="4" fill="#6fa343"/>
+
+          <!-- snout / nostril -->
+          <ellipse cx="312" cy="70" rx="1.8" ry="1.3" fill="#0c140a"/>
+          <!-- mouth + tongue -->
+          <path d="M304 84 Q312 86 317 82" stroke="#23391a" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+          <path class="ig-tongue" d="M313 84 q8 1 12 -1 q-5 4 -12 3 z" fill="#c2566a" opacity="0"/>
+        </g>
+
       </g>
     </svg>
   </div>
