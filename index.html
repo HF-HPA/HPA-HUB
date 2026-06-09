@@ -287,6 +287,14 @@
       border-color:rgba(43,212,154,.34);
       color:#eafff5; font-weight:600;
     }
+    /* unseen-change notification dot */
+    .navDot{
+      margin-left:auto; flex:none;
+      width:9px; height:9px; border-radius:50%;
+      background:#e0563f; box-shadow:0 0 0 2px rgba(224,86,63,.28);
+      display:none;
+    }
+    .navBtn.hasChange .navDot{ display:block; }
     .navSpacer{ flex:1; min-height:10px; }
 
     .main{
@@ -1330,10 +1338,50 @@
       checkin:document.getElementById("page-checkin"),
       issues: document.getElementById("page-issues")
     };
+
+    // ---- Unseen-change notification dots ----
+    // A tab gets a red dot when its data changes while you're NOT viewing it.
+    // The dot clears when you visit that tab. Flags persist across reloads.
+    const NOTIF_KEY = "hpa_tab_notifs_v1";
+    let currentPage = null;
+
+    function loadNotifs(){ return LS.get(NOTIF_KEY, {}); }
+    function saveNotifs(obj){ LS.set(NOTIF_KEY, obj); }
+
+    // give every nav button a dot element
+    navBtns.forEach(b => {
+      if(!b.querySelector(".navDot")){
+        const dot = document.createElement("span");
+        dot.className = "navDot";
+        b.appendChild(dot);
+      }
+    });
+
+    function refreshNotifDots(){
+      const n = loadNotifs();
+      navBtns.forEach(b => b.classList.toggle("hasChange", !!n[b.dataset.page]));
+    }
+
+    function markTabChanged(tabKey){
+      if(tabKey === currentPage) return;   // don't flag the tab you're on
+      const n = loadNotifs();
+      n[tabKey] = true;
+      saveNotifs(n);
+      refreshNotifDots();
+    }
+
+    function clearTabNotif(tabKey){
+      const n = loadNotifs();
+      if(n[tabKey]){ delete n[tabKey]; saveNotifs(n); }
+      refreshNotifDots();
+    }
+
     function showPage(key){
+      currentPage = key;
       Object.values(pages).forEach(p => p.style.display = "none");
       pages[key].style.display = "block";
       navBtns.forEach(b => b.classList.toggle("active", b.dataset.page === key));
+      clearTabNotif(key);   // visiting a tab clears its dot
       if(key === "order") renderOrder();
       if(key === "photos") renderPhotos();
       if(key === "avail") renderAvailability();
@@ -1714,6 +1762,7 @@
       }
 
       saveTrucks(trucks);
+      markTabChanged("order");
       closeTruckModal();
       renderAll();
       renderOrder();
@@ -1724,6 +1773,7 @@
       const ok = confirm("Delete this order?");
       if(!ok) return;
       saveTrucks(loadTrucks().filter(t => t.id !== editingTruckId));
+      markTabChanged("order");
       closeTruckModal();
       renderAll();
       renderOrder();
@@ -2603,6 +2653,7 @@
       populateIssuePhotoOptions();
 
       if(savedCount > 0){
+        markTabChanged("photos");
         const msg = `Saved ${savedCount} photo${savedCount===1?"":"s"} (${fmtBytes(savedBytes)} total).`;
         statusChip.textContent = stoppedEarly ? "Storage full — some skipped" : msg;
         setTimeout(() => { statusChip.textContent = "Ready"; }, 4000);
@@ -2806,6 +2857,7 @@
       }
 
       saveAvail(list);
+      markTabChanged("avail");
       closeAvailModal();
       renderAvailability();
     });
@@ -2949,6 +3001,7 @@
             const all = loadAvailOrders();
             for(const k of Object.keys(all)){ if(all[k]) delete all[k][e.id]; }
             saveAvailOrders(all);
+            markTabChanged("avail");
             renderAvailability();
           });
 
@@ -3048,6 +3101,7 @@
         createdAt: new Date().toISOString()
       });
       saveIssues(issues);
+      markTabChanged("issues");
       closeIssueModal();
       renderIssues();
     });
