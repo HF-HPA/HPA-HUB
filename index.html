@@ -984,10 +984,16 @@
         </label>
       </div>
 
-      <label>
-        <span class="lbl">Item (optional)</span>
-        <input id="p_item" placeholder='e.g., 6" Monstera'/>
-      </label>
+      <div class="row">
+        <label>
+          <span class="lbl">Item (optional)</span>
+          <input id="p_item" placeholder='e.g., Monstera Deliciosa'/>
+        </label>
+        <label>
+          <span class="lbl">Spec (optional)</span>
+          <input id="p_spec" placeholder='size, e.g., 6"'/>
+        </label>
+      </div>
 
       <label>
         <span class="lbl">Select Images</span>
@@ -2258,6 +2264,7 @@
       photoModal.classList.remove("active");
       photoModal.setAttribute("aria-hidden","true");
       document.getElementById("p_files").value = "";
+      document.getElementById("p_spec").value = "";
     }
 
     document.getElementById("photoSaveBtn").addEventListener("click", async () => {
@@ -2265,6 +2272,7 @@
       const vendor = document.getElementById("p_vendor").value.trim();
       const truckId = document.getElementById("p_truck").value;
       const item = document.getElementById("p_item").value.trim();
+      const spec = document.getElementById("p_spec").value.trim();
       const files = Array.from(document.getElementById("p_files").files || []);
 
       if(files.length === 0){
@@ -2294,6 +2302,7 @@
           week, vendor,
           truckId: truckId || "",
           item,
+          spec,
           createdAt: new Date().toISOString(),
           name: f.name,
           width: shrunk.width,
@@ -2362,6 +2371,7 @@
             <span class="pillMini">${escapeHtml(p.week || "—")}</span>
             <span class="pillMini">${escapeHtml(p.vendor || "Vendor —")}</span>
             <span class="pillMini">${escapeHtml(p.item || "Item —")}</span>
+            ${p.spec ? `<span class="pillMini">${escapeHtml(p.spec)}</span>` : ``}
             <span class="pillMini">${escapeHtml(t?.pickupDate ? ("PU "+t.pickupDate) : "Truck —")}</span>
             ${p.bytes ? `<span class="pillMini">${fmtBytes(p.bytes)}</span>` : ``}
           </div>
