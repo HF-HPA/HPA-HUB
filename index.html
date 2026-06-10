@@ -446,6 +446,30 @@
     .navList{ display:flex; flex-direction:column; gap:2px; }
     .navFooter{ display:flex; flex-direction:column; gap:2px; }
 
+    /* ===== Truck cards: clear visual hierarchy so each truck stands out ===== */
+    /* The location/type group becomes a light label — trucks are the heroes */
+    .orderSection{ border:none; background:transparent; box-shadow:none; border-radius:0; overflow:visible; margin:0 0 4px; }
+    .orderSection > .sectionHeader{ background:transparent; border-bottom:none; padding:10px 2px 8px; }
+    .orderSection > .sectionHeader::after{ display:none; }
+    .orderSection > .sectionHeader .sectionTitle{ font-size:12.5px; font-weight:700; text-transform:uppercase; letter-spacing:.1em; color:var(--moss); }
+    .orderSection > .sectionHeader .pillMini{ border:none; background:transparent; padding:2px 3px; color:var(--ink-2); font-weight:600; }
+    .orderSection > .sectionBody{ padding:0; gap:18px; }
+
+    /* Each truck = a bold, elevated, color-accented card */
+    .pickupBlock{ position:relative; background:var(--paper); border:1px solid var(--line); border-left:6px solid var(--truckAccent, var(--moss)); border-radius:14px; box-shadow:0 10px 26px rgba(8,29,22,.14); overflow:hidden; }
+    .pickupHead{ background:var(--truckTint, #f3efe0); border-bottom:1px solid rgba(8,29,22,.08); }
+    .pickupTitle{ font-size:16px; display:flex; align-items:center; gap:9px; }
+    .truckDot{ width:11px; height:11px; border-radius:50%; flex:none; background:var(--truckAccent, var(--moss)); box-shadow:0 0 0 3px var(--truckTint, #e7f4ec); }
+
+    /* Vendor blocks recede so they read as the truck's contents, not competing cards */
+    .pickupBlock .vendorBlockXL{ border:none; background:transparent; border-radius:0; }
+    .pickupBlock .vendorBlockXL + .vendorBlockXL{ border-top:1px solid var(--line); }
+    .pickupBlock .vendorHeadXL{ background:transparent; border-bottom:none; padding:12px 12px 4px; }
+
+    /* Week Totals: lighter so it doesn't compete with the truck cards */
+    .orderSummary{ border:1px dashed var(--line); background:transparent; box-shadow:none; margin-bottom:6px; }
+    .orderSummary .sectionHeader{ background:transparent !important; border-bottom:none; }
+
     /* ============================================================
        MOBILE LAYOUT  (clean, scrollable, nothing cut off)
        ============================================================ */
@@ -1350,6 +1374,12 @@
      * Month bar (quick month navigation for the Order Tracker)
      *********************************************************/
     const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    // distinct, on-brand accent colors so each truck card stands out [accent, light tint]
+    const TRUCK_ACCENTS = [
+      ["#2f9d6b","#e7f4ec"], ["#1f7a8c","#e2eff2"], ["#cf9a1f","#f7eecb"],
+      ["#c2674a","#f6e5de"], ["#5b8c3e","#eaf2df"], ["#3a6ea5","#e4edf5"],
+      ["#9b5ba8","#f0e6f3"], ["#0f7a5a","#e0f1ea"]
+    ];
     function weeksInMonth(year, month){
       const keys = []; const seen = new Set();
       const end = new Date(year, month + 1, 0).getDate();
@@ -2050,6 +2080,7 @@
         return a.localeCompare(b);
       });
 
+      let _truckIdx = 0;
       for(const key of keys){
         const sectionTrucks = groupMap.get(key).slice().sort((a,b) => (a.pickupDate||"").localeCompare(b.pickupDate||""));
 
@@ -2097,6 +2128,10 @@
 
           const pickup = document.createElement("div");
           pickup.className = "pickupBlock";
+          const _acc = TRUCK_ACCENTS[_truckIdx % TRUCK_ACCENTS.length];
+          _truckIdx++;
+          pickup.style.setProperty("--truckAccent", _acc[0]);
+          pickup.style.setProperty("--truckTint", _acc[1]);
 
           const searchParts = [
             t.pickupDate, t.region, t.orderType, t.trucking, t.notes, String(t.price || ""),
@@ -2110,7 +2145,7 @@
           pickup.innerHTML = `
             <div class="pickupHead">
               <div class="pickupLeft">
-                <div class="pickupTitle">PU ${escapeHtml(t.pickupDate || "—")}</div>
+                <div class="pickupTitle"><span class="truckDot"></span>PU ${escapeHtml(t.pickupDate || "—")}</div>
                 <div class="pickupChips">
                   <span class="pillMini editablePill" data-action="editTrucking" title="Click to edit trucking company">${escapeHtml(t.trucking || "Trucking —")}</span>
                   <span class="pillMini editablePill" data-action="editPrice" title="Click to edit truck price">${money(t.price || 0)}</span>
