@@ -607,6 +607,151 @@
     @keyframes igPeek{ 0%{ transform:translateY(18px); } 16%{ transform:translateY(-6px) scale(1.05); } 80%{ transform:translateY(-6px) scale(1.05); } 100%{ transform:translateY(0); } }
     @media (max-width:560px){ #iggy{ width:58px; right:10px; } #iggyChat{ bottom:74px; } }
     @media (prefers-reduced-motion: reduce){ .iggyBody, #iggy.peeking .iggyBody{ animation:none !important; } }
+    /* =====================================================================
+       VISUAL POLISH v2  — coordinated pass (tables, status, empty states,
+       modals, focus, mobile). Appended last so it cleanly layers over the
+       base rules. Delete this whole block to revert to the original look.
+       ===================================================================== */
+
+    :root{
+      /* unified state palette — one shared language for every "state" cue */
+      --state-ok-bd:#7fcfa8;     --state-ok-bg:#e6f6ee;   --state-ok-fg:#0d7a55;
+      --state-warn-bd:#e7c873;   --state-warn-bg:#fbf2d8;  --state-warn-fg:#8a6410;
+      --state-info-bd:#8fb9c9;   --state-info-bg:#e6f0f4;  --state-info-fg:#1f5c6b;
+      --state-danger-bd:#e8a596; --state-danger-bg:#fbe7e1;--state-danger-fg:#a8341f;
+      --state-neutral-bd:#d9d2bf;--state-neutral-bg:#f4f0e2;--state-neutral-fg:#4c5d52;
+      /* calmer surfaces */
+      --rowB:#f6f2e6;
+      --rowHover:#e8f4ec;
+      --thead:#eef3ec;
+      --shadow:0 16px 42px rgba(4,18,12,.20);
+      --shadow-sm:0 3px 10px rgba(4,18,12,.08);
+      --ring:0 0 0 3px rgba(43,212,154,.35);
+      --focusEdge:#0e8a60;
+    }
+
+    /* ---- accessible focus rings for keyboard users (buttons lacked one) ---- */
+    .btn:focus-visible, .btnGhost:focus-visible, .tinyBtn:focus-visible,
+    .navBtn:focus-visible, .closeX:focus-visible, .collapseBtn:focus-visible,
+    .monthBtn:focus-visible, .weekChip:focus-visible, .subTab:focus-visible,
+    .availTab:focus-visible, .statusToggle:focus-visible, .chip:focus-visible{
+      outline:none; box-shadow:var(--ring); border-color:var(--focusEdge);
+    }
+
+    /* ---------------------------------------------------------------
+       TABLES — quieter zebra, clearer numeric rhythm, crisp sticky head
+       --------------------------------------------------------------- */
+    .sheetTable th, .poTable thead th{
+      background:linear-gradient(180deg, #f1f6ef, var(--thead));
+      color:var(--moss); letter-spacing:.05em; font-weight:700;
+      box-shadow:inset 0 -1px 0 var(--line);
+    }
+    .sheetTable td, .poTable td{ transition:background .12s ease; }
+    .sheetTable .num, .poTable .num{
+      font-variant-numeric:tabular-nums; font-feature-settings:"tnum" 1;
+      font-weight:600; color:var(--ink);
+    }
+    /* hover the whole row, with a soft accent edge so the eye tracks it */
+    .sheetTable tbody tr:hover td, .poTable tbody tr:hover td{ background:var(--rowHover); }
+    .sheetTable tbody tr:hover td:first-child{ box-shadow:inset 3px 0 0 var(--mint-deep); }
+    .poTable tbody tr:hover td:first-child{ box-shadow:inset 3px 0 0 var(--mint-deep); }
+    /* the item-name affordance gets a clearer "this is clickable" cue */
+    .itemNameCell{ position:relative; }
+    .itemNameCell:hover{ color:var(--mint-deep); }
+
+    /* totals strips read as a quiet ledger footer rather than more chips */
+    .totalsStrip{ background:linear-gradient(180deg, #f3efe0, #efe9d7); }
+    .totalsStrip .pillMini{ background:#fffef9; }
+
+    /* ---------------------------------------------------------------
+       STATUS — one pill shape + shared colors across the whole app
+       --------------------------------------------------------------- */
+    .statusPill, .statusChip{
+      padding:5px 12px; border-radius:999px; font-size:11.5px; font-weight:700;
+      letter-spacing:.01em; border:1px solid var(--state-neutral-bd);
+      background:var(--state-neutral-bg); color:var(--state-neutral-fg);
+      display:inline-flex; align-items:center; gap:6px; white-space:nowrap; line-height:1.4;
+    }
+    /* leading dot makes state legible at a glance and color-blind friendlier */
+    .statusPill::before, .statusChip::before{
+      content:""; width:7px; height:7px; border-radius:50%;
+      background:currentColor; opacity:.85; flex:none;
+    }
+    .statusConfirmed, .statusResolved{
+      border-color:var(--state-ok-bd); background:var(--state-ok-bg); color:var(--state-ok-fg);
+    }
+    .statusOpen{
+      border-color:var(--state-warn-bd); background:var(--state-warn-bg); color:var(--state-warn-fg);
+    }
+    .statusSubmitted{
+      border-color:var(--state-info-bd); background:var(--state-info-bg); color:var(--state-info-fg);
+    }
+    .statusToggle{ cursor:pointer; }
+    .statusToggle::after{ opacity:.45; }
+
+    /* sync chip + tab notification dots join the same color language */
+    #syncChip[data-state="on"]{ color:var(--state-ok-fg); }
+    #syncChip[data-state="connecting"]{ color:var(--state-warn-fg); }
+    .navDot{ background:var(--state-danger-bd); box-shadow:0 0 0 3px rgba(232,165,150,.25); }
+
+    /* ---------------------------------------------------------------
+       EMPTY STATES — friendlier than bare grey text
+       --------------------------------------------------------------- */
+    .orderSheet > .note:only-child,
+    #checkinWrap > .note,
+    #availWrap > .note,
+    .photoGrid > .note,
+    .plantGrid > .note,
+    .trainingGrid > .note{
+      display:flex; align-items:center; gap:12px;
+      padding:18px 20px; border:1.5px dashed var(--line);
+      border-radius:var(--radius); background:linear-gradient(180deg,#fffdf6,#f6f2e6);
+      color:var(--ink-2); font-weight:600; box-shadow:var(--shadow-sm);
+    }
+    .orderSheet > .note:only-child::before{ content:"🌱"; font-size:26px; }
+    #checkinWrap > .note::before{ content:"📥"; font-size:24px; }
+    .photoGrid > .note::before{ content:"📷"; font-size:24px; }
+    .plantGrid > .note::before{ content:"🪴"; font-size:24px; }
+    .trainingGrid > .note::before{ content:"📚"; font-size:24px; }
+
+    /* ---------------------------------------------------------------
+       MODALS — smoother entrance, softer scrim, lifted card
+       --------------------------------------------------------------- */
+    .modal{ background:rgba(6,20,14,.55); backdrop-filter:blur(3px); }
+    .modal.active .modalCard{ animation:modalRise .22s cubic-bezier(.2,.8,.25,1); }
+    @keyframes modalRise{ from{ opacity:0; transform:translateY(14px) scale(.985); } to{ opacity:1; transform:none; } }
+    .modalCard{ box-shadow:0 30px 80px rgba(4,18,12,.45); border-color:var(--line-soft); }
+    .modalHead h3{ letter-spacing:-.01em; }
+
+    /* ---------------------------------------------------------------
+       BUTTONS / CARDS — a touch more refined, less heavy
+       --------------------------------------------------------------- */
+    .btn{ box-shadow:0 8px 18px rgba(22,168,119,.28); }
+    .btn:active{ box-shadow:0 4px 10px rgba(22,168,119,.3); }
+    .pickupBlock{ box-shadow:0 8px 22px rgba(8,29,22,.12); }
+    .pickupBlock:hover{ box-shadow:0 12px 30px rgba(8,29,22,.16); }
+    .navBtn.active{ box-shadow:inset 0 0 0 1px rgba(43,212,154,.25); }
+
+    /* card-shadow gentling everywhere */
+    .card, .side, .main, .orderSummary, .vendorBlockXL,
+    .photoTile, .plantTile, .trainingCard, .linkCard{ box-shadow:var(--shadow-sm); }
+
+    /* ---------------------------------------------------------------
+       MOBILE — comfortable 44px tap targets for warehouse phones
+       --------------------------------------------------------------- */
+    @media (max-width:560px){
+      .tinyBtn{ min-height:44px; padding:0 14px; display:inline-flex; align-items:center; }
+      .pickupRight .tinyBtn, .vendorActions .tinyBtn,
+      .checkActions .tinyBtn, .availRowActions .tinyBtn{ min-height:44px; }
+      .poChk, .availRow input[type="checkbox"], .checkRow input[type="checkbox"]{ width:24px; height:24px; }
+      .statusPill, .statusChip{ padding:8px 14px; font-size:12px; }
+      .navList .navBtn{ min-height:44px; }
+    }
+
+    @media (prefers-reduced-motion: reduce){
+      .modal.active .modalCard{ animation:none !important; }
+      .sheetTable td, .poTable td{ transition:none !important; }
+    }
   </style>
 </head>
 <body class="density-comfortable atmos">
@@ -677,6 +822,9 @@
         <div class="navSpacer"></div>
         <div class="navFooter">
           <button id="syncSideBtn" class="navBtn">🔗 Team Sync</button>
+          <button id="backupBtn" class="navBtn">💾 Backup all data</button>
+          <button id="restoreBtn" class="navBtn">↺ Restore from backup</button>
+          <input id="restoreFile" type="file" accept=".json,application/json" style="display:none;">
           <button id="logoutBtn" class="navBtn" style="border-color:rgba(224,86,63,.3); color:#ffb4a4;">Log out</button>
         </div>
         <div class="note sideNote" style="color:rgba(168,214,190,.66); margin-top:10px;">Live team sync via Firebase. Works offline too — changes sync when you reconnect.</div>
@@ -4057,6 +4205,10 @@
         // notifications
         if(has("notif") && (has("enable","turn on","allow","on"))){ if(typeof ensureNotifyPermission === "function") ensureNotifyPermission(); return "Asked your device for notification permission — say yes and I'll ping you on saves (once it's on your home screen)."; }
         // log out
+        // backup / restore
+        if(has("backup","back up","export everything","export all","save everything") && !has("issue","order","cc","truck","csv")){ if(typeof Backup !== "undefined"){ Backup.export(); return "Backing everything up to a JSON file. 💾 Stash it somewhere safe — that's your undo button."; } }
+        if(has("restore") && has("backup","data","file")){ if(clickId("restoreBtn")) return "Pick your backup .json and I'll bring it all back. ↺"; }
+        // log out
         if(verb("log out","logout","sign out","log me out")){ if(clickId("logoutBtn")) return "Logging you out. Don't be a stranger. 🦎"; }
 
         return null;
@@ -4273,9 +4425,21 @@
         if(SYNC_KEYS.indexOf(key) === -1) return;
         const local = localStorage.getItem(key);
         if(local === data.value) return;          // already in sync — no loop
+        // Is the person looking at the very thing that just changed under them?
+        const editingThis =
+          (key === LS.trucksKey   && currentPage === "order")   ||
+          (key === LS.issuesKey   && currentPage === "issues")  ||
+          ([LS.poHistKey, LS.poStateKey, LS.poActiveKey].indexOf(key) !== -1 && currentPage === "checkin") ||
+          (key === LS.trainingKey && currentPage === "training");
         try { localStorage.setItem(key, data.value); } catch(e){ return; } // direct write: no re-push
         this.lastReceived = Date.now(); this.applies++;
         this.rerender(key);
+        if(editingThis && data.by && data.by !== this.user){
+          const prev = statusChip.textContent;
+          statusChip.textContent = `Updated by ${data.by} · refreshed`;
+          clearTimeout(this._noticeT);
+          this._noticeT = setTimeout(() => { statusChip.textContent = "Ready"; }, 5000);
+        }
       },
       onLocalSet(key){ this.push(key); },
       push(key){
@@ -4375,6 +4539,90 @@
       }
     };
     window.HPASync = Sync;
+
+    /*********************************************************
+     * Backup & Restore — full local data export/import
+     *  - One JSON file holds every hpa_* localStorage key
+     *  - Restore replaces local data on this device, then reloads
+     *  - After restore, synced keys re-push so the team gets them
+     *********************************************************/
+    const Backup = {
+      keys(){
+        const out = [];
+        for(let i = 0; i < localStorage.length; i++){
+          const k = localStorage.key(i);
+          if(k && k.startsWith("hpa_")) out.push(k);
+        }
+        return out;
+      },
+      export(){
+        try {
+          const dump = { _meta:{ app:"HPA Jungle Hub", exportedAt:new Date().toISOString(), schema:3 }, data:{} };
+          this.keys().forEach(k => {
+            const v = localStorage.getItem(k);
+            if(v != null) dump.data[k] = v;            // raw strings — no double parse/stringify
+          });
+          const blob = new Blob([JSON.stringify(dump)], { type:"application/json" });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `hpa-backup_${fmtDate(new Date())}.json`;
+          document.body.appendChild(a); a.click(); a.remove();
+          URL.revokeObjectURL(url);
+          const n = Object.keys(dump.data).length;
+          statusChip.textContent = `Backed up ${n} section(s)`;
+          setTimeout(() => { statusChip.textContent = "Ready"; }, 3500);
+        } catch(e){
+          console.error("[Backup] export failed", e);
+          alert("Couldn't create the backup file. See the console for details.");
+        }
+      },
+      async import(file){
+        let text;
+        try { text = await file.text(); }
+        catch { alert("Couldn't read that file."); return; }
+        let parsed;
+        try { parsed = JSON.parse(text); }
+        catch { alert("That doesn't look like a valid HPA backup (.json) file."); return; }
+        if(!parsed || typeof parsed.data !== "object" || parsed.data === null){
+          alert("Backup file is missing its data section — nothing to restore.");
+          return;
+        }
+        const entries = Object.entries(parsed.data).filter(([k]) => k.startsWith("hpa_"));
+        if(!entries.length){ alert("No HPA data found inside that backup file."); return; }
+        const when = parsed._meta && parsed._meta.exportedAt ? new Date(parsed._meta.exportedAt).toLocaleString() : "this backup";
+        if(!confirm(`Restore ${entries.length} data section(s) from ${when}?\n\nThis REPLACES the current data on this device, then reloads. Make a backup first if you're unsure.`)) return;
+        let failed = 0;
+        entries.forEach(([k, v]) => {
+          try { localStorage.setItem(k, v); }
+          catch(e){ failed++; console.error("[Backup] restore failed for", k, e); }
+        });
+        // push restored keys up so teammates receive them
+        try {
+          if(window.HPASync && window.HPASync.ready && Array.isArray(SYNC_KEYS)){
+            entries.forEach(([k]) => { if(SYNC_KEYS.indexOf(k) !== -1) window.HPASync.push(k); });
+          }
+        } catch(_){}
+        alert(failed ? `Restored with ${failed} section(s) skipped (likely storage limits). Reloading…` : "Restore complete. Reloading…");
+        setTimeout(() => location.reload(), 400);
+      }
+    };
+    window.HPABackup = Backup;
+    (function wireBackup(){
+      const b = document.getElementById("backupBtn");
+      if(b) b.addEventListener("click", () => Backup.export());
+      const r = document.getElementById("restoreBtn");
+      const rf = document.getElementById("restoreFile");
+      if(r && rf){
+        r.addEventListener("click", () => rf.click());
+        rf.addEventListener("change", (e) => {
+          const f = e.target.files && e.target.files[0];
+          if(f) Backup.import(f);
+          e.target.value = "";
+        });
+      }
+    })();
+
     (function wireSyncChip(){
       const el = document.getElementById("syncChip");
       if(el){
