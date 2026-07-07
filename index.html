@@ -928,6 +928,7 @@
             <div class="weekBanner">
               <div class="chip" id="weekLabel">Week</div>
               <div class="chip subtle" id="truckCountLabel">0 orders</div>
+              <div class="chip subtle" id="requestDateLabel" title="Automatically set to the Monday after this week">Request date —</div>
             </div>
             <div class="weekActions">
               <button id="newTruckBtn" class="btn">+ New Order</button>
@@ -1328,6 +1329,17 @@
       const right = (s.getMonth() === e.getMonth()) ? `${e.getDate()}` : `${mo[e.getMonth()]} ${e.getDate()}`;
       return `Week ${wk} · ${left} – ${right}, ${e.getFullYear()}`;
     }
+    // The request date for a week is always the Monday of the *following* week
+    // (e.g. a week starting Mon 7/13 has a request date of Mon 7/20).
+    function requestDateFor(date){
+      return addDays(startOfWeek(date), 7);
+    }
+    function requestDateLabel(date){
+      const rd = requestDateFor(date);
+      const mo = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+      const wd = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+      return `${wd[rd.getDay()]} ${mo[rd.getMonth()]} ${rd.getDate()}, ${rd.getFullYear()}`;
+    }
     function dateFromWeekKey(key){
       const m = /^(\d{4})-W(\d{2})$/.exec(key || "");
       if(!m) return startOfWeek(new Date());
@@ -1598,6 +1610,7 @@
 
     let weekAnchor = startOfWeek(new Date());
     const weekLabelEl = document.getElementById("weekLabel");
+    const requestDateLabelEl = document.getElementById("requestDateLabel");
     const truckCountLabel = document.getElementById("truckCountLabel");
 
     document.getElementById("prevWeek").addEventListener("click", () => { weekAnchor = addDays(weekAnchor, -7); renderOrder(); });
@@ -2273,6 +2286,7 @@
       renderPeriodPicker();
       const wk = weekKeyFromDate(weekAnchor);
       weekLabelEl.textContent = weekLabel(weekAnchor);
+      if(requestDateLabelEl) requestDateLabelEl.textContent = `Request date: ${requestDateLabel(weekAnchor)}`;
 
       const trucks = loadTrucks().filter(t => t.weekKey === wk);
       truckCountLabel.textContent = `${trucks.length} order${trucks.length===1?"":"s"}`;
