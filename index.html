@@ -1429,6 +1429,24 @@
         img.src = srcUrl;
       });
     }
+    const SHRINK_STEPS = [
+      { maxEdge: 1280, quality: 0.6  },
+      { maxEdge: 1000, quality: 0.5  },
+      { maxEdge: 800,  quality: 0.4  },
+      { maxEdge: 600,  quality: 0.32 },
+      { maxEdge: 420,  quality: 0.28 },
+      { maxEdge: 300,  quality: 0.22 }
+    ];
+    // Compresses an image step by step until it's small enough to sync to the whole team.
+    // Non-image files can't be shrunk this way and are returned as-is (only one read).
+    async function shrinkImageToFit(file, maxBytes = MAX_SYNC_BYTES - 20000){
+      if(!file.type.startsWith("image/")) return shrinkImage(file);
+      let result = await shrinkImage(file, SHRINK_STEPS[0]);
+      for(let i = 1; i < SHRINK_STEPS.length && result.dataUrl.length > maxBytes; i++){
+        result = await shrinkImage(file, SHRINK_STEPS[i]);
+      }
+      return result; // even on the last step, this is as small as we can reasonably get
+    }
     function fmtBytes(n){
       if(!n) return "—";
       if(n < 1024) return n + " B";
@@ -2990,7 +3008,7 @@
         tile.querySelector(".plantPhotoBtn").addEventListener("click", () => fileInput.click());
         fileInput.addEventListener("change", async () => {
           const f = fileInput.files?.[0]; if(!f) return;
-          const shrunk = await shrinkImage(f, { maxEdge:800, quality:0.7 });
+          const shrunk = await shrinkImageToFit(f);
           updatePlant(id, p => { p.photo = shrunk.dataUrl; });
           drawPlantTiles(document.getElementById("plantSearch")?.value || "");
         });
@@ -3096,7 +3114,7 @@
       for(let idx = 0; idx < files.length; idx++){
         const f = files[idx];
         saveBtn.textContent = `Processing ${idx+1} of ${files.length}…`;
-        const shrunk = await shrinkImage(f);
+        const shrunk = await shrinkImageToFit(f);
         const record = {
           id: cryptoRandomId(), week, vendor, truckId: truckId || "", item, spec,
           createdAt: new Date().toISOString(), name: f.name,
@@ -3106,6 +3124,7 @@
         current.push(record);
         try { savePhotos(current); savedCount++; savedBytes += shrunk.bytes || 0; }
         catch { stoppedEarly = true; break; }
+        if(window.HPASync) window.HPASync.pushPhoto(record.id);
       }
       saveBtn.disabled = false;
       saveBtn.textContent = origLabel;
@@ -3169,6 +3188,7 @@
           const ok = confirm("Delete this photo?");
           if(!ok) return;
           savePhotos(loadPhotos().filter(x => x.id !== p.id));
+          if(window.HPASync) window.HPASync.deletePhotoRemote(p.id);
           renderPhotos();
           populateIssuePhotoOptions();
         });
@@ -3431,7 +3451,7 @@
       const f = document.getElementById("i_photoUpload").files?.[0];
       const prev = document.getElementById("i_photoPreview");
       if(!f){ prev.style.display = "none"; prev.innerHTML = ""; prev.dataset.url = ""; return; }
-      const shrunk = await shrinkImage(f, { maxEdge:1000, quality:0.65 });
+      const shrunk = await shrinkImageToFit(f);
       prev.dataset.url = shrunk.dataUrl;
       prev.innerHTML = `<img src="${shrunk.dataUrl}" style="max-height:130px; border-radius:8px; border:1px solid var(--line);">`;
       prev.style.display = "block";
@@ -3858,11 +3878,13 @@
       const f = e.target.files && e.target.files[0]; if(!f) return;
       const MAXB = 3 * 1024 * 1024;
       if(f.size > MAXB && !confirm(`"${f.name}" is ${fmtBytes(f.size)}. Files are stored in this browser and large files can exceed storage limits. Add it anyway?`)){ e.target.value = ""; return; }
+      const id = cryptoRandomId();
       let dataUrl;
       try { dataUrl = await fileToDataURL(f); } catch { alert("Couldn't read that file."); e.target.value = ""; return; }
       const list = loadTraining();
-      list.unshift({ id:cryptoRandomId(), type:"file", title:f.name, name:f.name, mime:f.type||"", size:f.size, dataUrl, cat:"", desc:"", createdAt:new Date().toISOString() });
+      list.unshift({ id, type:"file", title:f.name, name:f.name, mime:f.type||"", size:f.size, dataUrl, cat:"", desc:"", createdAt:new Date().toISOString() });
       try { saveTraining(list); } catch { alert("Storage limit reached — couldn't save that file."); e.target.value = ""; return; }
+      if(window.HPASync) window.HPASync.pushTrainingFile(id);
       markTabChanged("training");
       e.target.value = "";
       renderTraining();
@@ -3932,6 +3954,7 @@
         card.querySelector(".trDel").addEventListener("click", () => {
           if(!confirm(`Delete "${d.title}"?`)) return;
           saveTraining(loadTraining().filter(x => x.id !== d.id));
+          if(d.type === "file" && window.HPASync) window.HPASync.deleteTrainingFileRemote(d.id);
           renderTraining();
         });
         grid.appendChild(card);
@@ -4436,6 +4459,7 @@
 
     const Sync = {
       ready:false, starting:false, fs:null, db:null, col:null,
+      photosCol:null, trainingFilesCol:null, _pendingTrainingFiles:{},
       clientId: Math.random().toString(36).slice(2),
       user:"someone", _t:{}, _seeded:false, _warned:{},
       lastSent:0, lastReceived:0, lastError:"", pushes:0, applies:0,
@@ -4467,8 +4491,12 @@
           } catch(e){ db = fs.getFirestore(app); }
           this.fs = fs; this.db = db;
           this.col = fs.collection(db, "hubs", this.teamCode(), "keys");
-          this.ready = true; this._seeded = false;
+          this.photosCol = fs.collection(db, "hubs", this.teamCode(), "photos");
+          this.trainingFilesCol = fs.collection(db, "hubs", this.teamCode(), "trainingFiles");
+          this.ready = true; this._seeded = false; this._seededPhotos = false; this._seededTrainingFiles = false;
           this.subscribe();
+          this.subscribePhotos();
+          this.subscribeTrainingFiles();
           this.setStatus("on", "Sync: on · " + this.teamCode());
           console.log("[HPA sync] connected ✓");
         } catch(err){
@@ -4505,6 +4533,111 @@
           if(!present.has(key) && localStorage.getItem(key) != null) this.push(key);
         });
       },
+
+      /* --- Photos: one small Firestore doc per photo, never one giant blob --- */
+      subscribePhotos(){
+        const { onSnapshot } = this.fs;
+        if(this._unsubPhotos){ try{ this._unsubPhotos(); }catch(e){} }
+        this._unsubPhotos = onSnapshot(this.photosCol, (snap) => {
+          snap.docChanges().forEach(ch => {
+            if(ch.type === "removed") this.applyRemotePhotoRemoved(ch.doc.id);
+            else this.applyRemotePhoto(ch.doc.id, ch.doc.data());
+          });
+          if(!this._seededPhotos){ this._seededPhotos = true; this.seedMissingPhotos(snap); }
+        }, (err) => console.error("[HPA sync] photos listener error:", err));
+      },
+      seedMissingPhotos(snap){
+        const present = new Set(); snap.forEach(d => present.add(d.id));
+        loadPhotos().forEach(p => { if(!present.has(p.id)) this.pushPhoto(p.id); });
+      },
+      applyRemotePhoto(id, data){
+        if(!data || typeof data.value !== "string") return;
+        let record; try { record = JSON.parse(data.value); } catch(e){ return; }
+        const list = loadPhotos();
+        const i = list.findIndex(p => p.id === id);
+        if(i === -1) list.unshift(record); else list[i] = record;
+        try { localStorage.setItem(LS.photosKey, JSON.stringify(list)); } catch(e){ return; } // direct write: no re-push
+        if(currentPage === "photos"){ renderPhotos(); populateIssuePhotoOptions(); }
+      },
+      applyRemotePhotoRemoved(id){
+        const list = loadPhotos().filter(p => p.id !== id);
+        try { localStorage.setItem(LS.photosKey, JSON.stringify(list)); } catch(e){ return; }
+        if(currentPage === "photos"){ renderPhotos(); populateIssuePhotoOptions(); }
+      },
+      async pushPhoto(id){
+        if(!this.ready || !this.photosCol) return;
+        const record = loadPhotos().find(p => p.id === id);
+        if(!record) return;
+        try{
+          const val = JSON.stringify(record);
+          if(val.length > MAX_SYNC_BYTES){ console.warn("Sync: photo '"+id+"' too large to share with the team; kept on this device only."); return; }
+          const { doc, setDoc } = this.fs;
+          await setDoc(doc(this.photosCol, id), { value: val, updatedAt: Date.now(), by: this.user, client: this.clientId });
+        } catch(e){ console.error("[HPA sync] photo push failed for", id, e); }
+      },
+      async deletePhotoRemote(id){
+        if(!this.ready || !this.photosCol) return;
+        try{ const { doc, deleteDoc } = this.fs; await deleteDoc(doc(this.photosCol, id)); }
+        catch(e){ console.error("[HPA sync] photo delete failed for", id, e); }
+      },
+
+      /* --- Training files: same one-doc-per-file pattern; big files should use "+ Add Link" instead --- */
+      subscribeTrainingFiles(){
+        const { onSnapshot } = this.fs;
+        if(this._unsubTrainingFiles){ try{ this._unsubTrainingFiles(); }catch(e){} }
+        this._unsubTrainingFiles = onSnapshot(this.trainingFilesCol, (snap) => {
+          snap.docChanges().forEach(ch => {
+            if(ch.type === "removed") return; // deleting the entry itself removes the metadata row already
+            this.applyRemoteTrainingFile(ch.doc.id, ch.doc.data());
+          });
+          if(!this._seededTrainingFiles){ this._seededTrainingFiles = true; this.seedMissingTrainingFiles(snap); }
+        }, (err) => console.error("[HPA sync] training files listener error:", err));
+      },
+      seedMissingTrainingFiles(snap){
+        const present = new Set(); snap.forEach(d => present.add(d.id));
+        loadTraining().forEach(d => { if(d.type === "file" && d.dataUrl && !present.has(d.id)) this.pushTrainingFile(d.id); });
+      },
+      applyRemoteTrainingFile(id, data){
+        if(!data || typeof data.value !== "string") return;
+        const list = loadTraining();
+        const i = list.findIndex(d => d.id === id);
+        if(i === -1){ this._pendingTrainingFiles[id] = data.value; return; } // metadata hasn't arrived yet
+        if(list[i].dataUrl === data.value) return;
+        list[i] = { ...list[i], dataUrl: data.value };
+        try { localStorage.setItem(LS.trainingKey, JSON.stringify(list)); } catch(e){ return; } // direct write: no re-push
+        if(currentPage === "training"){ renderTraining(); }
+      },
+      reconcilePendingTrainingFiles(){
+        const pending = this._pendingTrainingFiles;
+        if(!pending || Object.keys(pending).length === 0) return;
+        const list = loadTraining();
+        let changed = false;
+        list.forEach(d => {
+          if(d.type === "file" && !d.dataUrl && pending[d.id] != null){
+            d.dataUrl = pending[d.id]; delete pending[d.id]; changed = true;
+          }
+        });
+        if(changed){
+          try { localStorage.setItem(LS.trainingKey, JSON.stringify(list)); } catch(e){ return; }
+          if(currentPage === "training"){ renderTraining(); }
+        }
+      },
+      async pushTrainingFile(id){
+        if(!this.ready || !this.trainingFilesCol) return;
+        const entry = loadTraining().find(d => d.id === id);
+        if(!entry || !entry.dataUrl) return;
+        try{
+          const val = entry.dataUrl;
+          if(val.length > MAX_SYNC_BYTES){ console.warn("Sync: training file '"+id+"' too large to share with the team (use '+ Add Link' for big files instead); kept on this device only."); return; }
+          const { doc, setDoc } = this.fs;
+          await setDoc(doc(this.trainingFilesCol, id), { value: val, updatedAt: Date.now(), by: this.user, client: this.clientId });
+        } catch(e){ console.error("[HPA sync] training file push failed for", id, e); }
+      },
+      async deleteTrainingFileRemote(id){
+        if(!this.ready || !this.trainingFilesCol) return;
+        try{ const { doc, deleteDoc } = this.fs; await deleteDoc(doc(this.trainingFilesCol, id)); }
+        catch(e){ console.error("[HPA sync] training file delete failed for", id, e); }
+      },
       applyRemote(key, data){
         if(!data || typeof data.value !== "string") return;
         if(SYNC_KEYS.indexOf(key) === -1) return;
@@ -4519,6 +4652,7 @@
         try { localStorage.setItem(key, data.value); } catch(e){ return; } // direct write: no re-push
         this.lastReceived = Date.now(); this.applies++;
         this.rerender(key);
+        if(key === LS.trainingKey){ this.reconcilePendingTrainingFiles(); }
         if(editingThis && data.by && data.by !== this.user){
           const prev = statusChip.textContent;
           statusChip.textContent = `Updated by ${data.by} · refreshed`;
@@ -4536,8 +4670,15 @@
       async _pushNow(key){
         if(!this.ready) return;
         try{
-          const val = localStorage.getItem(key);
+          let val = localStorage.getItem(key);
           if(val == null) return;
+          if(key === LS.trainingKey){
+            // Keep the synced metadata list tiny: file bytes travel separately via trainingFilesCol.
+            try{
+              const arr = JSON.parse(val);
+              val = JSON.stringify(arr.map(d => (d && d.type === "file") ? { ...d, dataUrl: undefined } : d));
+            } catch(e){}
+          }
           if(val.length > MAX_SYNC_BYTES){
             if(!this._warned[key]){ this._warned[key] = true; console.warn("Sync: '"+key+"' too large to sync; kept local only."); }
             return;
