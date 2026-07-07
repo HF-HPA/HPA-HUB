@@ -2596,18 +2596,33 @@
       const s = (itemText || "").toLowerCase();
       const has = (...words) => words.some(w => s.includes(w));
       const hasSize = (n) => new RegExp(`(^|[^0-9])${n}\\s*["”']?`).test(s);
-      const isBrom = has("bromeliad", "brom", "guzmania", "guzania", "neoregelia", "aechmea");
-      const isHanging = has("hanging", "hb", "basket");
+      // Grabs the first size number in the name, e.g. "7\" Guzmania" -> 7. Used only for
+      // bromeliad sizing below, since odd/uncommon sizes should round to the nearest tier
+      // rather than go unmatched.
+      const extractSize = () => {
+        const m = s.match(/(\d+)\s*["”']?/);
+        return m ? Number(m[1]) : null;
+      };
+      const isBrom = has(
+        "bromeliad", "brom", "guzmania", "guzania", "neoregelia", "aechmea",
+        "vriesea", "tillandsia", "cryptanthus", "billbergia", "dyckia",
+        "nidularium", "portea", "canistrum", "quesnelia"
+      );
+      const isHanging = has("hanging", "hb", "h.b.", "hanger", "basket");
       if(isBrom){
-        if(hasSize(10) || hasSize(8) || hasSize(6)) return { shelves:3, posts:4, extenders:4, label:"Bromeliad (6\"/8\"/10\")" };
-        if(hasSize(4)) return { shelves:4, posts:4, extenders:0, label:"4\" Bromeliad" };
-        if(hasSize(2) || has("mini")) return { shelves:6, posts:4, extenders:0, label:"2\"/Mini Bromeliad" };
-        return null;
+        const size = extractSize();
+        if(size == null){
+          if(has("mini")) return { shelves:6, posts:4, extenders:0, label:"2\" / Mini Bromeliad" };
+          return null; // no size at all and no "mini" — flagged as unmatched rather than guessed
+        }
+        if(size <= 2) return { shelves:6, posts:4, extenders:0, label:"2\" / Mini Bromeliad" };
+        if(size <= 4) return { shelves:4, posts:4, extenders:0, label:"3\"\u20134\" Bromeliad" };   // 3" rounds up to 4" tier
+        return { shelves:3, posts:4, extenders:4, label:"5\"+ Bromeliad" };                        // 5" and anything larger rounds to 6\"/8\"/10\" tier
       }
       if(isHanging) return { shelves:4, posts:4, extenders:0, label:"Hanging Baskets" };
       if(hasSize(4)) return { shelves:6, posts:4, extenders:0, label:"4\" Foliage" };
       if(hasSize(6)) return { shelves:4, posts:4, extenders:0, label:"6\" Foliage" };
-      return null;
+      return null; // 8"/10"/12" foliage are Floor Stack, not CC — intentionally left unmatched
     }
 
     let _exceljsPromise = null;
@@ -2767,7 +2782,10 @@
       if(!trucks.length){ alert("No Homestead/Apopka orders in this week to export.\n(Canada and New Jersey are excluded from the guides.)"); return; }
       const byLocation = new Map();
       const unmatched = [];
+      const CC_EXCLUDED_ORDER_TYPES = ["FLOOR STACK", "PALLETS"];
       for(const t of trucks){
+        const orderType = (t.orderType || "").trim().toUpperCase();
+        if(CC_EXCLUDED_ORDER_TYPES.includes(orderType)) continue; // whole truck isn't on CC racks
         const loc = (t.region || "—").trim() || "—";
         const isApopka = loc === "Apopka";
         if(!byLocation.has(loc)) byLocation.set(loc, { vendors:new Map(), truckIds:new Set() });
@@ -2776,6 +2794,7 @@
         for(const vb of (t.vendorBlocks||[])){
           const vendor = (vb.name||"—").trim() || "—";
           for(const it of (vb.items||[])){
+            if(it.unit === "Pallet") continue; // pallets aren't CC racks
             const racks = Number(it.racks||0);
             if(!racks) continue;
             let shelves, posts, ext;
