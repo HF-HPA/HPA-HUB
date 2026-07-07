@@ -1005,16 +1005,16 @@
           <div class="toolbar">
             <h2>Order Check-In</h2>
             <div class="tools">
-              <button id="checkinImportBtn" class="btnGhost">⬆ Import PO Analysis</button>
-              <input id="checkinImportFile" type="file" accept=".xlsx,.xls" style="display:none;" />
-              <select id="checkinWeekSelect" title="Imported week"></select>
+              <button id="checkinPrevWeek" class="btnGhost" title="Previous week">‹</button>
+              <div class="chip" id="checkinWeekLabel">Week</div>
+              <button id="checkinNextWeek" class="btnGhost" title="Next week">›</button>
               <input id="checkinVendorFilter" placeholder="Vendor filter (optional)" />
               <input id="checkinItemFilter" placeholder="Item filter (optional)" />
-              <button id="checkinExportBtn" class="btnGhost">Export CSV</button>
-              <button id="checkinClearWeekBtn" class="btnGhost" style="border-color:rgba(224,86,63,.3); color:#a8341f;">Clear This Week</button>
+              <button id="checkinExportBtn" class="btnGhost">Export PO Analysis</button>
+              <button id="checkinResetWeekBtn" class="btnGhost" style="border-color:rgba(224,86,63,.3); color:#a8341f;">Reset Check-In</button>
             </div>
           </div>
-          <div class="note" id="checkinNote">Import the weekly <strong>PO Analysis</strong> spreadsheet, then check items in as they arrive and add notes per line.</div>
+          <div class="note" id="checkinNote">This week's orders, straight from the Order Tracker — check items in as they arrive and add notes per line.</div>
           <div id="checkinWrap" style="margin-top:12px;"></div>
         </div>
 
@@ -2582,11 +2582,6 @@
       const availWeekSelect = document.getElementById("availWeekSelect");
       availWeekSelect.innerHTML = weeks.map(w => `<option value="${w}">${w}</option>`).join("");
       availWeekSelect.value = weekKeyFromDate(availAnchor);
-
-      const checkinWeekSelect = document.getElementById("checkinWeekSelect");
-      const prevCheck = checkinWeekSelect.value;
-      checkinWeekSelect.innerHTML = weeks.map(w => `<option value="${w}">${w}</option>`).join("");
-      checkinWeekSelect.value = prevCheck || currentWk;
     }
 
     /*********************************************************
@@ -3608,215 +3603,98 @@
         tbody.appendChild(tr);
       }
     }
-
     /*********************************************************
-     * Order Check-In — driven by imported PO Analysis (with week history)
+     * Order Check-In — auto-built live from this week's Order Tracker
      *********************************************************/
-    // History model:
-    //   poHistKey  = { [weekKey]: { weekKey, label, fileName, importedAt, rows:[...] } }
-    //   poActiveKey= weekKey currently being viewed
-    //   poStateKey = { [weekKey]: { [rowKey]: {checked,notes} } }
-    function loadHist(){ return LS.get(LS.poHistKey, {}); }
-    function saveHist(o){ LS.set(LS.poHistKey, o); }
-    function loadActive(){ return LS.get(LS.poActiveKey, ""); }
-    function saveActive(w){ LS.set(LS.poActiveKey, w); }
-    function loadAllState(){ return LS.get(LS.poStateKey, {}); }
-    function saveAllState(o){ LS.set(LS.poStateKey, o); }
-    function stateForWeek(wk){ const all = loadAllState(); return all[wk] || {}; }
-    function setStateForWeek(wk, obj){ const all = loadAllState(); all[wk] = obj; saveAllState(all); }
-    function poRowKey(r){ return `${(r.po||"").trim()}||${(r.itemNo||"").trim()}||${r._i}`; }
+    // LS.checkinKey = { [weekKey]: { [rowKey]: { checked, notes } } }
+    // rowKey = `${truckId}::${vendorBlockIndex}::${itemIndex}` — stable as long as
+    // rows aren't reordered within a truck; adding/removing other lines doesn't shift it.
+    function loadCheckinAll(){ return LS.get(LS.checkinKey, {}); }
+    function saveCheckinAll(o){ LS.set(LS.checkinKey, o); }
+    function checkinStateForWeek(wk){ const all = loadCheckinAll(); return all[wk] || {}; }
+    function setCheckinStateForWeek(wk, obj){ const all = loadCheckinAll(); all[wk] = obj; saveCheckinAll(all); }
 
-    function weekNumKey(s){ const m = String(s).match(/WK?(\d{1,2})/i) || String(s).match(/(\d{1,2})/); return m ? parseInt(m[1],10) : -1; }
-    function poWeekInfo(rows, fileName){
-      const counts = {};
-      rows.forEach(r => { const k = (r.reqweek||"").trim(); if(k) counts[k] = (counts[k]||0)+1; });
-      let wk = "", best = -1;
-      Object.keys(counts).forEach(k => { if(counts[k] > best){ best = counts[k]; wk = k; } });
-      if(wk) return { key:"WK"+wk, label:"Week "+wk };
-      const m = (fileName||"").match(/WK[_-]?(\d{1,2})/i);
-      if(m) return { key:"WK"+m[1], label:"Week "+m[1] };
-      const base = (fileName||"import").replace(/\.(xlsx|xls)$/i, "");
-      return { key:"F:"+base, label:base };
-    }
-    // migrate any v1 single-import into the history model (runs once)
-    function migratePOHistory(){
-      if(LS.get(LS.poHistKey, null) !== null) return;
-      const hist = {};
-      const old = LS.get(LS.poImportKey, null);
-      if(old && old.rows && old.rows.length){
-        const info = poWeekInfo(old.rows, old.fileName);
-        hist[info.key] = { weekKey:info.key, label:info.label, fileName:old.fileName, importedAt:old.importedAt, rows:old.rows };
-        saveActive(info.key);
-        const oldState = LS.get(LS.poStateKey, {});
-        const isFlat = Object.keys(oldState).length && Object.values(oldState).some(v => v && typeof v === "object" && ("checked" in v));
-        if(isFlat) saveAllState({ [info.key]: oldState });
-      }
-      saveHist(hist);
-      try { localStorage.removeItem(LS.poImportKey); } catch(e){}
-    }
-
-    let _sheetjsPromise = null;
-    function loadSheetJS(){
-      if(window.XLSX) return Promise.resolve(window.XLSX);
-      if(_sheetjsPromise) return _sheetjsPromise;
-      _sheetjsPromise = new Promise((resolve, reject) => {
-        const s = document.createElement("script");
-        s.src = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
-        s.onload = () => resolve(window.XLSX);
-        s.onerror = () => reject(new Error("Could not load the spreadsheet reader. Check your internet connection and try again."));
-        document.head.appendChild(s);
-      });
-      return _sheetjsPromise;
-    }
-    function pickPOSheet(wb){
-      const want = ["vendor name","item description","po number"];
-      let best = null, bestScore = -1;
-      for(const name of wb.SheetNames){
-        const ws = wb.Sheets[name];
-        const rows = XLSX.utils.sheet_to_json(ws, { header:1, blankrows:false, defval:"" });
-        if(!rows.length) continue;
-        const hdr = (rows[0] || []).map(h => String(h).trim().toLowerCase());
-        let score = 0;
-        want.forEach(w => { if(hdr.includes(w)) score++; });
-        ["ordered","received","open"].forEach(w => { if(hdr.includes(w)) score += 0.3; });
-        if(score > bestScore){ bestScore = score; best = { name, rows, hdr }; }
-      }
-      return bestScore >= 2 ? best : null;
-    }
-    function colIndex(hdr, names){ for(const n of names){ const i = hdr.indexOf(n); if(i >= 0) return i; } return -1; }
-    function cleanComment(s){ return String(s || "").replace(/_x000D_/g, "").replace(/\r/g, "").replace(/\n{2,}/g, "\n").trim(); }
-    function parsePOWorkbook(wb){
-      const picked = pickPOSheet(wb);
-      if(!picked) return null;
-      const { rows, hdr } = picked;
-      const idx = {
-        vendor:  colIndex(hdr, ["vendor name","vendor"]),
-        desc:    colIndex(hdr, ["item description","description"]),
-        itemNo:  colIndex(hdr, ["item no","item number","item #","item"]),
-        po:      colIndex(hdr, ["po number","po #","po"]),
-        ordered: colIndex(hdr, ["ordered","total ordered"]),
-        received:colIndex(hdr, ["received"]),
-        open:    colIndex(hdr, ["open"]),
-        comment: colIndex(hdr, ["po line comment","comment","notes"]),
-        reqweek: colIndex(hdr, ["req week","week"])
-      };
-      const out = [];
-      for(let r = 1; r < rows.length; r++){
-        const row = rows[r]; if(!row) continue;
-        const get = i => (i >= 0 && i < row.length) ? row[i] : "";
-        const vendor = String(get(idx.vendor) || "").trim();
-        const desc = String(get(idx.desc) || "").trim();
-        const po = String(get(idx.po) || "").trim();
-        if(!vendor && !desc && !po) continue;
-        out.push({
-          _i: out.length, vendor, desc,
-          itemNo: String(get(idx.itemNo) || "").trim(),
-          po,
-          ordered: Number(get(idx.ordered) || 0) || 0,
-          received: Number(get(idx.received) || 0) || 0,
-          open: Number(get(idx.open) || 0) || 0,
-          comment: cleanComment(get(idx.comment)),
-          reqweek: String(get(idx.reqweek) || "").trim()
+    function checkinRowsForWeek(wk){
+      const trucks = loadTrucks().filter(t => t.weekKey === wk);
+      const rows = [];
+      trucks.forEach(t => {
+        (t.vendorBlocks || []).forEach((vb, vIdx) => {
+          const vendor = (vb.name || "—").trim() || "—";
+          const po = (vb.po || "").trim();
+          (vb.items || []).forEach((it, iIdx) => {
+            if(!it.item && !it.qty && !it.racks && !it.cases) return; // skip fully-blank rows
+            rows.push({
+              key: `${t.id}::${vIdx}::${iIdx}`,
+              vendor, po,
+              item: (it.item || "").trim(),
+              qty: Number(it.qty || 0),
+              comment: (it.notes || "").trim()
+            });
+          });
         });
-      }
-      return out;
+      });
+      return rows;
     }
 
     const checkinWrap = document.getElementById("checkinWrap");
-    const checkinWeekSelect = document.getElementById("checkinWeekSelect");
-    document.getElementById("checkinImportBtn").addEventListener("click", () => document.getElementById("checkinImportFile").click());
-    document.getElementById("checkinImportFile").addEventListener("change", async (e) => {
-      const f = e.target.files && e.target.files[0]; if(!f) return;
-      const note = document.getElementById("checkinNote");
-      note.textContent = "Reading " + f.name + "…";
-      let lib;
-      try { lib = await loadSheetJS(); }
-      catch(err){ alert(err.message); note.textContent = "Import failed — couldn't load the reader."; e.target.value = ""; return; }
-      try {
-        const buf = await f.arrayBuffer();
-        const wb = lib.read(buf, { type:"array" });
-        const rows = parsePOWorkbook(wb);
-        if(!rows || !rows.length){
-          alert("Couldn't find PO Analysis columns (Vendor Name, Item Description, PO Number) in that file.");
-          note.textContent = "Import failed — unrecognized layout."; e.target.value = ""; return;
-        }
-        const info = poWeekInfo(rows, f.name);
-        const hist = loadHist();
-        const existed = !!hist[info.key];
-        if(existed && !confirm(`${info.label} is already in your history. Replace its imported lines with this file?\n(Your check marks and notes for ${info.label} are kept where PO + item still match.)`)){
-          note.innerHTML = checkinSummaryHTML(); e.target.value = ""; return;
-        }
-        hist[info.key] = { weekKey:info.key, label:info.label, fileName:f.name, importedAt:new Date().toISOString(), rows };
-        saveHist(hist);
-        saveActive(info.key);
-        markTabChanged("checkin");
-        renderCheckIn();
-      } catch(err){
-        alert("Could not read that spreadsheet: " + err.message);
-        note.textContent = "Import failed.";
-      } finally { e.target.value = ""; }
-    });
-    checkinWeekSelect.addEventListener("change", () => { saveActive(checkinWeekSelect.value); renderCheckIn(); });
+    const checkinWeekLabelEl = document.getElementById("checkinWeekLabel");
+    document.getElementById("checkinPrevWeek").addEventListener("click", () => { weekAnchor = addDays(weekAnchor, -7); renderCheckIn(); });
+    document.getElementById("checkinNextWeek").addEventListener("click", () => { weekAnchor = addDays(weekAnchor,  7); renderCheckIn(); });
     document.getElementById("checkinVendorFilter").addEventListener("input", renderCheckIn);
     document.getElementById("checkinItemFilter").addEventListener("input", renderCheckIn);
-    document.getElementById("checkinClearWeekBtn").addEventListener("click", () => {
-      const hist = loadHist();
-      const active = loadActive();
-      if(!hist[active]){ alert("Nothing imported yet."); return; }
-      if(!confirm(`Clear ${hist[active].label} (its imported lines, check marks and notes)? Other weeks are kept.`)) return;
-      delete hist[active];
-      saveHist(hist);
-      const allState = loadAllState(); delete allState[active]; saveAllState(allState);
-      const remaining = Object.keys(hist);
-      saveActive(remaining.length ? remaining.sort((a,b) => weekNumKey(b)-weekNumKey(a))[0] : "");
+    document.getElementById("checkinResetWeekBtn").addEventListener("click", () => {
+      const wk = weekKeyFromDate(weekAnchor);
+      const all = loadCheckinAll();
+      if(!all[wk] || !Object.keys(all[wk]).length){ alert("Nothing checked in yet for this week."); return; }
+      if(!confirm(`Clear all check-in marks and notes for ${weekLabel(weekAnchor)}? The orders themselves aren't affected.`)) return;
+      delete all[wk];
+      saveCheckinAll(all);
       renderCheckIn();
     });
-    document.getElementById("checkinExportBtn").addEventListener("click", () => {
-      const hist = loadHist(); const active = loadActive(); const rec = hist[active];
-      if(!rec){ alert("Import a PO Analysis first."); return; }
-      const st = stateForWeek(active);
-      const rows = rec.rows.map(r => {
-        const s = st[poRowKey(r)] || {};
-        return { Week:rec.label, Vendor:r.vendor, "Item Description":r.desc, "PO Number":r.po, Ordered:r.ordered, Received:r.received, Open:r.open, Details:r.comment, CheckedIn:s.checked?"YES":"NO", Notes:s.notes||"" };
+    document.getElementById("checkinExportBtn").addEventListener("click", async () => {
+      const wk = weekKeyFromDate(weekAnchor);
+      const rows = checkinRowsForWeek(wk);
+      if(!rows.length){ alert("No orders to export for this week."); return; }
+      const state = checkinStateForWeek(wk);
+      let ExcelJS;
+      try { ExcelJS = await loadExcelJS(); }
+      catch(e){ alert(e.message); return; }
+      const wb = new ExcelJS.Workbook();
+      const ws = wb.addWorksheet("Sheet1");
+      ws.columns = [ { width:30 }, { width:40 }, { width:12 }, { width:10 }, { width:53 }, { width:20 } ];
+      ws.addRow(["Vendor Name","Item Description","PO Number","Ordered","Details","NOTES"]);
+      rows.forEach(r => {
+        const s = state[r.key] || { checked:false, notes:"" };
+        let notes = (s.notes || "").trim();
+        if(s.checked) notes = notes ? `Received — ${notes}` : "Received";
+        ws.addRow([ r.vendor, r.item, r.po, r.qty || "", r.comment, notes ]);
       });
-      downloadCSV(`order-checkin_${rec.label.replace(/\s+/g,"-")}.csv`, rows, ["Week","Vendor","Item Description","PO Number","Ordered","Received","Open","Details","CheckedIn","Notes"]);
+      await downloadWorkbook(wb, `po-analysis_${wk}.xlsx`);
     });
 
-    function checkinSummaryHTML(){
-      const hist = loadHist(); const active = loadActive(); const rec = hist[active];
-      if(!rec) return 'Import the weekly <strong>PO Analysis</strong> spreadsheet, then check items in as they arrive and add notes per line.';
-      const st = stateForWeek(active);
-      const done = rec.rows.filter(r => (st[poRowKey(r)] || {}).checked).length;
-      const nWeeks = Object.keys(hist).length;
-      const when = new Date(rec.importedAt).toLocaleString();
-      return `<strong>${escapeHtml(rec.label)}</strong> · ${escapeHtml(rec.fileName)} · ${rec.rows.length} line(s) · <strong>${done}</strong> checked in · imported ${escapeHtml(when)} · ${nWeeks} week(s) in history`;
+    function checkinSummaryHTML(rows, state){
+      if(!rows.length) return "No orders yet for this week — fill out the Order Tracker and lines will show up here automatically.";
+      const done = rows.filter(r => (state[r.key] || {}).checked).length;
+      return `<strong>${escapeHtml(weekLabel(weekAnchor))}</strong> · ${rows.length} line(s) · <strong>${done}</strong> checked in`;
     }
-    function refreshCheckinWeeks(){
-      const hist = loadHist();
-      const keys = Object.keys(hist).sort((a,b) => weekNumKey(b) - weekNumKey(a));
-      checkinWeekSelect.innerHTML = keys.map(k => `<option value="${escapeHtml(k)}">${escapeHtml(hist[k].label)}</option>`).join("");
-      checkinWeekSelect.style.display = keys.length ? "" : "none";
-      const active = loadActive();
-      if(active && hist[active]) checkinWeekSelect.value = active;
-      else if(keys.length){ saveActive(keys[0]); checkinWeekSelect.value = keys[0]; }
-    }
+
     function renderCheckIn(){
-      migratePOHistory();
-      refreshCheckinWeeks();
+      const wk = weekKeyFromDate(weekAnchor);
+      checkinWeekLabelEl.textContent = weekLabel(weekAnchor);
       const note = document.getElementById("checkinNote");
-      const hist = loadHist(); const active = loadActive(); const rec = hist[active];
+      const allRows = checkinRowsForWeek(wk);
+      const state = checkinStateForWeek(wk);
+      note.innerHTML = checkinSummaryHTML(allRows, state);
       checkinWrap.innerHTML = "";
-      note.innerHTML = checkinSummaryHTML();
-      if(!rec){
-        checkinWrap.innerHTML = '<div class="linkCard"><div class="linkCardIcon">📥</div><div><div class="linkCardTitle">No PO Analysis imported</div><div class="note">Click <strong>⬆ Import PO Analysis</strong> and choose your weekly <em>WK_##_PO_ANALYSIS.xlsx</em>. Each week you import is kept in history — use the week dropdown to switch between them.</div></div></div>';
+      if(!allRows.length){
+        checkinWrap.innerHTML = '<div class="linkCard"><div class="linkCardIcon">📥</div><div><div class="linkCardTitle">No orders yet for this week</div><div class="note">Fill out the <strong>Order Tracker</strong> for this week and every line will show up here automatically to check in.</div></div></div>';
         return;
       }
       const vFilter = (document.getElementById("checkinVendorFilter").value || "").trim().toLowerCase();
       const iFilter = (document.getElementById("checkinItemFilter").value || "").trim().toLowerCase();
-      let rows = rec.rows.slice();
+      let rows = allRows.slice();
       if(vFilter) rows = rows.filter(r => r.vendor.toLowerCase().includes(vFilter));
-      if(iFilter) rows = rows.filter(r => (r.desc + " " + r.comment + " " + r.po).toLowerCase().includes(iFilter));
-      const st = stateForWeek(active);
+      if(iFilter) rows = rows.filter(r => (r.item + " " + r.comment + " " + r.po).toLowerCase().includes(iFilter));
 
       const scroll = document.createElement("div");
       scroll.className = "poTableScroll";
@@ -3829,36 +3707,35 @@
           <th style="width:20%;">Item Description</th>
           <th style="width:74px;">PO #</th>
           <th class="num" style="width:74px;">Ordered</th>
-          <th class="num" style="width:74px;">Recv'd</th>
-          <th class="num" style="width:58px;">Open</th>
           <th>Details</th>
           <th style="width:190px;">Notes</th>
         </tr></thead>
         <tbody></tbody>`;
       const tb = table.querySelector("tbody");
-      if(!rows.length){ tb.innerHTML = `<tr><td colspan="9" class="note" style="padding:14px;">No lines match your filters.</td></tr>`; }
+      if(!rows.length){ tb.innerHTML = `<tr><td colspan="7" class="note" style="padding:14px;">No lines match your filters.</td></tr>`; }
       rows.forEach(r => {
-        const key = poRowKey(r);
-        const s = st[key] || { checked:false, notes:"" };
+        const s = state[r.key] || { checked:false, notes:"" };
         const tr = document.createElement("tr");
         if(s.checked) tr.className = "poChecked";
         tr.innerHTML = `
           <td><input type="checkbox" class="poChk" ${s.checked ? "checked" : ""}></td>
           <td class="poVendor">${escapeHtml(r.vendor)}</td>
-          <td>${escapeHtml(r.desc)}</td>
+          <td>${escapeHtml(r.item)}</td>
           <td class="nowrap">${escapeHtml(r.po)}</td>
-          <td class="num">${r.ordered ? r.ordered.toLocaleString() : ""}</td>
-          <td class="num">${r.received ? r.received.toLocaleString() : ""}</td>
-          <td class="num">${r.open ? r.open.toLocaleString() : ""}</td>
+          <td class="num">${r.qty ? r.qty.toLocaleString() : ""}</td>
           <td class="poDetails">${escapeHtml(r.comment)}</td>
           <td><textarea class="poNotes" placeholder="Notes...">${escapeHtml(s.notes || "")}</textarea></td>`;
         const chk = tr.querySelector(".poChk");
         const notesEl = tr.querySelector(".poNotes");
-        const persist = () => { const obj = stateForWeek(active); obj[key] = { checked: chk.checked, notes: notesEl.value }; setStateForWeek(active, obj); };
+        const persist = () => {
+          const obj = checkinStateForWeek(wk);
+          obj[r.key] = { checked: chk.checked, notes: notesEl.value };
+          setCheckinStateForWeek(wk, obj);
+        };
         chk.addEventListener("change", () => {
           tr.classList.toggle("poChecked", chk.checked);
           persist();
-          note.innerHTML = checkinSummaryHTML();
+          note.innerHTML = checkinSummaryHTML(allRows, checkinStateForWeek(wk));
           markTabChanged("checkin");
         });
         notesEl.addEventListener("input", persist);
@@ -3867,6 +3744,7 @@
       scroll.appendChild(table);
       checkinWrap.appendChild(scroll);
     }
+
 
     /*********************************************************
      * Availability — opens an external Excel sheet
@@ -4110,9 +3988,9 @@
         { k:["photo","photos","photo library","upload photo","add photo","picture","images","order photos"],
           a:"The Photo Library has two tabs: Plant Catalog (houseplant reference) and Order Photos (your tagged order pictures). On Order Photos, drag-and-drop or click \u201c+ Add Photos\u201d and tag by week, vendor, truck and item." },
         { k:["import","po analysis","import po","upload spreadsheet","import spreadsheet","load po","po file","import button"],
-          a:"On Order Check-In, click \u201c\u2b06 Import PO Analysis\u201d and choose your weekly WK_##_PO_ANALYSIS.xlsx. Every PO line becomes a row \u2014 Vendor, Item Description, PO #, Ordered, Received, Open and the full PO Line Comment \u2014 each with a check box and a notes field that save automatically. \u201cClear Import\u201d removes it; \u201cExport CSV\u201d saves your checked/notes." },
+          a:"Order Check-In no longer needs an import — it builds itself live from whatever you've typed into the Order Tracker for that week. Every item line shows up automatically with a checkbox and a notes field. When you're done, \u201cExport PO Analysis\u201d saves it as an .xlsx in the same Vendor Name / Item Description / PO Number / Ordered / PO Line Comment / NOTES layout your team already uses." },
         { k:["check-in","checkin","check in","verify","receiving","received","order check","history","past week","previous week"],
-          a:"Order Check-In runs off the imported PO Analysis. Hit \u201c\u2b06 Import PO Analysis\u201d to load a week's spreadsheet, then tick each line in as it arrives and type notes \u2014 both save instantly. Every week you import is kept in history: use the week dropdown in the toolbar to flip between past weeks. Filter by vendor/item, \u201cExport CSV\u201d to share, or \u201cClear This Week\u201d to drop just that one." },
+          a:"Order Check-In mirrors the Order Tracker for whichever week you're viewing \u2014 fill out an order and its lines appear here automatically, no import needed. Tick each line in as it arrives and type notes; both save instantly and sync to the team. Use the \u2039/\u203a arrows to flip weeks, filter by vendor/item, \u201cExport PO Analysis\u201d to save an .xlsx, or \u201cReset Check-In\u201d to clear just the check marks/notes for that week." },
         { k:["issue","issues","issue tracker","problem","pest","spec","quality","shortage","damage","delivery"],
           a:"The Issue Tracker logs problems against orders. Types include Pest and Spec/Quality (plus Shortage, Damage, Delivery, Other). On a new issue you can attach an existing Library photo or upload a brand-new photo right there." },
         { k:["issue photo","upload issue","attach photo","photo issue","issue picture"],
@@ -4147,7 +4025,7 @@
         "I'm Iggy, your guide to HPA HUB! Here's the lay of the land:\n" +
         "\u2022 Order Tracker \u2014 month bar, \ud83d\udcc5 Pick Week/Year, multiple trucks per order, click a status to confirm, click an item to substitute, inline trucking/price edits, and Duplicate.\n" +
         "\u2022 Photo Library \u2014 a Plant Catalog of houseplants plus your tagged Order Photos.\n" +
-        "\u2022 Order Check-In \u2014 import the weekly PO Analysis, then check lines in with notes.\n" +
+        "\u2022 Order Check-In \u2014 auto-builds from this week's Order Tracker; check lines in with notes.\n" +
         "\u2022 Issue Tracker \u2014 log problems (Pest & Spec/Quality too) with a photo.\n" +
         "\u2022 Training Documents \u2014 links and files for SOPs and guides.\n" +
         "\u2022 Availability \u2014 opens your external Excel sheet.\n" +
@@ -4316,19 +4194,18 @@
             return `Added “${name}” to the Plant Catalog. 🪴 I'll grab its photo when you open the catalog.`;
           }
         }
-        // import PO analysis
+        // check-in now builds itself from the Order Tracker — nothing to import
         if(has("import") && has("po","analysis","spreadsheet","check-in","checkin","order","week")){
           showPage("checkin");
-          if(clickId("checkinImportBtn")) return "Opened the file picker — pick your WK_##_PO_ANALYSIS.xlsx and I'll lay it all out. 📥";
+          return "Order Check-In builds itself from this week's Order Tracker now — no import needed. Fill out the Order Tracker and every line shows up here automatically. 📥";
         }
         // switch check-in week
         const wk = q.match(/week\s*(\d{1,2})/);
-        if(wk && verb("show","go","switch","view","open","jump") ){
-          const sel = el("checkinWeekSelect"); const key = "WK" + parseInt(wk[1], 10);
-          if(sel && Array.from(sel.options).some(o => o.value === key)){
-            showPage("checkin"); sel.value = key; sel.dispatchEvent(new Event("change", { bubbles:true }));
-            return "Jumped Check-In to Week " + parseInt(wk[1], 10) + ". 📅";
-          }
+        if(wk && verb("show","go","switch","view","open","jump")){
+          const key = weekAnchor.getFullYear() + "-W" + String(parseInt(wk[1], 10)).padStart(2, "0");
+          weekAnchor = dateFromWeekKey(key);
+          showPage("checkin"); renderCheckIn();
+          return "Jumped Check-In to Week " + parseInt(wk[1], 10) + ". 📅";
         }
         // density / expand / collapse
         if(has("expand all")){ showPage("order"); if(clickId("expandAllBtn")) return "Everything's wide open. So much to admire. 👀"; }
@@ -4336,7 +4213,7 @@
         if(has("compact") || has("comfortable")){ showPage("order"); if(clickId("densityBtn")) return "Flipped the row density. Click the button again to flip back."; }
         // export
         if(has("export")){
-          if(here === "checkin" && clickId("checkinExportBtn")) return "Exported this check-in week to CSV. 📄";
+          if(here === "checkin" && clickId("checkinExportBtn")) return "Exported this week's Check-In as a PO Analysis workbook. 📄";
           if(has("cc")){ showPage("order"); if(clickId("exportCCBtn")) return "Exported the CC order. 📄"; }
           showPage("order"); if(clickId("exportTruckBtn")) return "Exported this week's truck order. 📄";
         }
@@ -4486,7 +4363,7 @@
     // Operational, team-relevant data. Photos/thumbs are intentionally excluded
     // (too large for Firestore's 1MB/doc limit — they'd need Firebase Storage).
     const SYNC_KEYS = [
-      LS.trucksKey, LS.issuesKey, LS.poHistKey, LS.poStateKey, LS.poActiveKey,
+      LS.trucksKey, LS.issuesKey,
       LS.trainingKey, LS.availLinkKey, LS.catalogKey, LS.checkinKey,
       LS.availKey, LS.availOrdersKey
     ];
@@ -4682,7 +4559,7 @@
         const editingThis =
           (key === LS.trucksKey   && currentPage === "order")   ||
           (key === LS.issuesKey   && currentPage === "issues")  ||
-          ([LS.poHistKey, LS.poStateKey, LS.poActiveKey].indexOf(key) !== -1 && currentPage === "checkin") ||
+          (key === LS.checkinKey  && currentPage === "checkin") ||
           (key === LS.trainingKey && currentPage === "training");
         try { localStorage.setItem(key, data.value); } catch(e){ return; } // direct write: no re-push
         this.lastReceived = Date.now(); this.applies++;
@@ -4729,7 +4606,7 @@
         try {
           if(k === "order" && (key === LS.trucksKey)) renderOrder();
           else if(k === "issues" && key === LS.issuesKey) renderIssues();
-          else if(k === "checkin" && [LS.poHistKey,LS.poStateKey,LS.poActiveKey].indexOf(key) !== -1) renderCheckIn();
+          else if(k === "checkin" && (key === LS.checkinKey || key === LS.trucksKey)) renderCheckIn();
           else if(k === "training" && key === LS.trainingKey) renderTraining();
           else if(k === "photos" && key === LS.catalogKey) renderPhotosTab();
           else if(k === "avail" && key === LS.availLinkKey) refreshAvailLinkUI();
@@ -4878,7 +4755,7 @@
       labelFor(key){
         const map = {
           [LS.trucksKey]:"Orders", [LS.issuesKey]:"Issues", [LS.photosKey]:"Photos",
-          [LS.poHistKey]:"Check-In import", [LS.poStateKey]:"Check-In progress", [LS.poActiveKey]:"Check-In week",
+          [LS.checkinKey]:"Check-In progress",
           [LS.trainingKey]:"Training docs", [LS.availLinkKey]:"Availability link", [LS.catalogKey]:"Plant catalog",
           [LS.availKey]:"Availability", [LS.availOrdersKey]:"Availability orders"
         };
@@ -4932,14 +4809,14 @@
         const openIssues = issues.filter(i => i.status !== "Resolved").length;
 
         // check-in completion for the active week
-        let ciPct = null, ciLabel = "no import";
+        let ciPct = null, ciLabel = "no orders yet";
         try {
-          const hist = LS.get(LS.poHistKey, {}); const active = LS.get(LS.poActiveKey, ""); const rec = hist[active];
-          if(rec && rec.rows && rec.rows.length){
-            const st = (LS.get(LS.poStateKey, {})[active]) || {};
-            const done = rec.rows.filter(r => (st[`${(r.po||"").trim()}||${(r.itemNo||"").trim()}||${r._i}`]||{}).checked).length;
-            ciPct = Math.round(done / rec.rows.length * 100);
-            ciLabel = `${done}/${rec.rows.length} of ${rec.label}`;
+          const ciRows = checkinRowsForWeek(wk);
+          if(ciRows.length){
+            const st = checkinStateForWeek(wk);
+            const done = ciRows.filter(r => (st[r.key]||{}).checked).length;
+            ciPct = Math.round(done / ciRows.length * 100);
+            ciLabel = `${done}/${ciRows.length} checked in`;
           }
         } catch(_){}
 
@@ -4991,10 +4868,11 @@
           { icon:"📊", title:"Open Availability sheet", tag:"Nav", run:()=>openAvailabilitySheet() },
           { icon:"➕", title:"New order", sub:"Create a truck order", tag:"Action", run:()=>{ showPage("order"); document.getElementById("newTruckBtn")?.click(); } },
           { icon:"🐛", title:"Log an issue", tag:"Action", run:()=>{ showPage("issues"); document.getElementById("newIssueBtn")?.click(); } },
-          { icon:"📥", title:"Import PO Analysis", tag:"Action", run:()=>{ showPage("checkin"); document.getElementById("checkinImportBtn")?.click(); } },
+          { icon:"✅", title:"Open Order Check-In", tag:"Nav", run:()=>showPage("checkin") },
           { icon:"🔗", title:"Add training link", tag:"Action", run:()=>{ showPage("training"); document.getElementById("trainingAddLinkBtn")?.click(); } },
           { icon:"📄", title:"Export Truck Order", tag:"Export", run:()=>{ showPage("order"); document.getElementById("exportTruckBtn")?.click(); } },
           { icon:"📄", title:"Export CC Order", tag:"Export", run:()=>{ showPage("order"); document.getElementById("exportCCBtn")?.click(); } },
+          { icon:"📄", title:"Export PO Analysis", tag:"Export", run:()=>{ showPage("checkin"); document.getElementById("checkinExportBtn")?.click(); } },
           { icon:"💾", title:"Backup all data", tag:"Data", run:()=>window.HPABackup.export() },
           { icon:"↺", title:"Restore from backup", tag:"Data", run:()=>document.getElementById("restoreBtn")?.click() },
           { icon:"🟢", title:"Open Team Sync", tag:"Data", run:()=>window.HPASync.openModal() },
@@ -5043,11 +4921,11 @@
         });
         // check-in lines
         try {
-          const hist = LS.get(LS.poHistKey, {});
-          Object.values(hist).forEach(rec => (rec.rows||[]).forEach(r => {
-            if([r.vendor,r.desc,r.po,r.comment].some(x => (x||"").toLowerCase().includes(q)))
-              push("✅", `${r.desc||"Line"} — ${r.vendor||""}`, `${rec.label} · PO ${r.po||""}`, "Check-In", ()=>{ showPage("checkin"); });
-          }));
+          const wk = weekKeyFromDate(weekAnchor);
+          checkinRowsForWeek(wk).forEach(r => {
+            if([r.vendor,r.item,r.po,r.comment].some(x => (x||"").toLowerCase().includes(q)))
+              push("✅", `${r.item||"Line"} — ${r.vendor||""}`, `${weekLabel(weekAnchor)} · PO ${r.po||""}`, "Check-In", ()=>{ showPage("checkin"); });
+          });
         } catch(_){}
         return out.slice(0, 40);
       }
