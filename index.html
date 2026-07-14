@@ -3830,6 +3830,23 @@
     function setPoImportForWeek(wk, data){ const all = loadPoImportAll(); all[wk] = data; savePoImportAll(all); }
 
     function checkinHeadersForWeek(wk){ const imp = poImportForWeek(wk); return imp ? imp.headers : []; }
+    // Order Check-In only ever shows this fixed set of columns, regardless of how
+    // many columns the imported PO Analysis workbook actually has. Matched by
+    // header name against the source file (a few common name variants covered),
+    // so it still works if a workbook spells a column slightly differently.
+    function checkinDisplayColumns(headers){
+      const wanted = [
+        { regexes:[/^vendor name$/i, /^vendor$/i] },
+        { regexes:[/^item description$/i] },
+        { regexes:[/^po number$/i] },
+        { regexes:[/^ordered$/i, /^total ordered$/i] },
+        { regexes:[/^po line comment$/i, /^comment$/i] },
+        { regexes:[/^notes$/i] }
+      ];
+      const out = [];
+      wanted.forEach(w => { const h = findHeader(headers, ...w.regexes); if(h !== undefined) out.push(h); });
+      return out;
+    }
     function checkinRowsForWeek(wk){ const imp = poImportForWeek(wk); return imp ? imp.rows : []; }
 
     // Excel stores dates as a day-count from 1899-12-30; PO Analysis date columns
@@ -4037,7 +4054,7 @@
       checkinWeekLabelEl.textContent = weekLabel(weekAnchor);
       const note = document.getElementById("checkinNote");
       const imp = poImportForWeek(wk);
-      const headers = checkinHeadersForWeek(wk);
+      const headers = checkinDisplayColumns(checkinHeadersForWeek(wk));
       const allRows = checkinRowsForWeek(wk);
       const state = checkinStateForWeek(wk);
       note.innerHTML = checkinSummaryHTML(imp, allRows, state);
