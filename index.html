@@ -576,6 +576,9 @@
 
     /* ----- Link cards (availability + empty states) ----- */
     .linkCard{ display:flex; gap:14px; align-items:center; padding:18px; margin-top:14px; background:var(--paper-2); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow-sm); }
+    .airEmbedWrap{ position:relative; width:100%; margin-top:12px; border:1px solid var(--line); border-radius:var(--radius); overflow:hidden; box-shadow:var(--shadow-sm); background:var(--paper-2); height:78vh; min-height:520px; }
+    .airEmbedWrap iframe{ width:100%; height:100%; border:0; display:block; }
+    @media (max-width: 720px){ .airEmbedWrap{ height:70vh; min-height:420px; } }
     .linkCardIcon{ font-size:34px; line-height:1; flex:none; width:56px; height:56px; display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg,#e6f3ec,#cfe9d9); border-radius:14px; }
     .linkCardTitle{ font-family:var(--display); font-weight:600; font-size:17px; color:var(--ink); margin-bottom:2px; }
 
@@ -953,26 +956,34 @@
         </div>
 
         <div id="page-photos" class="page" style="display:none;">
-          <div class="photoSubTabs" id="photoSubTabs">
-            <button class="subTab active" data-view="catalog" type="button">Plant Catalog</button>
-            <button class="subTab" data-view="order" type="button">Order Photos</button>
-          </div>
-          <div id="photoCatalogView" style="display:none;"></div>
-          <div id="photoOrderView">
           <div class="toolbar">
             <h2>Photo Library</h2>
             <div class="tools">
+              <button id="photoOpenAirBtn" class="btnGhost">↗ Open in Air</button>
+            </div>
+          </div>
+          <div class="note">Plant Library, powered by Air.</div>
+          <div class="airEmbedWrap">
+            <iframe id="airPlantLibraryFrame" src="https://app.air.inc/b/plant-library-117279bf-9190-4e62-b54b-a1626d57dac9" title="Plant Library — Air" loading="lazy" allow="fullscreen" referrerpolicy="no-referrer-when-downgrade"></iframe>
+          </div>
+          <!-- legacy hidden controls kept for compatibility (old Plant Catalog / Order Photos UI; not shown) -->
+          <div style="display:none;">
+            <div class="photoSubTabs" id="photoSubTabs">
+              <button class="subTab active" data-view="catalog" type="button">Plant Catalog</button>
+              <button class="subTab" data-view="order" type="button">Order Photos</button>
+            </div>
+            <div id="photoCatalogView"></div>
+            <div id="photoOrderView">
               <button id="photoAddBtn" class="btnGhost">+ Add Photos</button>
               <select id="photoWeekFilter"></select>
               <input id="photoVendorFilter" placeholder="Filter vendor (optional)" />
               <input id="photoItemFilter" placeholder="Filter item (optional)" />
+              <div class="dropZone" id="dropZone">
+                <strong>Drag &amp; drop</strong> images here, or click "Add Photos".
+                <div class="note" style="margin-top:6px;">Photos are stored in this browser. Large uploads may hit storage limits.</div>
+              </div>
+              <div class="photoGrid" id="photoGrid"></div>
             </div>
-          </div>
-          <div class="dropZone" id="dropZone">
-            <strong>Drag &amp; drop</strong> images here, or click "Add Photos".
-            <div class="note" style="margin-top:6px;">Photos are stored in this browser. Large uploads may hit storage limits.</div>
-          </div>
-          <div class="photoGrid" id="photoGrid"></div>
           </div>
         </div>
 
@@ -1010,11 +1021,12 @@
               <button id="checkinNextWeek" class="btnGhost" title="Next week">›</button>
               <input id="checkinVendorFilter" placeholder="Vendor filter (optional)" />
               <input id="checkinItemFilter" placeholder="Item filter (optional)" />
-              <button id="checkinExportBtn" class="btnGhost">Export PO Analysis</button>
+              <button id="checkinImportBtn" class="btnGhost">Import PO Analysis</button>
+              <input id="checkinImportFile" type="file" accept=".xlsx,.xls" style="display:none;">
               <button id="checkinResetWeekBtn" class="btnGhost" style="border-color:rgba(224,86,63,.3); color:#a8341f;">Reset Check-In</button>
             </div>
           </div>
-          <div class="note" id="checkinNote">This week's orders, straight from the Order Tracker — check items in as they arrive and add notes per line.</div>
+          <div class="note" id="checkinNote">Import a PO Analysis workbook for this week — every column comes in exactly as exported, with a checkbox and notes per line.</div>
           <div id="checkinWrap" style="margin-top:12px;"></div>
         </div>
 
@@ -3604,36 +3616,116 @@
       }
     }
     /*********************************************************
-     * Order Check-In — auto-built live from this week's Order Tracker
+     * Order Check-In — imported live from a PO Analysis workbook
      *********************************************************/
-    // LS.checkinKey = { [weekKey]: { [rowKey]: { checked, notes } } }
-    // rowKey = `${truckId}::${vendorBlockIndex}::${itemIndex}` — stable as long as
-    // rows aren't reordered within a truck; adding/removing other lines doesn't shift it.
+    // LS.poImportKey = { [weekKey]: { headers:[...], rows:[{cells,key,vendor,item,po,comment,qty}], fileName, importedAt } }
+    // LS.checkinKey  = { [weekKey]: { [rowKey]: { checked, notes } } } — unchanged shape from before.
     function loadCheckinAll(){ return LS.get(LS.checkinKey, {}); }
     function saveCheckinAll(o){ LS.set(LS.checkinKey, o); }
     function checkinStateForWeek(wk){ const all = loadCheckinAll(); return all[wk] || {}; }
     function setCheckinStateForWeek(wk, obj){ const all = loadCheckinAll(); all[wk] = obj; saveCheckinAll(all); }
 
-    function checkinRowsForWeek(wk){
-      const trucks = loadTrucks().filter(t => t.weekKey === wk);
-      const rows = [];
-      trucks.forEach(t => {
-        (t.vendorBlocks || []).forEach((vb, vIdx) => {
-          const vendor = (vb.name || "—").trim() || "—";
-          const po = (vb.po || "").trim();
-          (vb.items || []).forEach((it, iIdx) => {
-            if(!it.item && !it.qty && !it.racks && !it.cases) return; // skip fully-blank rows
-            rows.push({
-              key: `${t.id}::${vIdx}::${iIdx}`,
-              vendor, po,
-              item: (it.item || "").trim(),
-              qty: Number(it.qty || 0),
-              comment: (it.notes || "").trim()
-            });
-          });
-        });
+    function loadPoImportAll(){ return LS.get(LS.poImportKey, {}); }
+    function savePoImportAll(o){ LS.set(LS.poImportKey, o); }
+    function poImportForWeek(wk){ return loadPoImportAll()[wk] || null; }
+    function setPoImportForWeek(wk, data){ const all = loadPoImportAll(); all[wk] = data; savePoImportAll(all); }
+
+    function checkinHeadersForWeek(wk){ const imp = poImportForWeek(wk); return imp ? imp.headers : []; }
+    function checkinRowsForWeek(wk){ const imp = poImportForWeek(wk); return imp ? imp.rows : []; }
+
+    // Excel stores dates as a day-count from 1899-12-30; PO Analysis date columns
+    // usually come through as plain numbers (no cell date formatting), so convert by hand.
+    function excelSerialToDate(n){ return new Date(Date.UTC(1899,11,30) + Math.round(n) * 86400000); }
+    // Some export pipelines leave a literal "_x000D_" in place of a real line break — clean that up for display.
+    function cleanCellText(v){
+      if(typeof v !== "string") return v;
+      return v.replace(/_x000[dD]_/g, "\n").replace(/\r\n?/g, "\n").trim();
+    }
+    function rawCellValue(cell){
+      const v = cell ? cell.value : null;
+      if(v == null) return "";
+      if(v instanceof Date) return v;
+      if(typeof v === "object"){
+        if(Array.isArray(v.richText)) return v.richText.map(t => t.text).join("");
+        if("result" in v) return v.result;
+        if("text" in v) return v.text;
+      }
+      return v;
+    }
+    function formatCellForDisplay(header, value){
+      if(value == null || value === "") return "";
+      const h = (header || "").toLowerCase();
+      if(value instanceof Date) return value.toLocaleDateString();
+      if(typeof value === "number"){
+        if(h.includes("date")) return excelSerialToDate(value).toLocaleDateString();
+        if(h.includes("price")) return "$" + value.toLocaleString(undefined, { minimumFractionDigits:2, maximumFractionDigits:2 });
+        return value.toLocaleString(undefined, { maximumFractionDigits:2 });
+      }
+      return cleanCellText(String(value));
+    }
+    function findHeader(headers, ...regexes){
+      for(const re of regexes){ const h = headers.find(hh => re.test(hh)); if(h !== undefined) return h; }
+      return undefined;
+    }
+
+    async function parsePoAnalysisWorkbook(file){
+      const ExcelJS = await loadExcelJS();
+      const buf = await file.arrayBuffer();
+      const wb = new ExcelJS.Workbook();
+      await wb.xlsx.load(buf);
+      const ws = wb.worksheets[0];
+      if(!ws) throw new Error("That workbook has no sheets.");
+      const headerRow = ws.getRow(1);
+      let headers = [];
+      headerRow.eachCell({ includeEmpty:false }, (cell, colNumber) => {
+        const v = rawCellValue(cell);
+        headers[colNumber - 1] = (v == null || v === "") ? `Column ${colNumber}` : cleanCellText(String(v));
       });
-      return rows;
+      headers = headers.filter(Boolean);
+      if(!headers.length) throw new Error("Couldn't find a header row in that workbook.");
+      const hasNotes = headers.some(h => /^notes$/i.test(h));
+      if(!hasNotes) headers.push("Notes");
+
+      const rawRows = [];
+      for(let r = 2; r <= ws.rowCount; r++){
+        const row = ws.getRow(r);
+        if(!row || row.cellCount === 0) continue;
+        const cells = {};
+        let hasData = false;
+        headers.forEach((h, i) => {
+          if(h === "Notes" && !hasNotes) { cells[h] = ""; return; }
+          const val = rawCellValue(row.getCell(i + 1));
+          cells[h] = val;
+          if(val !== "" && val != null) hasData = true;
+        });
+        if(hasData) rawRows.push(cells);
+      }
+      if(!rawRows.length) throw new Error("No data rows found under the header row.");
+
+      const vendorH  = findHeader(headers, /^vendor name$/i, /^vendor$/i);
+      const itemH    = findHeader(headers, /^item description$/i, /^item no$/i);
+      const poH      = findHeader(headers, /^po number$/i);
+      const commentH = findHeader(headers, /^po line comment$/i, /^comment$/i);
+      const qtyH     = findHeader(headers, /^ordered$/i, /^total ordered$/i);
+      const keyH1    = poH, keyH2 = itemH;
+      const seen = {};
+      const rows = rawRows.map((cells, i) => {
+        const kPo   = keyH1 ? cleanCellText(String(cells[keyH1] ?? "")) : "";
+        const kItem = keyH2 ? cleanCellText(String(cells[keyH2] ?? "")) : "";
+        let base = (kPo || kItem) ? `${kPo}::${kItem}` : `row${i}`;
+        seen[base] = (seen[base] || 0) + 1;
+        const key = seen[base] > 1 ? `${base}::${seen[base]}` : base;
+        const qtyRaw = qtyH ? cells[qtyH] : 0;
+        return {
+          key, cells,
+          vendor:  vendorH  ? cleanCellText(String(cells[vendorH]  ?? "")) : "",
+          item:    itemH    ? cleanCellText(String(cells[itemH]    ?? "")) : "",
+          po:      poH      ? cleanCellText(String(cells[poH]      ?? "")) : "",
+          comment: commentH ? cleanCellText(String(cells[commentH] ?? "")) : "",
+          qty: (typeof qtyRaw === "number") ? qtyRaw : (Number(qtyRaw) || 0)
+        };
+      });
+      return { headers, rows };
     }
 
     const checkinWrap = document.getElementById("checkinWrap");
@@ -3646,48 +3738,57 @@
       const wk = weekKeyFromDate(weekAnchor);
       const all = loadCheckinAll();
       if(!all[wk] || !Object.keys(all[wk]).length){ alert("Nothing checked in yet for this week."); return; }
-      if(!confirm(`Clear all check-in marks and notes for ${weekLabel(weekAnchor)}? The orders themselves aren't affected.`)) return;
+      if(!confirm(`Clear all check-in marks and notes for ${weekLabel(weekAnchor)}? The imported PO Analysis itself isn't affected.`)) return;
       delete all[wk];
       saveCheckinAll(all);
       renderCheckIn();
     });
-    document.getElementById("checkinExportBtn").addEventListener("click", async () => {
+    document.getElementById("checkinImportBtn").addEventListener("click", () => {
+      document.getElementById("checkinImportFile").click();
+    });
+    document.getElementById("checkinImportFile").addEventListener("change", async (e) => {
+      const file = e.target.files && e.target.files[0];
+      e.target.value = "";
+      if(!file) return;
+      let parsed;
+      try { parsed = await parsePoAnalysisWorkbook(file); }
+      catch(err){ alert("Couldn't read that PO Analysis file: " + err.message); return; }
+
+      // Figure out which week this belongs to from a Req/Post Date column, so it lands
+      // on the right tab automatically; falls back to whichever week is on screen.
+      let targetDate = null;
+      const dateH = findHeader(parsed.headers, /req date/i, /post date/i);
+      if(dateH){
+        const raw = parsed.rows[0].cells[dateH];
+        if(raw instanceof Date) targetDate = raw;
+        else if(typeof raw === "number" && raw > 0) targetDate = excelSerialToDate(raw);
+      }
+      if(targetDate) weekAnchor = startOfWeek(targetDate);
       const wk = weekKeyFromDate(weekAnchor);
-      const rows = checkinRowsForWeek(wk);
-      if(!rows.length){ alert("No orders to export for this week."); return; }
-      const state = checkinStateForWeek(wk);
-      let ExcelJS;
-      try { ExcelJS = await loadExcelJS(); }
-      catch(e){ alert(e.message); return; }
-      const wb = new ExcelJS.Workbook();
-      const ws = wb.addWorksheet("Sheet1");
-      ws.columns = [ { width:30 }, { width:40 }, { width:12 }, { width:10 }, { width:53 }, { width:20 } ];
-      ws.addRow(["Vendor Name","Item Description","PO Number","Ordered","Details","NOTES"]);
-      rows.forEach(r => {
-        const s = state[r.key] || { checked:false, notes:"" };
-        let notes = (s.notes || "").trim();
-        if(s.checked) notes = notes ? `Received — ${notes}` : "Received";
-        ws.addRow([ r.vendor, r.item, r.po, r.qty || "", r.comment, notes ]);
-      });
-      await downloadWorkbook(wb, `po-analysis_${wk}.xlsx`);
+      setPoImportForWeek(wk, { headers: parsed.headers, rows: parsed.rows, fileName: file.name, importedAt: new Date().toISOString() });
+      markTabChanged("checkin");
+      renderCheckIn();
     });
 
-    function checkinSummaryHTML(rows, state){
-      if(!rows.length) return "No orders yet for this week — fill out the Order Tracker and lines will show up here automatically.";
+    function checkinSummaryHTML(imp, rows, state){
+      if(!rows.length) return "No PO Analysis imported yet for this week — click <strong>Import PO Analysis</strong> to bring one in.";
       const done = rows.filter(r => (state[r.key] || {}).checked).length;
-      return `<strong>${escapeHtml(weekLabel(weekAnchor))}</strong> · ${rows.length} line(s) · <strong>${done}</strong> checked in`;
+      const fileBit = imp && imp.fileName ? ` · from <strong>${escapeHtml(imp.fileName)}</strong>` : "";
+      return `<strong>${escapeHtml(weekLabel(weekAnchor))}</strong> · ${rows.length} line(s) · <strong>${done}</strong> checked in${fileBit}`;
     }
 
     function renderCheckIn(){
       const wk = weekKeyFromDate(weekAnchor);
       checkinWeekLabelEl.textContent = weekLabel(weekAnchor);
       const note = document.getElementById("checkinNote");
+      const imp = poImportForWeek(wk);
+      const headers = checkinHeadersForWeek(wk);
       const allRows = checkinRowsForWeek(wk);
       const state = checkinStateForWeek(wk);
-      note.innerHTML = checkinSummaryHTML(allRows, state);
+      note.innerHTML = checkinSummaryHTML(imp, allRows, state);
       checkinWrap.innerHTML = "";
       if(!allRows.length){
-        checkinWrap.innerHTML = '<div class="linkCard"><div class="linkCardIcon">📥</div><div><div class="linkCardTitle">No orders yet for this week</div><div class="note">Fill out the <strong>Order Tracker</strong> for this week and every line will show up here automatically to check in.</div></div></div>';
+        checkinWrap.innerHTML = '<div class="linkCard"><div class="linkCardIcon">📥</div><div><div class="linkCardTitle">No PO Analysis imported for this week</div><div class="note">Click <strong>Import PO Analysis</strong> and pick the .xlsx for this week — every column comes in exactly as exported, ready to check off.</div></div></div>';
         return;
       }
       const vFilter = (document.getElementById("checkinVendorFilter").value || "").trim().toLowerCase();
@@ -3700,45 +3801,44 @@
       scroll.className = "poTableScroll";
       const table = document.createElement("table");
       table.className = "poTable";
-      table.innerHTML = `
-        <thead><tr>
-          <th style="width:34px;">✓</th>
-          <th style="width:16%;">Vendor</th>
-          <th style="width:20%;">Item Description</th>
-          <th style="width:74px;">PO #</th>
-          <th class="num" style="width:74px;">Ordered</th>
-          <th>Details</th>
-          <th style="width:190px;">Notes</th>
-        </tr></thead>
-        <tbody></tbody>`;
+      const notesHeader = findHeader(headers, /^notes$/i);
+      const theadCells = [`<th style="width:34px;">✓</th>`]
+        .concat(headers.map(h => `<th${/ordered|qty|price|total|open|received|returned/i.test(h) ? ' class="num"' : ''}>${escapeHtml(h)}</th>`))
+        .join("");
+      table.innerHTML = `<thead><tr>${theadCells}</tr></thead><tbody></tbody>`;
       const tb = table.querySelector("tbody");
-      if(!rows.length){ tb.innerHTML = `<tr><td colspan="7" class="note" style="padding:14px;">No lines match your filters.</td></tr>`; }
+      const colCount = headers.length + 1;
+      if(!rows.length){ tb.innerHTML = `<tr><td colspan="${colCount}" class="note" style="padding:14px;">No lines match your filters.</td></tr>`; }
       rows.forEach(r => {
-        const s = state[r.key] || { checked:false, notes:"" };
+        const s = state[r.key] || { checked:false, notes:undefined };
         const tr = document.createElement("tr");
         if(s.checked) tr.className = "poChecked";
-        tr.innerHTML = `
-          <td><input type="checkbox" class="poChk" ${s.checked ? "checked" : ""}></td>
-          <td class="poVendor">${escapeHtml(r.vendor)}</td>
-          <td>${escapeHtml(r.item)}</td>
-          <td class="nowrap">${escapeHtml(r.po)}</td>
-          <td class="num">${r.qty ? r.qty.toLocaleString() : ""}</td>
-          <td class="poDetails">${escapeHtml(r.comment)}</td>
-          <td><textarea class="poNotes" placeholder="Notes...">${escapeHtml(s.notes || "")}</textarea></td>`;
+        const bodyCells = headers.map(h => {
+          if(h === notesHeader){
+            const notesVal = (s.notes !== undefined) ? s.notes : cleanCellText(String(r.cells[h] ?? ""));
+            return `<td><textarea class="poNotes" placeholder="Notes...">${escapeHtml(notesVal)}</textarea></td>`;
+          }
+          const isNumericCol = /ordered|qty|price|total|open|received|returned/i.test(h);
+          const isVendorCol = /^vendor name$|^vendor$/i.test(h);
+          const display = formatCellForDisplay(h, r.cells[h]);
+          const cls = isNumericCol ? "num" : (isVendorCol ? "poVendor" : "poDetails");
+          return `<td class="${cls}">${escapeHtml(display)}</td>`;
+        }).join("");
+        tr.innerHTML = `<td><input type="checkbox" class="poChk" ${s.checked ? "checked" : ""}></td>${bodyCells}`;
         const chk = tr.querySelector(".poChk");
         const notesEl = tr.querySelector(".poNotes");
         const persist = () => {
           const obj = checkinStateForWeek(wk);
-          obj[r.key] = { checked: chk.checked, notes: notesEl.value };
+          obj[r.key] = { checked: chk.checked, notes: notesEl ? notesEl.value : (obj[r.key]?.notes || "") };
           setCheckinStateForWeek(wk, obj);
         };
         chk.addEventListener("change", () => {
           tr.classList.toggle("poChecked", chk.checked);
           persist();
-          note.innerHTML = checkinSummaryHTML(allRows, checkinStateForWeek(wk));
+          note.innerHTML = checkinSummaryHTML(imp, allRows, checkinStateForWeek(wk));
           markTabChanged("checkin");
         });
-        notesEl.addEventListener("input", persist);
+        if(notesEl) notesEl.addEventListener("input", persist);
         tb.appendChild(tr);
       });
       scroll.appendChild(table);
@@ -3775,6 +3875,16 @@
     }
     document.getElementById("availOpenBtn") && document.getElementById("availOpenBtn").addEventListener("click", openAvailabilitySheet);
     document.getElementById("availSetLinkBtn") && document.getElementById("availSetLinkBtn").addEventListener("click", () => promptAvailLink());
+
+    /*********************************************************
+     * Photo Library — embedded Air Plant Library board
+     *********************************************************/
+    const AIR_PLANT_LIBRARY_URL = "https://app.air.inc/b/plant-library-117279bf-9190-4e62-b54b-a1626d57dac9";
+    function openAirPlantLibrary(){
+      try { window.open(AIR_PLANT_LIBRARY_URL, "_blank", "noopener"); }
+      catch(e){ alert("Couldn't open Air. Copy this link instead:\n" + AIR_PLANT_LIBRARY_URL); }
+    }
+    document.getElementById("photoOpenAirBtn") && document.getElementById("photoOpenAirBtn").addEventListener("click", openAirPlantLibrary);
 
     /*********************************************************
      * Training Documents
@@ -3942,7 +4052,7 @@
         "Several trucks in one order? Flex. Hit + Add Truck.",
         "📅 Pick Week / Year — for when scrolling is beneath you.",
         "Click a trucking name or price to edit it. No menus, no mercy.",
-        "Plant Catalog's in the Photo Library. I'm basically in there.",
+        "The Plant Library lives in the Photo Library tab now — Air-powered.",
         "Duplicate clones a truck. Copy-paste, but make it logistics.",
         "I know every button in here. Try me. I dare you.",
         "Imported the PO Analysis yet? The check-in tab is lonely.",
@@ -3958,13 +4068,13 @@
         "New order",
         "What can you do?",
         "Open Team Sync",
-        "Plant catalog"
+        "Plant Library"
       ];
 
       // ---- Knowledge base: each entry has trigger keywords + an answer ----
       const KB = [
         { k:["who are you","what can you do","what do you do","what is this app","about you","what are you","your name","commands","help","what can i ask"],
-          a:"I'm Iggy 🦎 — part iguana, part filing cabinet, and now part butler. I can explain anything in the Hub, search the web for off-topic stuff, AND actually do things for you. Try telling me:\n• “open Order Check-In” / “go to the plant catalog”\n• “new order”  •  “import the PO Analysis”\n• “log an issue about a short shipment at vendor X”\n• “add training link titled Forklift SOP at https://…”\n• “set availability link to https://…”\n• “add plant Bird of Paradise”\n• “export this week” • “expand all” • “open team sync”\nImperative = I do it; a question = I explain it. I contain multitudes." },
+          a:"I'm Iggy 🦎 — part iguana, part filing cabinet, and now part butler. I can explain anything in the Hub, search the web for off-topic stuff, AND actually do things for you. Try telling me:\n• “open Order Check-In” / “go to the plant library”\n• “new order”  •  “import PO Analysis”\n• “log an issue about a short shipment at vendor X”\n• “add training link titled Forklift SOP at https://…”\n• “set availability link to https://…”\n• “export this week” • “expand all” • “open team sync”\nImperative = I do it; a question = I explain it. I contain multitudes." },
         { k:["month","months","month bar","jump month","12 month","calendar bar","timeline"],
           a:"The month bar sits right under the toolbar buttons on the Order Tracker. It shows all 12 months of the year you're viewing — tap any month and the tracker jumps to the first week of that month. The current month is highlighted in gold." },
         { k:["pick week","specific week","exact week","week year","choose week","jump to week","go to week","pick year","date picker","calendar button"],
@@ -3983,18 +4093,16 @@
           a:"Every saved truck has a \u201cDuplicate\u201d button. It clones the whole truck, asks for a new pickup date, and drops the copy onto that week. Great for recurring pickups." },
         { k:["new order","add order","create order","make order","enter order","start order"],
           a:"Click \u201c+ New Order\u201d on the Order Tracker. Fill in the pickup date, region/type, trucking and price, add vendor blocks and item lines, then \u201cSave Order\u201d. Use \u201c+ Add Truck\u201d to enter several at once." },
-        { k:["plant catalog","catalog","houseplant","plant library","plant heights","plant photos","plant","plants","height"],
-          a:"The Photo Library opens on a Plant Catalog tab — common houseplants with photos and average heights. Heights are editable, you can upload your own photo, rename/delete, or add plants. Photos load from Wikipedia the first time (\ud83e\udeb4 placeholder until they arrive)." },
-        { k:["photo","photos","photo library","upload photo","add photo","picture","images","order photos"],
-          a:"The Photo Library has two tabs: Plant Catalog (houseplant reference) and Order Photos (your tagged order pictures). On Order Photos, drag-and-drop or click \u201c+ Add Photos\u201d and tag by week, vendor, truck and item." },
+        { k:["plant catalog","catalog","houseplant","plant library","plant heights","plant photos","plant","plants","height","photo","photos","photo library","upload photo","add photo","picture","images","order photos"],
+          a:"The Photo Library tab now shows the Plant Library board straight from Air, embedded right in the app. Use \u201c\u2197 Open in Air\u201d to pop it out into its own tab if you'd rather work there directly." },
         { k:["import","po analysis","import po","upload spreadsheet","import spreadsheet","load po","po file","import button"],
-          a:"Order Check-In no longer needs an import — it builds itself live from whatever you've typed into the Order Tracker for that week. Every item line shows up automatically with a checkbox and a notes field. When you're done, \u201cExport PO Analysis\u201d saves it as an .xlsx in the same Vendor Name / Item Description / PO Number / Ordered / PO Line Comment / NOTES layout your team already uses." },
+          a:"On Order Check-In, click \u201cImport PO Analysis\u201d and pick the .xlsx for that week. Every column comes in exactly as it is in the file \u2014 Vendor, Item Description, PO Number, Ordered, comments, all of it \u2014 plus a checkbox and a Notes field on each line. It figures out which week to file the import under from the Req/Post Date column, so it lands on the right tab automatically." },
         { k:["check-in","checkin","check in","verify","receiving","received","order check","history","past week","previous week"],
-          a:"Order Check-In mirrors the Order Tracker for whichever week you're viewing \u2014 fill out an order and its lines appear here automatically, no import needed. Tick each line in as it arrives and type notes; both save instantly and sync to the team. Use the \u2039/\u203a arrows to flip weeks, filter by vendor/item, \u201cExport PO Analysis\u201d to save an .xlsx, or \u201cReset Check-In\u201d to clear just the check marks/notes for that week." },
+          a:"Order Check-In shows whatever PO Analysis workbook you've imported for the week you're viewing, column-for-column. Tick each line in as it arrives and type notes; both save instantly and sync to the team. Use the \u2039/\u203a arrows to flip weeks, filter by vendor/item, \u201cImport PO Analysis\u201d to bring in a new workbook, or \u201cReset Check-In\u201d to clear just the check marks/notes for that week." },
         { k:["issue","issues","issue tracker","problem","pest","spec","quality","shortage","damage","delivery"],
-          a:"The Issue Tracker logs problems against orders. Types include Pest and Spec/Quality (plus Shortage, Damage, Delivery, Other). On a new issue you can attach an existing Library photo or upload a brand-new photo right there." },
+          a:"The Issue Tracker logs problems against orders. Types include Pest and Spec/Quality (plus Shortage, Damage, Delivery, Other). On a new issue you can upload a brand-new photo right there, or attach one saved earlier from the dropdown." },
         { k:["issue photo","upload issue","attach photo","photo issue","issue picture"],
-          a:"In the New Issue window use \u201cOr upload a new photo\u201d to pick an image \u2014 it previews in the form and saves with the issue. You can also attach a photo already in your Photo Library." },
+          a:"In the New Issue window use \u201cOr upload a new photo\u201d to pick an image \u2014 it previews in the form and saves with the issue. You can also attach a photo saved earlier, if one's available in the dropdown." },
         { k:["training","training documents","training doc","sop","sops","guide","guides","manual","manuals","onboarding","reference doc","procedure"],
           a:"Training Documents (tab under Issue Tracker) is your guide/SOP library. Use \u201c+ Add Link\u201d to save an online doc (OneDrive, Google Docs, a PDF URL, a video) with a title, category and description, or \u201c\u2b06 Upload File\u201d to keep a small file in this browser. Each card has Open/Download and Delete, and there's a search box." },
         { k:["availability","avail","available","availability sheet","availability link"],
@@ -4004,7 +4112,7 @@
         { k:["notification","notifications","notify","alert","alerts","remind"],
           a:"When the app is installed to a phone's home screen and you've allowed notifications, it sends a little notification each time a change is saved (orders, check-ins, issues, training docs, etc.). Notifications are skipped in a normal browser tab \u2014 they're meant for the installed app." },
         { k:["export","excel","xlsx","download","truck order export","cc order export"],
-          a:"On the Order Tracker, \u201cExport Truck Order\u201d and \u201cExport CC Order\u201d build Excel workbooks for the current week. There's also Print, plus CSV exports on Check-In and the Issue tab." },
+          a:"On the Order Tracker, \u201cExport Truck Order\u201d and \u201cExport CC Order\u201d build Excel workbooks for the current week. There's also Print, plus a CSV export on the Issue tab. Order Check-In works the other way around \u2014 it imports a PO Analysis .xlsx rather than exporting one." },
         { k:["delete","remove","delete week","delete order"],
           a:"Delete a single order from its editor (red \u201cDelete Order\u201d), or clear the whole visible week with \u201cDelete Week\u201d. Deletions can't be undone." },
         { k:["search","filter","find"],
@@ -4016,7 +4124,7 @@
         { k:["login","log in","password","sign in","account","user"],
           a:"Login is a local session only \u2014 any username/password gets you in; it's stored just on this device. \u201cLog out\u201d clears it." },
         { k:["hello","hi","hey","yo","sup","hiya","howdy"],
-          a:"Oh good, a human. 🦎 Hey. Ask me about orders, check-in, training docs, the plant catalog — or literally anything and I'll go look it up." },
+          a:"Oh good, a human. 🦎 Hey. Ask me about orders, check-in, training docs, the plant library — or literally anything and I'll go look it up." },
         { k:["thanks","thank you","thx","cheers","ty"],
           a:"You're welcome. I'll be over here, photosynthesizing. 🌿 Tap me whenever." }
       ];
@@ -4024,7 +4132,7 @@
       const OVERVIEW =
         "I'm Iggy, your guide to HPA HUB! Here's the lay of the land:\n" +
         "\u2022 Order Tracker \u2014 month bar, \ud83d\udcc5 Pick Week/Year, multiple trucks per order, click a status to confirm, click an item to substitute, inline trucking/price edits, and Duplicate.\n" +
-        "\u2022 Photo Library \u2014 a Plant Catalog of houseplants plus your tagged Order Photos.\n" +
+        "\u2022 Photo Library \u2014 the Plant Library board, embedded straight from Air.\n" +
         "\u2022 Order Check-In \u2014 auto-builds from this week's Order Tracker; check lines in with notes.\n" +
         "\u2022 Issue Tracker \u2014 log problems (Pest & Spec/Quality too) with a photo.\n" +
         "\u2022 Training Documents \u2014 links and files for SOPs and guides.\n" +
@@ -4136,7 +4244,7 @@
           if(has("check-in","check in","checkin","receiv")){ showPage("checkin"); return "Order Check-In, served. Tick away. ✅"; }
           if(has("training","sop","guide","document","docs")){ showPage("training"); return "Training Documents. Knowledge, etc. 📚"; }
           if(has("issue","problem")){ showPage("issues"); return "Issue Tracker. Let's air some grievances. 🐛"; }
-          if(has("photo","catalog","plant")){ showPage("photos"); return "Photo Library + Plant Catalog. Feast your eyes. 🪴"; }
+          if(has("photo","catalog","plant")){ showPage("photos"); return "Photo Library — the Plant Library, straight from Air. 🪴"; }
           if(has("sync","team")){ Sync.openModal(); return "Team Sync panel, open. Hit ‘Run sync self-test’. 🟢"; }
           if(has("order","truck","tracker","home")){ showPage("order"); return "Order Tracker — the mothership. 🚛"; }
         }
@@ -4181,23 +4289,10 @@
           showPage("order");
           if(clickId("newTruckBtn")) return "Popped open a fresh order. Fill 'er up, add trucks/vendors, and hit Save. 🚛";
         }
-        // add a plant to the catalog
-        if(has("plant","catalog") && verb("add","create","new")){
-          let m = s.match(/add\s+(?:a\s+|the\s+|new\s+)?(?:plant\s+)?["']?(.+?)["']?(?:\s+to\s+(?:the\s+)?(?:plant\s+)?catalog)?$/i);
-          let name = m ? m[1].trim() : "";
-          name = name.replace(/\b(plant|to|the|catalog|new|a|an)\b/gi, "").replace(/\s+/g, " ").trim();
-          if(name){
-            const cat = loadCatalog();
-            cat.push({ id:cryptoRandomId(), name, wiki:name.replace(/\s+/g, "_"), height:"", photo:"" });
-            saveCatalog(cat); markTabChanged("photos");
-            if(here === "photos" && typeof renderPlantCatalog === "function") renderPlantCatalog();
-            return `Added “${name}” to the Plant Catalog. 🪴 I'll grab its photo when you open the catalog.`;
-          }
-        }
-        // check-in now builds itself from the Order Tracker — nothing to import
         if(has("import") && has("po","analysis","spreadsheet","check-in","checkin","order","week")){
           showPage("checkin");
-          return "Order Check-In builds itself from this week's Order Tracker now — no import needed. Fill out the Order Tracker and every line shows up here automatically. 📥";
+          if(clickId("checkinImportBtn")) return "Opened the file picker \u2014 choose the PO Analysis .xlsx for that week and I'll bring in every column. \ud83d\udce5";
+          return "Head to Order Check-In and click \u201cImport PO Analysis\u201d to bring in a workbook.";
         }
         // switch check-in week
         const wk = q.match(/week\s*(\d{1,2})/);
@@ -4213,8 +4308,8 @@
         if(has("compact") || has("comfortable")){ showPage("order"); if(clickId("densityBtn")) return "Flipped the row density. Click the button again to flip back."; }
         // export
         if(has("export")){
-          if(here === "checkin" && clickId("checkinExportBtn")) return "Exported this week's Check-In as a PO Analysis workbook. 📄";
           if(has("cc")){ showPage("order"); if(clickId("exportCCBtn")) return "Exported the CC order. 📄"; }
+          if(here === "checkin") return "Order Check-In imports PO Analysis workbooks rather than exporting them — say \"import PO Analysis\" and I'll open the file picker.";
           showPage("order"); if(clickId("exportTruckBtn")) return "Exported this week's truck order. 📄";
         }
         // sync
@@ -4872,7 +4967,7 @@
           { icon:"🔗", title:"Add training link", tag:"Action", run:()=>{ showPage("training"); document.getElementById("trainingAddLinkBtn")?.click(); } },
           { icon:"📄", title:"Export Truck Order", tag:"Export", run:()=>{ showPage("order"); document.getElementById("exportTruckBtn")?.click(); } },
           { icon:"📄", title:"Export CC Order", tag:"Export", run:()=>{ showPage("order"); document.getElementById("exportCCBtn")?.click(); } },
-          { icon:"📄", title:"Export PO Analysis", tag:"Export", run:()=>{ showPage("checkin"); document.getElementById("checkinExportBtn")?.click(); } },
+          { icon:"📥", title:"Import PO Analysis", tag:"Import", run:()=>{ showPage("checkin"); document.getElementById("checkinImportBtn")?.click(); } },
           { icon:"💾", title:"Backup all data", tag:"Data", run:()=>window.HPABackup.export() },
           { icon:"↺", title:"Restore from backup", tag:"Data", run:()=>document.getElementById("restoreBtn")?.click() },
           { icon:"🟢", title:"Open Team Sync", tag:"Data", run:()=>window.HPASync.openModal() },
@@ -4908,16 +5003,6 @@
         loadTraining().forEach(d => {
           if([d.title,d.cat,d.desc].some(x => (x||"").toLowerCase().includes(q)))
             push("📚", d.title||"Document", d.cat||(d.type==="file"?"File":"Link"), "Training", ()=>{ showPage("training"); });
-        });
-        // plant catalog
-        loadCatalog().forEach(p => {
-          if((p.name||"").toLowerCase().includes(q))
-            push("🪴", p.name, p.height||"Plant catalog", "Plant", ()=>{ showPage("photos"); setPhotoView("catalog"); });
-        });
-        // photos
-        loadPhotos().forEach(p => {
-          if([p.vendor,p.item,p.spec,p.week].some(x => (x||"").toLowerCase().includes(q)))
-            push("📷", `${p.item||"Photo"} — ${p.vendor||""}`, `${p.week||""} ${p.spec||""}`.trim(), "Photo", ()=>{ showPage("photos"); setPhotoView("order"); });
         });
         // check-in lines
         try {
