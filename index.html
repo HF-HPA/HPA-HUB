@@ -812,9 +812,11 @@
     @media (max-width:560px){ .paletteOverlay{ padding-top:6vh; } .paletteInput{ font-size:16px; } }
 
     /* =====================================================================
-       BOTTOM NAV BAR v4 — fixed mobile navigation + Iggy peeking over it.
-       Appended last on purpose so it wins over earlier nav/iggy rules
-       at these widths (see the layering note on the v2/v3 blocks above).
+       BOTTOM NAV BAR v5 — copied from the reference app's pattern: every
+       item is a plain flex:1 child of one single-row flex container, so
+       they always share the width evenly and shrink together. No wrapping,
+       no horizontal scrolling, nothing that can spill past the screen edge.
+       Appended last on purpose so it wins over earlier nav/iggy rules.
        ===================================================================== */
     @media (max-width:980px){
       .appShell{ padding-bottom:calc(84px + env(safe-area-inset-bottom)); }
@@ -822,65 +824,58 @@
 
       .side{
         position:fixed; left:0; right:0; bottom:0; top:auto;
-        width:100%; height:64px; margin:0; overflow:visible;
-        border-radius:16px 16px 0 0; border-bottom:none;
-        padding:4px 4px calc(4px + env(safe-area-inset-bottom));
-        box-shadow:0 -10px 26px rgba(0,0,0,.38);
-        display:flex; flex-direction:row; flex-wrap:nowrap; align-items:stretch; gap:2px;
+        width:100%; height:auto; margin:0; overflow:visible;
+        display:flex; flex-direction:row; flex-wrap:nowrap; align-items:stretch; gap:0;
+        padding:6px 6px calc(6px + env(safe-area-inset-bottom));
+        background:linear-gradient(180deg, var(--forest), var(--canopy));
+        border-radius:0; border-top:1px solid rgba(43,212,154,.18); border-bottom:none;
+        box-shadow:0 -8px 30px rgba(0,0,0,.4);
         z-index:70;
       }
       .side .navTitle, .side .navSub, .side .navSpacer, .side .sideNote{ display:none; }
 
-      .navList{ flex:1; display:flex; flex-direction:row; flex-wrap:nowrap; align-items:stretch; gap:1px;
-                overflow-x:auto; overflow-y:visible; -webkit-overflow-scrolling:touch; scrollbar-width:none;
-                min-width:0; justify-content:flex-start;
-                background-image:linear-gradient(to right, transparent, transparent),
-                                  linear-gradient(to right, transparent, var(--forest) 90%);
-                background-repeat:no-repeat; background-size:1px 100%, 16px 100%;
-                background-position:0 0, 100% 0; background-attachment:local, scroll; }
-      .navList::-webkit-scrollbar{ display:none; }
-      .navList .navBtn{
-        flex:1 1 0; min-width:0; max-width:56px; position:relative;
-        display:flex; flex-direction:column; align-items:center; justify-content:center;
-        gap:1px; padding:5px 2px 4px; margin:0;
-        font-size:9px; line-height:1.05; border-radius:10px; text-align:center;
-        white-space:nowrap; overflow:hidden;
-      }
-      .navList .navBtn .navIcon{ font-size:16px; line-height:1; }
-      .navList .navBtn .navLabel{ overflow:hidden; text-overflow:ellipsis; max-width:100%; }
-      .navList .navBtn .navDot{ position:absolute; top:3px; right:6px; margin:0; }
+      /* Flatten the <nav> so its buttons become direct flex children of the
+         bar itself — exactly like a native bottom tab bar — instead of a
+         nested scroll container that can clip its own last item. */
+      .navList{ display:contents; }
 
-      #navMoreBtn{
+      .navList .navBtn, #navMoreBtn{
+        flex:1 1 0; min-width:0; position:relative;
         display:flex; flex-direction:column; align-items:center; justify-content:center;
-        flex:0 0 auto; width:38px; gap:1px; padding:5px 2px 4px; margin:0;
-        font-size:9px; border-radius:10px; color:rgba(214,239,226,.82);
-        background:transparent; border:none; border-left:1px solid rgba(255,255,255,.14);
+        gap:2px; padding:6px 2px; margin:0; min-height:52px;
+        border-radius:12px; text-align:center; white-space:nowrap; overflow:hidden;
+        font-size:9.5px; line-height:1.1;
       }
-      #navMoreBtn .navIcon{ font-size:16px; line-height:1; }
-      #navMoreBtn.active{ color:#eafff5; }
+      .navList .navBtn .navIcon, #navMoreBtn .navIcon{ font-size:17px; line-height:1; transition:transform .15s ease; }
+      .navList .navBtn .navLabel{ overflow:hidden; text-overflow:ellipsis; max-width:100%; }
+      .navList .navBtn .navDot{ position:absolute; top:5px; right:8px; margin:0; }
+      .navList .navBtn.active{ background:rgba(43,212,154,.16); }
+      .navList .navBtn.active .navIcon{ transform:translateY(-1px) scale(1.08); }
+
+      #navMoreBtn{ color:rgba(214,239,226,.82); background:transparent; border:none; border-left:1px solid rgba(255,255,255,.12); }
+      #navMoreBtn.active{ color:#eafff5; background:rgba(43,212,154,.16); }
 
       .navFooter{ display:none; }
       .side.moreOpen .navFooter{
         display:flex; flex-direction:column; gap:6px;
         position:fixed; left:12px; right:12px;
-        bottom:calc(72px + env(safe-area-inset-bottom));
+        bottom:calc(76px + env(safe-area-inset-bottom));
         background:linear-gradient(180deg, var(--forest), var(--canopy));
         border:1px solid rgba(43,212,154,.28); border-radius:16px;
         padding:10px; box-shadow:0 16px 40px rgba(0,0,0,.45); z-index:71;
       }
-      .side.moreOpen .navFooter .navBtn{ width:100%; flex-direction:row; justify-content:flex-start; padding:11px 12px; font-size:14px; max-width:none; overflow:visible; }
+      .side.moreOpen .navFooter .navBtn{ flex:none; width:100%; flex-direction:row; justify-content:flex-start; padding:11px 12px; font-size:14px; min-height:0; overflow:visible; }
 
       /* Iggy rises up from behind the bar — bar sits at a higher z-index so it
          visually clips Iggy's lower half, giving the "peeking over" effect. */
-      #iggy{ bottom:40px !important; right:14px !important; width:58px !important; z-index:65; }
-      #iggyChat{ bottom:calc(78px + env(safe-area-inset-bottom)) !important; right:10px !important; left:10px !important; width:auto !important; max-width:none !important; }
+      #iggy{ bottom:48px !important; right:14px !important; width:58px !important; z-index:65; }
+      #iggyChat{ bottom:calc(86px + env(safe-area-inset-bottom)) !important; right:10px !important; left:10px !important; width:auto !important; max-width:none !important; }
     }
     @media (max-width:560px){
-      .side{ height:58px; }
-      .navList .navBtn{ max-width:50px; font-size:8.5px; }
-      #navMoreBtn{ width:34px; }
-      #iggy{ bottom:32px !important; right:8px !important; width:46px !important; }
-      #iggyChat{ bottom:calc(72px + env(safe-area-inset-bottom)) !important; }
+      .navList .navBtn, #navMoreBtn{ font-size:8.5px; min-height:48px; }
+      .navList .navBtn .navIcon, #navMoreBtn .navIcon{ font-size:15px; }
+      #iggy{ bottom:42px !important; right:8px !important; width:46px !important; }
+      #iggyChat{ bottom:calc(80px + env(safe-area-inset-bottom)) !important; }
     }
 
     /* =====================================================================
@@ -1810,6 +1805,50 @@
         if(sideEl.classList.contains("moreOpen") && !sideEl.contains(e.target)) closeMore();
       });
       document.addEventListener("keydown", (e) => { if(e.key === "Escape") closeMore(); });
+    })();
+
+    /*********************************************************
+     * Mobile Safari fix: a `position:fixed; bottom:0` element anchors to the
+     * page's full layout viewport, which is taller than what's actually on
+     * screen whenever Safari's own address/tab bar is showing — so the bar
+     * renders mostly behind that browser chrome with just a sliver peeking
+     * above it, until the page happens to scroll. Tracking the real visible
+     * area via visualViewport and nudging the bar up to match fixes it
+     * immediately, with no scroll required.
+     *********************************************************/
+    (function fixBottomNavForMobileSafari(){
+      const sideEl = document.querySelector(".side");
+      const iggyEl = document.getElementById("iggy");
+      const iggyChatEl = document.getElementById("iggyChat");
+      if(!sideEl || !window.visualViewport) return;
+      let baseIggyBottom = null, baseChatBottom = null;
+      function update(){
+        if(window.innerWidth > 980){
+          sideEl.style.bottom = "";
+          if(iggyEl) iggyEl.style.bottom = "";
+          if(iggyChatEl) iggyChatEl.style.bottom = "";
+          return;
+        }
+        const vv = window.visualViewport;
+        const hiddenBelow = Math.max(0, Math.round(window.innerHeight - (vv.height + vv.offsetTop)));
+        sideEl.style.bottom = hiddenBelow + "px";
+        // Iggy and his chat keep their own CSS bottom offset (so he still
+        // "peeks over" the bar) — just nudge that base value up by the same
+        // hidden-behind-browser-chrome amount.
+        if(iggyEl){
+          if(baseIggyBottom === null) baseIggyBottom = parseFloat(getComputedStyle(iggyEl).bottom) || 0;
+          iggyEl.style.bottom = (baseIggyBottom + hiddenBelow) + "px";
+        }
+        if(iggyChatEl){
+          if(baseChatBottom === null) baseChatBottom = parseFloat(getComputedStyle(iggyChatEl).bottom) || 0;
+          iggyChatEl.style.bottom = (baseChatBottom + hiddenBelow) + "px";
+        }
+      }
+      window.visualViewport.addEventListener("resize", update);
+      window.visualViewport.addEventListener("scroll", update);
+      window.addEventListener("orientationchange", () => setTimeout(update, 150));
+      update();
+      setTimeout(update, 300); // Safari sometimes reports viewport size a beat late on first paint
     })();
 
     /*********************************************************
