@@ -581,6 +581,13 @@
     .linkCard{ display:flex; gap:14px; align-items:center; padding:18px; margin-top:14px; background:var(--paper-2); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow-sm); }
     .airEmbedWrap{ position:relative; width:100%; margin-top:12px; border:1px solid var(--line); border-radius:var(--radius); overflow:hidden; box-shadow:var(--shadow-sm); background:var(--paper-2); height:78vh; min-height:520px; }
     .airEmbedWrap iframe{ width:100%; height:100%; border:0; display:block; }
+    .airEmbedFallback{ position:absolute; inset:0; z-index:2; display:flex; align-items:center; justify-content:center; background:var(--paper-2); transition:opacity .3s ease, visibility .3s ease; }
+    .airEmbedFallback.hidden{ opacity:0; visibility:hidden; pointer-events:none; }
+    .airEmbedFallbackInner{ text-align:center; color:var(--ink-2); font-size:13.5px; max-width:340px; padding:20px; }
+    .airEmbedFallbackInner a{ color:var(--moss); font-weight:700; text-decoration:underline; cursor:pointer; }
+    .airSpinner{ width:28px; height:28px; margin:0 auto 12px; border-radius:50%; border:3px solid var(--line); border-top-color:var(--mint-deep); animation:airSpin .8s linear infinite; }
+    @keyframes airSpin{ to{ transform:rotate(360deg); } }
+    @media (prefers-reduced-motion: reduce){ .airSpinner{ animation:none; } }
     @media (max-width: 720px){ .airEmbedWrap{ height:70vh; min-height:420px; } }
     .linkCardIcon{ font-size:34px; line-height:1; flex:none; width:56px; height:56px; display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg,#e6f3ec,#cfe9d9); border-radius:14px; }
     .linkCardTitle{ font-family:var(--display); font-weight:600; font-size:17px; color:var(--ink); margin-bottom:2px; }
@@ -752,7 +759,8 @@
       .tinyBtn{ min-height:44px; padding:0 14px; display:inline-flex; align-items:center; }
       .pickupRight .tinyBtn, .vendorActions .tinyBtn,
       .checkActions .tinyBtn, .availRowActions .tinyBtn{ min-height:44px; }
-      .poChk, .availRow input[type="checkbox"], .checkRow input[type="checkbox"]{ width:24px; height:24px; }
+      .poChk, .availRow input[type="checkbox"], .checkRow input[type="checkbox"]{ width:28px; height:28px; }
+      .poTable td:first-child, .poTable th:first-child{ min-width:44px; padding:9px 8px; }
       .statusPill, .statusChip{ padding:8px 14px; font-size:12px; }
       .navList .navBtn{ min-height:44px; }
     }
@@ -818,14 +826,14 @@
         border-radius:16px 16px 0 0; border-bottom:none;
         padding:4px 4px calc(4px + env(safe-area-inset-bottom));
         box-shadow:0 -10px 26px rgba(0,0,0,.38);
-        display:flex; flex-direction:row; align-items:stretch; gap:2px;
+        display:flex; flex-direction:row; flex-wrap:nowrap; align-items:stretch; gap:2px;
         z-index:70;
       }
       .side .navTitle, .side .navSub, .side .navSpacer, .side .sideNote{ display:none; }
 
-      .navList{ flex:1; display:flex; flex-direction:row; align-items:stretch; gap:1px;
+      .navList{ flex:1; display:flex; flex-direction:row; flex-wrap:nowrap; align-items:stretch; gap:1px;
                 overflow-x:auto; overflow-y:visible; -webkit-overflow-scrolling:touch; scrollbar-width:none;
-                min-width:0;
+                min-width:0; justify-content:flex-start;
                 background-image:linear-gradient(to right, transparent, transparent),
                                   linear-gradient(to right, transparent, var(--forest) 90%);
                 background-repeat:no-repeat; background-size:1px 100%, 16px 100%;
@@ -874,6 +882,33 @@
       #iggy{ bottom:32px !important; right:8px !important; width:46px !important; }
       #iggyChat{ bottom:calc(72px + env(safe-area-inset-bottom)) !important; }
     }
+
+    /* =====================================================================
+       HIGH CONTRAST MODE — toggled via body.highContrast; appended last so
+       it overrides every themed color used throughout the app (they all
+       route through these same CSS variables).
+       ===================================================================== */
+    body.highContrast{
+      --canopy:#000000; --forest:#001a0f; --moss:#004d2b; --fern:#00b368;
+      --mint:#00e68a; --mint-deep:#00b368; --gold:#e6b400;
+      --paper:#ffffff; --paper-2:#ffffff; --paper-3:#eeeeee;
+      --ink:#000000; --ink-2:#1a1a1a;
+      --line:#000000; --line-soft:#333333;
+      --shadow:0 4px 0 rgba(0,0,0,.6); --shadow-sm:0 2px 0 rgba(0,0,0,.5);
+      --ok:#006622; --warn:#8a5a00; --danger:#b30000;
+      --thead:#000000; --rowA:#ffffff; --rowB:#eeeeee; --rowHover:#fff2a8;
+    }
+    body.highContrast .bgPhoto, body.highContrast .mist, body.highContrast .rays{ display:none !important; }
+    body.highContrast::after{ display:none !important; }
+    body.highContrast *{ text-shadow:none !important; }
+    body.highContrast .btnGhost, body.highContrast .tinyBtn, body.highContrast .navBtn,
+    body.highContrast input, body.highContrast select, body.highContrast textarea,
+    body.highContrast .card, body.highContrast .statusPill, body.highContrast .statusChip,
+    body.highContrast .poTable, body.highContrast .table{ border-width:2px !important; border-color:#000 !important; }
+    body.highContrast .chip{ background:#000 !important; color:#fff !important; border:2px solid #fff !important; }
+    body.highContrast .thead, body.highContrast .poTable thead th{ color:#fff !important; background:#000 !important; }
+    body.highContrast .navBtn.active{ outline:3px solid #ffcc00; }
+    body.highContrast a, body.highContrast .pi_title{ color:#000 !important; }
   </style>
 </head>
 <body class="density-comfortable atmos">
@@ -933,20 +968,22 @@
       <aside class="side">
         <div class="navTitle">HPA HUB</div>
         <div class="navSub">Logistics</div>
-        <nav class="navList">
-          <button class="navBtn" data-page="dashboard"><span class="navIcon">📊</span><span class="navLabel">Dashboard</span></button>
-          <button class="navBtn active" data-page="order"><span class="navIcon">🚛</span><span class="navLabel">Order Tracker</span></button>
-          <button class="navBtn" data-page="photos"><span class="navIcon">🪴</span><span class="navLabel">Photo Library</span></button>
-          <button class="navBtn" data-page="avail"><span class="navIcon">📈</span><span class="navLabel">Availability</span></button>
-          <button class="navBtn" data-page="checkin"><span class="navIcon">✅</span><span class="navLabel">Order Check-In</span></button>
-          <button class="navBtn" data-page="issues"><span class="navIcon">🐛</span><span class="navLabel">Issue Tracker</span></button>
-          <button class="navBtn" data-page="training"><span class="navIcon">📚</span><span class="navLabel">Training Documents</span></button>
+        <nav class="navList" role="navigation" aria-label="Main">
+          <button class="navBtn" data-page="dashboard" aria-label="Dashboard"><span class="navIcon" aria-hidden="true">📊</span><span class="navLabel">Dashboard</span></button>
+          <button class="navBtn active" data-page="order" aria-label="Order Tracker"><span class="navIcon" aria-hidden="true">🚛</span><span class="navLabel">Order Tracker</span></button>
+          <button class="navBtn" data-page="photos" aria-label="Photo Library"><span class="navIcon" aria-hidden="true">🪴</span><span class="navLabel">Photo Library</span></button>
+          <button class="navBtn" data-page="avail" aria-label="Availability"><span class="navIcon" aria-hidden="true">📈</span><span class="navLabel">Availability</span></button>
+          <button class="navBtn" data-page="checkin" aria-label="Order Check-In"><span class="navIcon" aria-hidden="true">✅</span><span class="navLabel">Order Check-In</span></button>
+          <button class="navBtn" data-page="issues" aria-label="Issue Tracker"><span class="navIcon" aria-hidden="true">🐛</span><span class="navLabel">Issue Tracker</span></button>
+          <button class="navBtn" data-page="training" aria-label="Training Documents"><span class="navIcon" aria-hidden="true">📚</span><span class="navLabel">Training Documents</span></button>
         </nav>
-        <button id="navMoreBtn" type="button" aria-haspopup="true" aria-expanded="false"><span class="navIcon">⋯</span><span class="navLabel">More</span></button>
+        <button id="navMoreBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="More options"><span class="navIcon" aria-hidden="true">⋯</span><span class="navLabel">More</span></button>
         <div class="navSpacer"></div>
         <div class="navFooter">
+          <button id="contrastToggleBtn" class="navBtn" aria-pressed="false">◐ High contrast</button>
           <button id="syncSideBtn" class="navBtn">🔗 Team Sync</button>
           <button id="backupBtn" class="navBtn">💾 Backup all data</button>
+          <div class="note sideNote" id="lastBackupNote" style="margin:-4px 4px 4px;"></div>
           <button id="restoreBtn" class="navBtn">↺ Restore from backup</button>
           <input id="restoreFile" type="file" accept=".json,application/json" style="display:none;">
           <button id="logoutBtn" class="navBtn" style="border-color:rgba(224,86,63,.3); color:#ffb4a4;">Log out</button>
@@ -1040,6 +1077,12 @@
           </div>
           <div class="note">Plant Library, powered by Air.</div>
           <div class="airEmbedWrap">
+            <div id="airEmbedFallback" class="airEmbedFallback">
+              <div class="airEmbedFallbackInner">
+                <div class="airSpinner" aria-hidden="true"></div>
+                <div id="airEmbedFallbackText">Loading the Plant Library…</div>
+              </div>
+            </div>
             <iframe id="airPlantLibraryFrame" src="https://app.air.inc/b/plant-library-117279bf-9190-4e62-b54b-a1626d57dac9" title="Plant Library — Air" loading="lazy" allow="fullscreen" referrerpolicy="no-referrer-when-downgrade"></iframe>
           </div>
           <!-- legacy hidden controls kept for compatibility (old Plant Catalog / Order Photos UI; not shown) -->
@@ -1099,6 +1142,7 @@
               <input id="checkinItemFilter" placeholder="Item filter (optional)" />
               <button id="checkinImportBtn" class="btnGhost">Import PO Analysis</button>
               <input id="checkinImportFile" type="file" accept=".xlsx,.xls" style="display:none;">
+              <button id="checkinShareBtn" class="btnGhost">Share Outstanding</button>
               <button id="checkinResetWeekBtn" class="btnGhost" style="border-color:rgba(224,86,63,.3); color:#a8341f;">Reset Check-In</button>
             </div>
           </div>
@@ -1363,6 +1407,8 @@
       trainingKey:"hpa_training_v1",
       availLinkKey:"hpa_avail_link_v1",
       teamKey:"hpa_team_v1",
+      contrastKey:"hpa_contrast_v1",
+      lastBackupKey:"hpa_last_backup_v1",
       get(key, fallback){
         try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; }
       },
@@ -1377,6 +1423,22 @@
         try { if(window.HPASync && window.HPASync.onLocalSet) window.HPASync.onLocalSet(key); } catch(_){}
       }
     };
+    // Shared helper for the handful of "direct" writes (sync apply, restore) that
+    // intentionally skip LS.set's activity/re-push side effects but should still
+    // warn the user consistently if the device is out of storage.
+    let _storageWarnedRecently = false;
+    function rawStorageSet(key, value){
+      try { localStorage.setItem(key, value); return true; }
+      catch(e){
+        console.error("[storage] write failed for", key, e);
+        if(!_storageWarnedRecently){
+          _storageWarnedRecently = true;
+          setTimeout(() => { _storageWarnedRecently = false; }, 8000);
+          alert("Storage limit reached — this update couldn't be saved on this device. Delete some old photos, or use \u201cBackup all data\u201d to save a copy elsewhere.");
+        }
+        return false;
+      }
+    }
 
     /*********************************************************
      * Utilities
@@ -1459,6 +1521,35 @@
         .replaceAll(">", "&gt;")
         .replaceAll('"', "&quot;")
         .replaceAll("'", "&#039;");
+    }
+    /*********************************************************
+     * Fuzzy matching — shared by the command palette and Iggy's
+     * knowledge base so a typo or partial word still finds things.
+     *********************************************************/
+    function fuzzyScore(query, text){
+      query = (query||"").toLowerCase().trim(); text = (text||"").toLowerCase();
+      if(!query) return 0;
+      const idx = text.indexOf(query);
+      if(idx !== -1) return 1000 - idx; // exact substring: best, earlier position wins ties
+      // subsequence match: every query char must appear in order in text
+      let qi = 0, score = 0, streak = 0;
+      for(let ti = 0; ti < text.length && qi < query.length; ti++){
+        if(text[ti] === query[qi]){ qi++; streak++; score += streak; }
+        else streak = 0;
+      }
+      return qi === query.length ? score : -1; // -1 = no match at all
+    }
+    function levenshtein(a, b){
+      const m = a.length, n = b.length;
+      if(!m) return n; if(!n) return m;
+      const dp = Array.from({length:m+1}, (_,i) => { const row = new Array(n+1).fill(0); row[0] = i; return row; });
+      for(let j = 0; j <= n; j++) dp[0][j] = j;
+      for(let i = 1; i <= m; i++){
+        for(let j = 1; j <= n; j++){
+          dp[i][j] = a[i-1] === b[j-1] ? dp[i-1][j-1] : 1 + Math.min(dp[i-1][j-1], dp[i-1][j], dp[i][j-1]);
+        }
+      }
+      return dp[m][n];
     }
     function downloadCSV(filename, rows, headers){
       const csv = [
@@ -1613,6 +1704,8 @@
       ensureNotifyPermission();
       Sync.init({ name: u });
       if(window.IGGY){ window.IGGY.show(); window.IGGY.schedule(); }
+      checkStorageHealth();
+      refreshBackupReminder();
     });
 
     document.getElementById("logoutBtn").addEventListener("click", () => {
@@ -2378,6 +2471,27 @@
       body.classList.toggle("density-compact", comfortable);
       densityBtn.textContent = comfortable ? "Compact" : "Comfortable";
       renderOrder();
+    });
+
+    /*********************************************************
+     * High-contrast accessibility mode
+     *********************************************************/
+    function setContrastMode(on){
+      document.body.classList.toggle("highContrast", on);
+      const btn = document.getElementById("contrastToggleBtn");
+      if(btn){
+        btn.setAttribute("aria-pressed", String(on));
+        btn.textContent = on ? "◑ High contrast (on)" : "◐ High contrast";
+      }
+      try { localStorage.setItem(LS.contrastKey, on ? "1" : "0"); } catch(_){}
+    }
+    (function initContrast(){
+      let on = false;
+      try { on = localStorage.getItem(LS.contrastKey) === "1"; } catch(_){}
+      setContrastMode(on);
+    })();
+    document.getElementById("contrastToggleBtn")?.addEventListener("click", () => {
+      setContrastMode(!document.body.classList.contains("highContrast"));
     });
 
     const orderFilter = document.getElementById("orderFilter");
@@ -3848,6 +3962,48 @@
       saveCheckinAll(all);
       renderCheckIn();
     });
+    document.getElementById("checkinShareBtn").addEventListener("click", async () => {
+      const wk = weekKeyFromDate(weekAnchor);
+      const rows = checkinRowsForWeek(wk);
+      if(!rows.length){ alert("No PO Analysis imported for this week yet."); return; }
+      const state = checkinStateForWeek(wk);
+      const outstanding = rows.filter(r => !(state[r.key] || {}).checked);
+      const title = `Outstanding — ${weekLabel(weekAnchor)}`;
+      let body;
+      if(!outstanding.length){
+        body = `${title}\nEverything is checked in — ${rows.length}/${rows.length} lines received. 🎉`;
+      } else {
+        body = `${title}\n${outstanding.length} of ${rows.length} line(s) still outstanding:\n` +
+          outstanding.map(r => `• ${r.vendor || "Vendor —"} — ${r.item || "Item —"}${r.po ? ` (PO ${r.po})` : ""}${r.qty ? ` — ${r.qty.toLocaleString ? r.qty.toLocaleString() : r.qty}` : ""}`).join("\n");
+      }
+      try {
+        if(navigator.share){
+          await navigator.share({ title, text: body });
+          return;
+        }
+      } catch(_){ /* share cancelled or unsupported — fall through to clipboard */ }
+      try {
+        await navigator.clipboard.writeText(body);
+        statusChip.textContent = "Outstanding summary copied to clipboard";
+        setTimeout(() => { statusChip.textContent = "Ready"; }, 4000);
+      } catch(_){
+        alert(body);
+      }
+    });
+    function diffPoImport(oldRows, newRows){
+      const oldMap = new Map((oldRows||[]).map(r => [r.key, r]));
+      const newMap = new Map((newRows||[]).map(r => [r.key, r]));
+      const added = [], removed = [], changed = [];
+      newMap.forEach((r, k) => { if(!oldMap.has(k)) added.push(r); });
+      oldMap.forEach((r, k) => { if(!newMap.has(k)) removed.push(r); });
+      newMap.forEach((r, k) => {
+        const old = oldMap.get(k);
+        if(old && Number(old.qty||0) !== Number(r.qty||0)){
+          changed.push({ label: r.item || r.po || k, from: old.qty || 0, to: r.qty || 0 });
+        }
+      });
+      return { added, removed, changed };
+    }
     document.getElementById("checkinImportBtn").addEventListener("click", () => {
       document.getElementById("checkinImportFile").click();
     });
@@ -3870,9 +4026,23 @@
       }
       if(targetDate) weekAnchor = startOfWeek(targetDate);
       const wk = weekKeyFromDate(weekAnchor);
+      const prevImp = poImportForWeek(wk);
       setPoImportForWeek(wk, { headers: parsed.headers, rows: parsed.rows, fileName: file.name, importedAt: new Date().toISOString() });
       markTabChanged("checkin");
       renderCheckIn();
+      if(prevImp && prevImp.rows && prevImp.rows.length){
+        const d = diffPoImport(prevImp.rows, parsed.rows);
+        if(d.added.length || d.removed.length || d.changed.length){
+          const lines = [`Compared with the previous import for ${weekLabel(weekAnchor)} (${prevImp.fileName || "earlier file"}):`];
+          if(d.added.length) lines.push(`+ ${d.added.length} new line(s): ${d.added.slice(0,6).map(r=>r.item||r.po||"—").join(", ")}${d.added.length>6?", …":""}`);
+          if(d.removed.length) lines.push(`- ${d.removed.length} line(s) no longer present: ${d.removed.slice(0,6).map(r=>r.item||r.po||"—").join(", ")}${d.removed.length>6?", …":""}`);
+          if(d.changed.length) lines.push(`~ ${d.changed.length} quantity change(s): ${d.changed.slice(0,6).map(c=>`${c.label} ${c.from}\u2192${c.to}`).join("; ")}${d.changed.length>6?", …":""}`);
+          alert(lines.join("\n"));
+        } else {
+          statusChip.textContent = "PO Analysis re-imported — no changes vs. last time";
+          setTimeout(() => { statusChip.textContent = "Ready"; }, 4000);
+        }
+      }
     });
 
     function checkinSummaryHTML(imp, rows, state){
@@ -3990,6 +4160,27 @@
       catch(e){ alert("Couldn't open Air. Copy this link instead:\n" + AIR_PLANT_LIBRARY_URL); }
     }
     document.getElementById("photoOpenAirBtn") && document.getElementById("photoOpenAirBtn").addEventListener("click", openAirPlantLibrary);
+
+    (function airEmbedFallbackWatcher(){
+      const frame = document.getElementById("airPlantLibraryFrame");
+      const fallback = document.getElementById("airEmbedFallback");
+      const fallbackText = document.getElementById("airEmbedFallbackText");
+      if(!frame || !fallback || !fallbackText) return;
+      let loaded = false;
+      frame.addEventListener("load", () => {
+        loaded = true;
+        fallback.classList.add("hidden");
+      });
+      // If it hasn't loaded within a few seconds, it's likely blocked from being
+      // embedded (or offline) — swap the spinner for a direct link instead of
+      // leaving a mysterious blank box.
+      setTimeout(() => {
+        if(loaded) return;
+        fallbackText.innerHTML = `Taking a while to load — it may not allow embedding here.<br><br><a id="airEmbedFallbackLink">Open the Plant Library in Air ↗</a>`;
+        const link = document.getElementById("airEmbedFallbackLink");
+        if(link) link.addEventListener("click", openAirPlantLibrary);
+      }, 6000);
+    })();
 
     /*********************************************************
      * Training Documents
@@ -4250,12 +4441,21 @@
       function localAnswer(qRaw){
         const q = (qRaw || "").toLowerCase();
         if(!q.trim()) return { text: OVERVIEW, matched: true };
+        const qWords = q.split(/[^a-z0-9]+/).filter(Boolean);
         let best = null, bestScore = 0;
         for(const entry of KB){
           let score = 0;
           for(const kw of entry.k){
             if(kw.includes(" ")){ if(q.includes(kw)) score += kw.split(" ").length * 3; }
             else if(q.includes(kw)){ score += STOP.has(kw) ? 0 : 2; }
+            else if(!STOP.has(kw) && kw.length >= 4){
+              // typo tolerance: a keyword with no exact hit still counts if a
+              // word in the question is a near-miss (handles "chekin", "trainig", etc.)
+              const maxDist = kw.length <= 5 ? 1 : 2;
+              for(const w of qWords){
+                if(w.length >= 3 && Math.abs(w.length - kw.length) <= maxDist && levenshtein(w, kw) <= maxDist){ score += 1; break; }
+              }
+            }
           }
           if(score > bestScore){ bestScore = score; best = entry; }
         }
@@ -4668,12 +4868,12 @@
         const list = loadPhotos();
         const i = list.findIndex(p => p.id === id);
         if(i === -1) list.unshift(record); else list[i] = record;
-        try { localStorage.setItem(LS.photosKey, JSON.stringify(list)); } catch(e){ return; } // direct write: no re-push
+        if(!rawStorageSet(LS.photosKey, JSON.stringify(list))) return; // direct write: no re-push
         if(currentPage === "photos"){ renderPhotos(); populateIssuePhotoOptions(); }
       },
       applyRemotePhotoRemoved(id){
         const list = loadPhotos().filter(p => p.id !== id);
-        try { localStorage.setItem(LS.photosKey, JSON.stringify(list)); } catch(e){ return; }
+        if(!rawStorageSet(LS.photosKey, JSON.stringify(list))) return;
         if(currentPage === "photos"){ renderPhotos(); populateIssuePhotoOptions(); }
       },
       async pushPhoto(id){
@@ -4716,7 +4916,7 @@
         if(i === -1){ this._pendingTrainingFiles[id] = data.value; return; } // metadata hasn't arrived yet
         if(list[i].dataUrl === data.value) return;
         list[i] = { ...list[i], dataUrl: data.value };
-        try { localStorage.setItem(LS.trainingKey, JSON.stringify(list)); } catch(e){ return; } // direct write: no re-push
+        if(!rawStorageSet(LS.trainingKey, JSON.stringify(list))) return; // direct write: no re-push
         if(currentPage === "training"){ renderTraining(); }
       },
       reconcilePendingTrainingFiles(){
@@ -4730,7 +4930,7 @@
           }
         });
         if(changed){
-          try { localStorage.setItem(LS.trainingKey, JSON.stringify(list)); } catch(e){ return; }
+          if(!rawStorageSet(LS.trainingKey, JSON.stringify(list))) return;
           if(currentPage === "training"){ renderTraining(); }
         }
       },
@@ -4761,7 +4961,7 @@
           (key === LS.issuesKey   && currentPage === "issues")  ||
           (key === LS.checkinKey  && currentPage === "checkin") ||
           (key === LS.trainingKey && currentPage === "training");
-        try { localStorage.setItem(key, data.value); } catch(e){ return; } // direct write: no re-push
+        if(!rawStorageSet(key, data.value)) return; // direct write: no re-push
         this.lastReceived = Date.now(); this.applies++;
         this.rerender(key);
         if(key === LS.trainingKey){ this.reconcilePendingTrainingFiles(); }
@@ -4910,6 +5110,8 @@
           const n = Object.keys(dump.data).length;
           statusChip.textContent = `Backed up ${n} section(s)`;
           setTimeout(() => { statusChip.textContent = "Ready"; }, 3500);
+          try { localStorage.setItem(LS.lastBackupKey, String(Date.now())); } catch(_){}
+          refreshBackupReminder();
         } catch(e){
           console.error("[Backup] export failed", e);
           alert("Couldn't create the backup file. See the console for details.");
@@ -4946,6 +5148,37 @@
       }
     };
     window.HPABackup = Backup;
+
+    /*********************************************************
+     * Storage health — proactive warning before things silently fail,
+     * plus a "last backup: N days ago" reminder in the nav footer.
+     *********************************************************/
+    async function checkStorageHealth(){
+      try{
+        if(!(navigator.storage && navigator.storage.estimate)) return;
+        const { usage, quota } = await navigator.storage.estimate();
+        if(!quota) return;
+        const pct = Math.round((usage / quota) * 100);
+        if(pct >= 85){
+          statusChip.textContent = `⚠ Storage ${pct}% full`;
+          statusChip.title = `Using ${fmtBytes(usage)} of ${fmtBytes(quota)} available on this device. Delete old photos or back up and clear space.`;
+        }
+      } catch(_){}
+    }
+    function refreshBackupReminder(){
+      const el = document.getElementById("lastBackupNote");
+      if(!el) return;
+      let last = null;
+      try { last = localStorage.getItem(LS.lastBackupKey); } catch(_){}
+      if(!last){ el.textContent = "Never backed up — do it once you have data worth keeping."; el.style.color = "var(--state-warn-fg, #b36b00)"; return; }
+      const days = Math.floor((Date.now() - Number(last)) / 86400000);
+      if(days <= 0){ el.textContent = "Backed up today."; el.style.color = ""; }
+      else if(days === 1){ el.textContent = "Last backup: yesterday."; el.style.color = ""; }
+      else {
+        el.textContent = `Last backup: ${days} days ago.`;
+        el.style.color = days >= 7 ? "var(--state-warn-fg, #b36b00)" : "";
+      }
+    }
 
     /*********************************************************
      * NEXT-LEVEL v3 — Activity log, Dashboard, Command palette, Global search
@@ -5078,7 +5311,8 @@
           { icon:"🟢", title:"Open Team Sync", tag:"Data", run:()=>window.HPASync.openModal() },
           { icon:"⬅️", title:"Previous week", tag:"Nav", run:()=>{ weekAnchor = addDays(weekAnchor,-7); renderOrder(); } },
           { icon:"➡️", title:"Next week", tag:"Nav", run:()=>{ weekAnchor = addDays(weekAnchor,7); renderOrder(); } },
-          { icon:"📅", title:"Jump to this week", tag:"Nav", run:()=>{ weekAnchor = startOfWeek(new Date()); renderOrder(); } }
+          { icon:"📅", title:"Jump to this week", tag:"Nav", run:()=>{ weekAnchor = startOfWeek(new Date()); renderOrder(); } },
+          { icon:"◐", title:"Toggle high contrast mode", tag:"Accessibility", run:()=>document.getElementById("contrastToggleBtn")?.click() }
         ];
       },
 
@@ -5146,7 +5380,14 @@
           if(isCommand){
             const all = getItems();
             const qq = q.trim().toLowerCase();
-            items = qq ? all.filter(c => (c.title+" "+(c.tag||"")+" "+(c.sub||"")).toLowerCase().includes(qq)) : all;
+            if(!qq){ items = all; }
+            else {
+              items = all
+                .map(c => ({ c, s: fuzzyScore(qq, c.title + " " + (c.tag||"") + " " + (c.sub||"")) }))
+                .filter(x => x.s >= 0)
+                .sort((a,b) => b.s - a.s)
+                .map(x => x.c);
+            }
           } else {
             items = getItems(q);
           }
@@ -5238,6 +5479,8 @@
         ensureNotifyPermission();
         Sync.init(u);
         if(window.IGGY){ window.IGGY.show(); window.IGGY.schedule(); }
+        checkStorageHealth();
+        refreshBackupReminder();
       } else {
         showScreen(splash);
         statusChip.textContent = "Cinematic Jungle";
