@@ -812,10 +812,12 @@
     @media (max-width:560px){ .paletteOverlay{ padding-top:6vh; } .paletteInput{ font-size:16px; } }
 
     /* =====================================================================
-       BOTTOM NAV BAR v5 — copied from the reference app's pattern: every
-       item is a plain flex:1 child of one single-row flex container, so
-       they always share the width evenly and shrink together. No wrapping,
-       no horizontal scrolling, nothing that can spill past the screen edge.
+       BOTTOM NAV BAR v6 — same "every item shares the row equally" idea as
+       the reference app, but WITHOUT display:contents on the <nav> wrapper.
+       Safari (including standalone/home-screen mode) has long-standing bugs
+       rendering flex children through a display:contents ancestor — sizes
+       and positioning can come out wrong, which is what was cutting the bar
+       off. Two plain nested flex rows gets the identical layout safely.
        Appended last on purpose so it wins over earlier nav/iggy rules.
        ===================================================================== */
     @media (max-width:980px){
@@ -834,25 +836,33 @@
       }
       .side .navTitle, .side .navSub, .side .navSpacer, .side .sideNote{ display:none; }
 
-      /* Flatten the <nav> so its buttons become direct flex children of the
-         bar itself — exactly like a native bottom tab bar — instead of a
-         nested scroll container that can clip its own last item. */
-      .navList{ display:contents; }
+      .navList{
+        flex:1 1 0; min-width:0;
+        display:flex; flex-direction:row; flex-wrap:nowrap; align-items:stretch; gap:0;
+      }
 
-      .navList .navBtn, #navMoreBtn{
+      .navList .navBtn{
         flex:1 1 0; min-width:0; position:relative;
         display:flex; flex-direction:column; align-items:center; justify-content:center;
         gap:2px; padding:6px 2px; margin:0; min-height:52px;
         border-radius:12px; text-align:center; white-space:nowrap; overflow:hidden;
         font-size:9.5px; line-height:1.1;
       }
-      .navList .navBtn .navIcon, #navMoreBtn .navIcon{ font-size:17px; line-height:1; transition:transform .15s ease; }
+      .navList .navBtn .navIcon{ font-size:17px; line-height:1; transition:transform .15s ease; }
       .navList .navBtn .navLabel{ overflow:hidden; text-overflow:ellipsis; max-width:100%; }
       .navList .navBtn .navDot{ position:absolute; top:5px; right:8px; margin:0; }
       .navList .navBtn.active{ background:rgba(43,212,154,.16); }
       .navList .navBtn.active .navIcon{ transform:translateY(-1px) scale(1.08); }
 
-      #navMoreBtn{ color:rgba(214,239,226,.82); background:transparent; border:none; border-left:1px solid rgba(255,255,255,.12); }
+      #navMoreBtn{
+        flex:0 0 auto; width:44px; position:relative;
+        display:flex; flex-direction:column; align-items:center; justify-content:center;
+        gap:2px; padding:6px 2px; margin:0; min-height:52px;
+        font-size:9.5px; line-height:1.1; border-radius:12px;
+        color:rgba(214,239,226,.82); background:transparent; border:none;
+        border-left:1px solid rgba(255,255,255,.12);
+      }
+      #navMoreBtn .navIcon{ font-size:17px; line-height:1; }
       #navMoreBtn.active{ color:#eafff5; background:rgba(43,212,154,.16); }
 
       .navFooter{ display:none; }
@@ -1815,8 +1825,14 @@
      * above it, until the page happens to scroll. Tracking the real visible
      * area via visualViewport and nudging the bar up to match fixes it
      * immediately, with no scroll required.
+     * This only applies inside a normal browser tab — skip it entirely when
+     * installed to the home screen (standalone), since there's no browser
+     * chrome there and the correction has nothing real to compensate for.
      *********************************************************/
     (function fixBottomNavForMobileSafari(){
+      const isStandalone = (window.navigator.standalone === true) ||
+        (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches);
+      if(isStandalone) return;
       const sideEl = document.querySelector(".side");
       const iggyEl = document.getElementById("iggy");
       const iggyChatEl = document.getElementById("iggyChat");
