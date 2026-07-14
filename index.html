@@ -155,6 +155,9 @@
     .navTitle{ font-family:var(--display); font-weight:600; font-size:19px; color:#eafff5; letter-spacing:-.01em; margin:2px 4px 4px; }
     .navSub{ font-size:11px; color:rgba(168,214,190,.7); letter-spacing:.18em; text-transform:uppercase; margin:0 4px 16px; }
     .navBtn{ width:100%; text-align:left; padding:11px 12px; border-radius:var(--radius-sm); border:1px solid transparent; background:transparent; color:rgba(214,239,226,.82); cursor:pointer; margin:3px 0; font-family:var(--sans); font-weight:500; font-size:14px; display:flex; align-items:center; gap:10px; transition:background .15s, color .15s, border-color .15s; }
+    .navIcon{ flex:none; font-size:15px; line-height:1; }
+    .navLabel{ min-width:0; }
+    #navMoreBtn{ display:none; font-family:var(--sans); font-weight:600; cursor:pointer; }
     .navBtn:hover{ background:rgba(43,212,154,.1); color:#eafff5; }
     .navBtn.active{ background:rgba(43,212,154,.16); border-color:rgba(43,212,154,.34); color:#eafff5; font-weight:600; }
     .navDot{ margin-left:auto; flex:none; width:9px; height:9px; border-radius:50%; background:#e0563f; box-shadow:0 0 0 2px rgba(224,86,63,.28); display:none; }
@@ -799,6 +802,70 @@
     .palEmpty{ padding:22px; text-align:center; color:var(--ink-2); font-weight:600; }
     .paletteHint{ padding:9px 16px; font-size:11.5px; color:var(--ink-2); border-top:1px solid var(--line-soft); background:var(--paper-3); }
     @media (max-width:560px){ .paletteOverlay{ padding-top:6vh; } .paletteInput{ font-size:16px; } }
+
+    /* =====================================================================
+       BOTTOM NAV BAR v4 — fixed mobile navigation + Iggy peeking over it.
+       Appended last on purpose so it wins over earlier nav/iggy rules
+       at these widths (see the layering note on the v2/v3 blocks above).
+       ===================================================================== */
+    @media (max-width:980px){
+      .appShell{ padding-bottom:calc(84px + env(safe-area-inset-bottom)); }
+      .main{ margin-bottom:calc(84px + env(safe-area-inset-bottom)) !important; }
+
+      .side{
+        position:fixed; left:0; right:0; bottom:0; top:auto;
+        width:100%; height:64px; margin:0;
+        border-radius:16px 16px 0 0; border-bottom:none;
+        padding:6px 6px calc(6px + env(safe-area-inset-bottom));
+        box-shadow:0 -10px 26px rgba(0,0,0,.38);
+        display:flex; flex-direction:row; align-items:stretch; gap:4px;
+        z-index:70;
+      }
+      .side .navTitle, .side .navSub, .side .navSpacer, .side .sideNote{ display:none; }
+
+      .navList{ flex:1; display:flex; flex-direction:row; align-items:stretch; gap:2px;
+                overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+      .navList::-webkit-scrollbar{ display:none; }
+      .navList .navBtn{
+        flex:0 0 auto; min-width:60px; position:relative;
+        display:flex; flex-direction:column; align-items:center; justify-content:center;
+        gap:2px; padding:6px 8px 5px; margin:0;
+        font-size:10.5px; line-height:1.1; border-radius:12px; text-align:center; white-space:nowrap;
+      }
+      .navList .navBtn .navIcon{ font-size:18px; line-height:1; }
+      .navList .navBtn .navDot{ position:absolute; top:5px; right:9px; margin:0; }
+
+      #navMoreBtn{
+        display:flex; flex-direction:column; align-items:center; justify-content:center;
+        flex:0 0 auto; min-width:52px; gap:2px; padding:6px 6px 5px; margin:0;
+        font-size:10.5px; border-radius:12px; color:rgba(214,239,226,.82);
+        background:transparent; border:none; border-left:1px solid rgba(255,255,255,.14);
+      }
+      #navMoreBtn .navIcon{ font-size:18px; line-height:1; }
+      #navMoreBtn.active{ color:#eafff5; }
+
+      .navFooter{ display:none; }
+      .side.moreOpen .navFooter{
+        display:flex; flex-direction:column; gap:6px;
+        position:fixed; left:12px; right:12px;
+        bottom:calc(72px + env(safe-area-inset-bottom));
+        background:linear-gradient(180deg, var(--forest), var(--canopy));
+        border:1px solid rgba(43,212,154,.28); border-radius:16px;
+        padding:10px; box-shadow:0 16px 40px rgba(0,0,0,.45); z-index:71;
+      }
+      .side.moreOpen .navFooter .navBtn{ width:100%; flex-direction:row; justify-content:flex-start; padding:11px 12px; font-size:14px; }
+
+      /* Iggy rises up from behind the bar — bar sits at a higher z-index so it
+         visually clips Iggy's lower half, giving the "peeking over" effect. */
+      #iggy{ bottom:40px !important; right:14px !important; width:58px !important; z-index:65; }
+      #iggyChat{ bottom:calc(78px + env(safe-area-inset-bottom)) !important; right:10px !important; left:10px !important; width:auto !important; max-width:none !important; }
+    }
+    @media (max-width:560px){
+      .side{ height:60px; }
+      .navList .navBtn, #navMoreBtn{ font-size:10px; min-width:52px; }
+      #iggy{ bottom:34px !important; right:8px !important; width:48px !important; }
+      #iggyChat{ bottom:calc(72px + env(safe-area-inset-bottom)) !important; }
+    }
   </style>
 </head>
 <body class="density-comfortable atmos">
@@ -859,14 +926,15 @@
         <div class="navTitle">HPA HUB</div>
         <div class="navSub">Logistics</div>
         <nav class="navList">
-          <button class="navBtn" data-page="dashboard">Dashboard</button>
-          <button class="navBtn active" data-page="order">Order Tracker</button>
-          <button class="navBtn" data-page="photos">Photo Library</button>
-          <button class="navBtn" data-page="avail">Availability</button>
-          <button class="navBtn" data-page="checkin">Order Check-In</button>
-          <button class="navBtn" data-page="issues">Issue Tracker</button>
-          <button class="navBtn" data-page="training">Training Documents</button>
+          <button class="navBtn" data-page="dashboard"><span class="navIcon">📊</span><span class="navLabel">Dashboard</span></button>
+          <button class="navBtn active" data-page="order"><span class="navIcon">🚛</span><span class="navLabel">Order Tracker</span></button>
+          <button class="navBtn" data-page="photos"><span class="navIcon">🪴</span><span class="navLabel">Photo Library</span></button>
+          <button class="navBtn" data-page="avail"><span class="navIcon">📈</span><span class="navLabel">Availability</span></button>
+          <button class="navBtn" data-page="checkin"><span class="navIcon">✅</span><span class="navLabel">Order Check-In</span></button>
+          <button class="navBtn" data-page="issues"><span class="navIcon">🐛</span><span class="navLabel">Issue Tracker</span></button>
+          <button class="navBtn" data-page="training"><span class="navIcon">📚</span><span class="navLabel">Training Documents</span></button>
         </nav>
+        <button id="navMoreBtn" type="button" aria-haspopup="true" aria-expanded="false"><span class="navIcon">⋯</span><span class="navLabel">More</span></button>
         <div class="navSpacer"></div>
         <div class="navFooter">
           <button id="syncSideBtn" class="navBtn">🔗 Team Sync</button>
@@ -1612,7 +1680,36 @@
         return;
       }
       showPage(b.dataset.page);
+      document.querySelector(".side").classList.remove("moreOpen");
+      document.getElementById("navMoreBtn")?.setAttribute("aria-expanded", "false");
+      document.getElementById("navMoreBtn")?.classList.remove("active");
     }));
+
+    /*********************************************************
+     * Mobile bottom nav — "More" sheet for Team Sync / Backup / Restore / Log out
+     *********************************************************/
+    (function(){
+      const sideEl = document.querySelector(".side");
+      const moreBtn = document.getElementById("navMoreBtn");
+      const footer = document.querySelector(".navFooter");
+      if(!sideEl || !moreBtn || !footer) return;
+      function closeMore(){
+        sideEl.classList.remove("moreOpen");
+        moreBtn.setAttribute("aria-expanded", "false");
+        moreBtn.classList.remove("active");
+      }
+      moreBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const isOpen = sideEl.classList.toggle("moreOpen");
+        moreBtn.setAttribute("aria-expanded", String(isOpen));
+        moreBtn.classList.toggle("active", isOpen);
+      });
+      footer.addEventListener("click", (e) => { if(e.target.closest("button")) closeMore(); });
+      document.addEventListener("click", (e) => {
+        if(sideEl.classList.contains("moreOpen") && !sideEl.contains(e.target)) closeMore();
+      });
+      document.addEventListener("keydown", (e) => { if(e.key === "Escape") closeMore(); });
+    })();
 
     /*********************************************************
      * Trucks (Orders) v3 schema
