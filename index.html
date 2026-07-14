@@ -157,6 +157,7 @@
     .navBtn{ width:100%; text-align:left; padding:11px 12px; border-radius:var(--radius-sm); border:1px solid transparent; background:transparent; color:rgba(214,239,226,.82); cursor:pointer; margin:3px 0; font-family:var(--sans); font-weight:500; font-size:14px; display:flex; align-items:center; gap:10px; transition:background .15s, color .15s, border-color .15s; }
     .navIcon{ flex:none; font-size:15px; line-height:1; }
     .navLabel{ min-width:0; }
+    .navLabelShort{ display:none; }
     #navMoreBtn{ display:none; font-family:var(--sans); font-weight:600; cursor:pointer; }
     .navBtn:hover{ background:rgba(43,212,154,.1); color:#eafff5; }
     .navBtn.active{ background:rgba(43,212,154,.16); border-color:rgba(43,212,154,.34); color:#eafff5; font-weight:600; }
@@ -828,53 +829,79 @@
         position:fixed; left:0; right:0; bottom:0; top:auto;
         width:100%; height:auto; margin:0; overflow:visible;
         display:flex; flex-direction:row; flex-wrap:nowrap; align-items:stretch; gap:0;
-        padding:6px 6px calc(6px + env(safe-area-inset-bottom));
-        background:linear-gradient(180deg, var(--forest), var(--canopy));
-        border-radius:0; border-top:1px solid rgba(43,212,154,.18); border-bottom:none;
-        box-shadow:0 -8px 30px rgba(0,0,0,.4);
+        padding:7px 6px calc(7px + env(safe-area-inset-bottom));
+        background:linear-gradient(180deg, rgba(18,58,42,.94), rgba(8,26,19,.98));
+        backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px);
+        border-radius:0; border:none;
+        box-shadow:0 -1px 0 rgba(95,224,166,.22) inset, 0 -12px 30px rgba(0,0,0,.42);
         z-index:70;
       }
       .side .navTitle, .side .navSub, .side .navSpacer, .side .sideNote{ display:none; }
 
       .navList{
         flex:1 1 0; min-width:0;
-        display:flex; flex-direction:row; flex-wrap:nowrap; align-items:stretch; gap:0;
+        display:flex; flex-direction:row; flex-wrap:nowrap; align-items:stretch; gap:1px;
       }
 
       .navList .navBtn{
         flex:1 1 0; min-width:0; position:relative;
         display:flex; flex-direction:column; align-items:center; justify-content:center;
-        gap:2px; padding:6px 2px; margin:0; min-height:52px;
-        border-radius:12px; text-align:center; white-space:nowrap; overflow:hidden;
-        font-size:9.5px; line-height:1.1;
+        gap:3px; padding:7px 2px; margin:2px 1px; min-height:50px;
+        border-radius:13px; text-align:center; white-space:nowrap; overflow:hidden;
+        font-size:9.5px; font-weight:600; letter-spacing:.01em; line-height:1.1;
+        color:rgba(214,239,226,.62);
+        transition:color .18s ease, background .18s ease, transform .1s ease;
       }
-      .navList .navBtn .navIcon{ font-size:17px; line-height:1; transition:transform .15s ease; }
+      .navList .navBtn .navIcon{
+        font-size:18px; line-height:1; display:block;
+        opacity:.68; filter:saturate(.7);
+        transition:opacity .18s ease, transform .18s ease, filter .18s ease;
+      }
       .navList .navBtn .navLabel{ overflow:hidden; text-overflow:ellipsis; max-width:100%; }
-      .navList .navBtn .navDot{ position:absolute; top:5px; right:8px; margin:0; }
-      .navList .navBtn.active{ background:rgba(43,212,154,.16); }
-      .navList .navBtn.active .navIcon{ transform:translateY(-1px) scale(1.08); }
+      .navList .navBtn .navLabelFull{ display:none; }
+      .navList .navBtn .navLabelShort{ display:inline; }
+      .navList .navBtn .navDot{
+        position:absolute; top:4px; right:calc(50% - 15px); margin:0;
+        box-shadow:0 0 0 2px rgba(8,26,19,.9), 0 0 6px rgba(224,86,63,.7);
+      }
+      .navList .navBtn:active{ transform:scale(.93); }
+      .navList .navBtn.active{
+        color:#eafff5;
+        background:linear-gradient(180deg, rgba(43,212,154,.22), rgba(43,212,154,.09));
+        box-shadow:0 0 0 1px rgba(95,224,166,.22) inset;
+      }
+      .navList .navBtn.active .navIcon{ opacity:1; filter:none; transform:translateY(-1px) scale(1.1); }
 
       #navMoreBtn{
-        flex:0 0 auto; width:44px; position:relative;
+        flex:0 0 auto; width:42px; position:relative;
         display:flex; flex-direction:column; align-items:center; justify-content:center;
-        gap:2px; padding:6px 2px; margin:0; min-height:52px;
-        font-size:9.5px; line-height:1.1; border-radius:12px;
-        color:rgba(214,239,226,.82); background:transparent; border:none;
-        border-left:1px solid rgba(255,255,255,.12);
+        gap:3px; padding:7px 2px; margin:2px 0 2px 3px; min-height:50px;
+        font-size:9.5px; font-weight:600; letter-spacing:.01em; line-height:1.1;
+        border-radius:13px;
+        color:rgba(214,239,226,.62); background:transparent; border:none;
+        border-left:1px solid rgba(255,255,255,.10);
+        transition:color .18s ease, background .18s ease, transform .1s ease;
       }
-      #navMoreBtn .navIcon{ font-size:17px; line-height:1; }
-      #navMoreBtn.active{ color:#eafff5; background:rgba(43,212,154,.16); }
+      #navMoreBtn .navIcon{ font-size:18px; line-height:1; opacity:.68; transition:opacity .18s ease, transform .18s ease; }
+      #navMoreBtn:active{ transform:scale(.93); }
+      #navMoreBtn.active{
+        color:#eafff5;
+        background:linear-gradient(180deg, rgba(43,212,154,.22), rgba(43,212,154,.09));
+      }
+      #navMoreBtn.active .navIcon{ opacity:1; transform:rotate(90deg); }
 
       .navFooter{ display:none; }
       .side.moreOpen .navFooter{
         display:flex; flex-direction:column; gap:6px;
         position:fixed; left:12px; right:12px;
-        bottom:calc(76px + env(safe-area-inset-bottom));
+        bottom:calc(78px + env(safe-area-inset-bottom));
         background:linear-gradient(180deg, var(--forest), var(--canopy));
-        border:1px solid rgba(43,212,154,.28); border-radius:16px;
-        padding:10px; box-shadow:0 16px 40px rgba(0,0,0,.45); z-index:71;
+        backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+        border:1px solid rgba(95,224,166,.28); border-radius:18px;
+        padding:10px; box-shadow:0 16px 44px rgba(0,0,0,.5); z-index:71;
       }
-      .side.moreOpen .navFooter .navBtn{ flex:none; width:100%; flex-direction:row; justify-content:flex-start; padding:11px 12px; font-size:14px; min-height:0; overflow:visible; }
+      .side.moreOpen .navFooter .navBtn{ flex:none; width:100%; flex-direction:row; justify-content:flex-start; padding:12px 13px; font-size:14px; font-weight:600; min-height:0; overflow:visible; color:rgba(214,239,226,.9); border-radius:11px; }
+      .side.moreOpen .navFooter .navBtn:hover, .side.moreOpen .navFooter .navBtn:active{ background:rgba(43,212,154,.12); }
 
       /* Iggy rises up from behind the bar — bar sits at a higher z-index so it
          visually clips Iggy's lower half, giving the "peeking over" effect. */
@@ -882,8 +909,8 @@
       #iggyChat{ bottom:calc(86px + env(safe-area-inset-bottom)) !important; right:10px !important; left:10px !important; width:auto !important; max-width:none !important; }
     }
     @media (max-width:560px){
-      .navList .navBtn, #navMoreBtn{ font-size:8.5px; min-height:48px; }
-      .navList .navBtn .navIcon, #navMoreBtn .navIcon{ font-size:15px; }
+      .navList .navBtn, #navMoreBtn{ font-size:8.5px; min-height:46px; }
+      .navList .navBtn .navIcon, #navMoreBtn .navIcon{ font-size:16px; }
       #iggy{ bottom:42px !important; right:8px !important; width:46px !important; }
       #iggyChat{ bottom:calc(80px + env(safe-area-inset-bottom)) !important; }
     }
@@ -974,13 +1001,13 @@
         <div class="navTitle">HPA HUB</div>
         <div class="navSub">Logistics</div>
         <nav class="navList" role="navigation" aria-label="Main">
-          <button class="navBtn" data-page="dashboard" aria-label="Dashboard"><span class="navIcon" aria-hidden="true">📊</span><span class="navLabel">Dashboard</span></button>
-          <button class="navBtn active" data-page="order" aria-label="Order Tracker"><span class="navIcon" aria-hidden="true">🚛</span><span class="navLabel">Order Tracker</span></button>
-          <button class="navBtn" data-page="photos" aria-label="Photo Library"><span class="navIcon" aria-hidden="true">🪴</span><span class="navLabel">Photo Library</span></button>
-          <button class="navBtn" data-page="avail" aria-label="Availability"><span class="navIcon" aria-hidden="true">📈</span><span class="navLabel">Availability</span></button>
-          <button class="navBtn" data-page="checkin" aria-label="Order Check-In"><span class="navIcon" aria-hidden="true">✅</span><span class="navLabel">Order Check-In</span></button>
-          <button class="navBtn" data-page="issues" aria-label="Issue Tracker"><span class="navIcon" aria-hidden="true">🐛</span><span class="navLabel">Issue Tracker</span></button>
-          <button class="navBtn" data-page="training" aria-label="Training Documents"><span class="navIcon" aria-hidden="true">📚</span><span class="navLabel">Training Documents</span></button>
+          <button class="navBtn" data-page="dashboard" aria-label="Dashboard"><span class="navIcon" aria-hidden="true">📊</span><span class="navLabel"><span class="navLabelFull">Dashboard</span><span class="navLabelShort">Dashboard</span></span></button>
+          <button class="navBtn active" data-page="order" aria-label="Order Tracker"><span class="navIcon" aria-hidden="true">🚛</span><span class="navLabel"><span class="navLabelFull">Order Tracker</span><span class="navLabelShort">Orders</span></span></button>
+          <button class="navBtn" data-page="photos" aria-label="Photo Library"><span class="navIcon" aria-hidden="true">🪴</span><span class="navLabel"><span class="navLabelFull">Photo Library</span><span class="navLabelShort">Photos</span></span></button>
+          <button class="navBtn" data-page="avail" aria-label="Availability"><span class="navIcon" aria-hidden="true">📈</span><span class="navLabel"><span class="navLabelFull">Availability</span><span class="navLabelShort">Avail</span></span></button>
+          <button class="navBtn" data-page="checkin" aria-label="Order Check-In"><span class="navIcon" aria-hidden="true">✅</span><span class="navLabel"><span class="navLabelFull">Order Check-In</span><span class="navLabelShort">Check-In</span></span></button>
+          <button class="navBtn" data-page="issues" aria-label="Issue Tracker"><span class="navIcon" aria-hidden="true">🐛</span><span class="navLabel"><span class="navLabelFull">Issue Tracker</span><span class="navLabelShort">Issues</span></span></button>
+          <button class="navBtn" data-page="training" aria-label="Training Documents"><span class="navIcon" aria-hidden="true">📚</span><span class="navLabel"><span class="navLabelFull">Training Documents</span><span class="navLabelShort">Training</span></span></button>
         </nav>
         <button id="navMoreBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="More options"><span class="navIcon" aria-hidden="true">⋯</span><span class="navLabel">More</span></button>
         <div class="navSpacer"></div>
