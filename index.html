@@ -814,34 +814,41 @@
 
       .side{
         position:fixed; left:0; right:0; bottom:0; top:auto;
-        width:100%; height:64px; margin:0;
+        width:100%; height:64px; margin:0; overflow:visible;
         border-radius:16px 16px 0 0; border-bottom:none;
-        padding:6px 6px calc(6px + env(safe-area-inset-bottom));
+        padding:4px 4px calc(4px + env(safe-area-inset-bottom));
         box-shadow:0 -10px 26px rgba(0,0,0,.38);
-        display:flex; flex-direction:row; align-items:stretch; gap:4px;
+        display:flex; flex-direction:row; align-items:stretch; gap:2px;
         z-index:70;
       }
       .side .navTitle, .side .navSub, .side .navSpacer, .side .sideNote{ display:none; }
 
-      .navList{ flex:1; display:flex; flex-direction:row; align-items:stretch; gap:2px;
-                overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+      .navList{ flex:1; display:flex; flex-direction:row; align-items:stretch; gap:1px;
+                overflow-x:auto; overflow-y:visible; -webkit-overflow-scrolling:touch; scrollbar-width:none;
+                min-width:0;
+                background-image:linear-gradient(to right, transparent, transparent),
+                                  linear-gradient(to right, transparent, var(--forest) 90%);
+                background-repeat:no-repeat; background-size:1px 100%, 16px 100%;
+                background-position:0 0, 100% 0; background-attachment:local, scroll; }
       .navList::-webkit-scrollbar{ display:none; }
       .navList .navBtn{
-        flex:0 0 auto; min-width:60px; position:relative;
+        flex:1 1 0; min-width:0; max-width:56px; position:relative;
         display:flex; flex-direction:column; align-items:center; justify-content:center;
-        gap:2px; padding:6px 8px 5px; margin:0;
-        font-size:10.5px; line-height:1.1; border-radius:12px; text-align:center; white-space:nowrap;
+        gap:1px; padding:5px 2px 4px; margin:0;
+        font-size:9px; line-height:1.05; border-radius:10px; text-align:center;
+        white-space:nowrap; overflow:hidden;
       }
-      .navList .navBtn .navIcon{ font-size:18px; line-height:1; }
-      .navList .navBtn .navDot{ position:absolute; top:5px; right:9px; margin:0; }
+      .navList .navBtn .navIcon{ font-size:16px; line-height:1; }
+      .navList .navBtn .navLabel{ overflow:hidden; text-overflow:ellipsis; max-width:100%; }
+      .navList .navBtn .navDot{ position:absolute; top:3px; right:6px; margin:0; }
 
       #navMoreBtn{
         display:flex; flex-direction:column; align-items:center; justify-content:center;
-        flex:0 0 auto; min-width:52px; gap:2px; padding:6px 6px 5px; margin:0;
-        font-size:10.5px; border-radius:12px; color:rgba(214,239,226,.82);
+        flex:0 0 auto; width:38px; gap:1px; padding:5px 2px 4px; margin:0;
+        font-size:9px; border-radius:10px; color:rgba(214,239,226,.82);
         background:transparent; border:none; border-left:1px solid rgba(255,255,255,.14);
       }
-      #navMoreBtn .navIcon{ font-size:18px; line-height:1; }
+      #navMoreBtn .navIcon{ font-size:16px; line-height:1; }
       #navMoreBtn.active{ color:#eafff5; }
 
       .navFooter{ display:none; }
@@ -853,7 +860,7 @@
         border:1px solid rgba(43,212,154,.28); border-radius:16px;
         padding:10px; box-shadow:0 16px 40px rgba(0,0,0,.45); z-index:71;
       }
-      .side.moreOpen .navFooter .navBtn{ width:100%; flex-direction:row; justify-content:flex-start; padding:11px 12px; font-size:14px; }
+      .side.moreOpen .navFooter .navBtn{ width:100%; flex-direction:row; justify-content:flex-start; padding:11px 12px; font-size:14px; max-width:none; overflow:visible; }
 
       /* Iggy rises up from behind the bar — bar sits at a higher z-index so it
          visually clips Iggy's lower half, giving the "peeking over" effect. */
@@ -861,9 +868,10 @@
       #iggyChat{ bottom:calc(78px + env(safe-area-inset-bottom)) !important; right:10px !important; left:10px !important; width:auto !important; max-width:none !important; }
     }
     @media (max-width:560px){
-      .side{ height:60px; }
-      .navList .navBtn, #navMoreBtn{ font-size:10px; min-width:52px; }
-      #iggy{ bottom:34px !important; right:8px !important; width:48px !important; }
+      .side{ height:58px; }
+      .navList .navBtn{ max-width:50px; font-size:8.5px; }
+      #navMoreBtn{ width:34px; }
+      #iggy{ bottom:32px !important; right:8px !important; width:46px !important; }
       #iggyChat{ bottom:calc(72px + env(safe-area-inset-bottom)) !important; }
     }
   </style>
