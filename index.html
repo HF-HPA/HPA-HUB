@@ -4027,7 +4027,8 @@
         if(raw instanceof Date) targetDate = raw;
         else if(typeof raw === "number" && raw > 0) targetDate = excelSerialToDate(raw);
       }
-      const weekH = findHeader(parsed.headers, /^week\s*(number|no\.?|#)?$/i, /^wk\s*#?$/i);
+      const weekH = findHeader(parsed.headers, /^week\s*(number|no\.?|#)?$/i, /^wk\s*#?$/i)
+        || parsed.headers.find(h => /week/i.test(h) && !/end|of/i.test(h));
       if(weekH){
         const rawWeek = parsed.rows[0].cells[weekH];
         const weekNum = Number(rawWeek);
