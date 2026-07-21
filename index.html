@@ -4015,14 +4015,28 @@
       try { parsed = await parsePoAnalysisWorkbook(file); }
       catch(err){ alert("Couldn't read that PO Analysis file: " + err.message); return; }
 
-      // Figure out which week this belongs to from a Req/Post Date column, so it lands
-      // on the right tab automatically; falls back to whichever week is on screen.
+      // Figure out which week this belongs to. Prefer an explicit "Week"/"Week
+      // Number" column straight from the workbook — that's the number the team
+      // actually goes by — and only fall back to guessing from a Req/Post Date
+      // column if no such column exists (falls back further to whichever week
+      // is on screen if neither is present).
       let targetDate = null;
       const dateH = findHeader(parsed.headers, /req date/i, /post date/i);
       if(dateH){
         const raw = parsed.rows[0].cells[dateH];
         if(raw instanceof Date) targetDate = raw;
         else if(typeof raw === "number" && raw > 0) targetDate = excelSerialToDate(raw);
+      }
+      const weekH = findHeader(parsed.headers, /^week\s*(number|no\.?|#)?$/i, /^wk\s*#?$/i);
+      if(weekH){
+        const rawWeek = parsed.rows[0].cells[weekH];
+        const weekNum = Number(rawWeek);
+        if(Number.isFinite(weekNum) && weekNum >= 1 && weekNum <= 53){
+          // A date column (if present) only supplies the year here; the sheet's
+          // own week number wins over any ISO week the date would compute to.
+          const year = targetDate ? targetDate.getFullYear() : weekAnchor.getFullYear();
+          targetDate = dateFromWeekKey(`${year}-W${pad2(Math.round(weekNum))}`);
+        }
       }
       if(targetDate) weekAnchor = startOfWeek(targetDate);
       const wk = weekKeyFromDate(weekAnchor);
