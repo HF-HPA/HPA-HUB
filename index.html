@@ -1992,9 +1992,9 @@
     function blankTruckData(){
       return {
         id:null,
-        pickupDate: fmtDate(addDays(weekAnchor, 1)),
+        pickupDate: fmtDate(weekAnchor),
         region:"Homestead", orderType:"CC", trucking:"", price:"", notes:"",
-        vendorBlocks:[{ name:"", po:"", status:"Confirmed", items:[{ item:"", racks:"", cases:"", qty:"", notes:"" }] }]
+        vendorBlocks:[{ name:"", po:"", status:"Open", items:[{ item:"", racks:"", cases:"", qty:"", notes:"" }] }]
       };
     }
     function truckToData(truck){
@@ -2003,13 +2003,13 @@
         (truck ? [{ name:(truck.vendors || ""), po:(truck.po || ""), status:"Confirmed", items:(truck.items || []) }] : []);
       return {
         id: truck?.id || null,
-        pickupDate: truck?.pickupDate ?? fmtDate(addDays(weekAnchor, 1)),
+        pickupDate: truck?.pickupDate ?? fmtDate(weekAnchor),
         region: truck?.region ?? "Homestead",
         orderType: normalizeOrderType(truck),
         trucking: truck?.trucking ?? "",
         price: (truck?.price ?? ""),
         notes: truck?.notes ?? "",
-        vendorBlocks: (vendorBlocks.length ? vendorBlocks : [{ name:"", po:"", status:"Confirmed", items:[] }]).map(vb => ({
+        vendorBlocks: (vendorBlocks.length ? vendorBlocks : [{ name:"", po:"", status:"Open", items:[] }]).map(vb => ({
           name: vb.name || "", po: vb.po || truck?.po || "", status: vb.status || "Confirmed",
           items: (vb.items || []).map(x => ({
             item:x.item, racks:x.racks, cases:x.cases ?? "", qty:x.qty, notes:x.notes,
@@ -2091,7 +2091,7 @@
       block.querySelector(".tb_dup").style.display = editing ? "none" : "";
 
       const vendorWrapEl = block.querySelector(".tb_vendorWrap");
-      const vbs = data.vendorBlocks?.length ? data.vendorBlocks : [{ name:"", po:"", status:"Confirmed", items:[{ item:"", racks:"", cases:"", qty:"", notes:"" }] }];
+      const vbs = data.vendorBlocks?.length ? data.vendorBlocks : [{ name:"", po:"", status:"Open", items:[{ item:"", racks:"", cases:"", qty:"", notes:"" }] }];
       vbs.forEach(vb => addVendorBlock(vendorWrapEl, block, vb));
 
       block.querySelector(".tb_addVendor").addEventListener("click", () => addVendorBlock(vendorWrapEl, block));
@@ -2129,7 +2129,7 @@
       return `<tr><th style="width:32%;">Item</th>${rackCol}${shelvesCol}<th style="width:11%;">Case Count</th><th style="width:11%;">Plant Qty</th><th>Notes</th><th style="width:1%;"></th></tr>`;
     }
 
-    function addVendorBlock(vendorWrapEl, block, vendorObj = { name:"", po:"", status:"Confirmed", items:[{ item:"", racks:"", cases:"", qty:"", notes:"" }] }){
+    function addVendorBlock(vendorWrapEl, block, vendorObj = { name:"", po:"", status:"Open", items:[{ item:"", racks:"", cases:"", qty:"", notes:"" }] }){
       const vb = document.createElement("div");
       vb.className = "vendorBlock";
       vb.innerHTML = `
