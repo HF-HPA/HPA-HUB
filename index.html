@@ -130,6 +130,8 @@
 
     .weekHeader{ display:flex; gap:10px; align-items:center; justify-content:space-between; margin-bottom:14px; flex-wrap:wrap; }
     .weekHeader .chip{ background:var(--paper-3); color:var(--moss); border:1px solid var(--line); backdrop-filter:none; font-weight:600; }
+    #weekLabel.isSkipWeek{ background:#dc2626 !important; color:#fff !important; border-color:#dc2626 !important; }
+    #skipWeekBtn.isActive{ background:#dc2626; border-color:#dc2626; color:#fff; }
 
     .density-comfortable{ --cellPad:10px; --headerPad:10px 12px; --tableFont:14px; --blockGap:12px; --pickupStickyTop:0px; --theadStickyTop:50px; }
     .density-compact{ --cellPad:6px 8px; --headerPad:8px 10px; --tableFont:13px; --blockGap:9px; --pickupStickyTop:0px; --theadStickyTop:56px; }
@@ -332,6 +334,8 @@
     .weekChip{ flex:0 0 auto; display:flex; flex-direction:column; align-items:flex-start; gap:1px; padding:8px 13px; border-radius:12px; border:1px solid var(--line); background:var(--paper); color:var(--ink); cursor:pointer; font-family:var(--sans); transition:background .15s, border-color .15s, color .15s; }
     .weekChip:hover{ background:var(--rowHover); border-color:var(--fern); }
     .weekChip.active{ background:var(--moss); border-color:var(--moss); color:#eafff5; }
+    .weekChip.isSkipWeek .wcNum{ background:#dc2626; color:#fff; border-radius:6px; padding:1px 6px; }
+    .weekChip.isSkipWeek.active{ border-color:#dc2626; }
     .wcNum{ font-weight:700; font-size:13.5px; }
     .wcRange{ font-size:11px; opacity:.78; white-space:nowrap; }
     .weekChip.active .wcRange{ opacity:.92; }
@@ -368,6 +372,8 @@
     .weekCell{ display:flex; flex-direction:column; align-items:flex-start; gap:2px; padding:8px 10px; border-radius:var(--radius-sm); border:1px solid var(--line); background:var(--paper-2); color:var(--ink); cursor:pointer; font-family:var(--sans); font-weight:600; font-size:13px; text-align:left; transition:background .15s, border-color .15s; }
     .weekCell:hover{ background:var(--rowHover); border-color:var(--fern); }
     .weekCell.active{ background:var(--moss); border-color:var(--moss); color:#eafff5; }
+    .weekCell.isSkipWeek{ color:#dc2626; border-color:#dc2626; }
+    .weekCell.isSkipWeek.active{ background:#dc2626; border-color:#dc2626; color:#fff; }
     .weekCellDates{ font-size:11px; font-weight:500; color:var(--ink-2); }
     .weekCell.active .weekCellDates{ color:rgba(234,255,245,.85); }
     .wpHead{ display:flex; align-items:center; justify-content:center; gap:14px; margin-bottom:12px; }
@@ -997,6 +1003,7 @@
               <button id="newTruckBtn" class="btn">+ New Order</button>
               <button id="exportTruckBtn" class="btnGhost">Export Truck Order</button>
               <button id="exportCCBtn" class="btnGhost">Export CC Order</button>
+              <button id="skipWeekBtn" class="btnGhost" type="button">🚫 Mark as Skip Week</button>
             </div>
             <details class="moreTools">
               <summary>More tools &amp; filters</summary>
@@ -1356,6 +1363,7 @@
       teamKey:"hpa_team_v1",
       contrastKey:"hpa_contrast_v1",
       lastBackupKey:"hpa_last_backup_v1",
+      skipWeeksKey:"hpa_skip_weeks_v1",
       get(key, fallback){
         try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; }
       },
@@ -1798,6 +1806,17 @@
     function loadTrucks(){ return LS.get(LS.trucksKey, []); }
     function saveTrucks(list){ LS.set(LS.trucksKey, list); }
 
+    /*********************************************************
+     * Skip Weeks — flag a week (e.g. holiday, no deliveries)
+     *********************************************************/
+    function loadSkipWeeks(){ return LS.get(LS.skipWeeksKey, {}); }
+    function isSkipWeek(weekKey){ return !!loadSkipWeeks()[weekKey]; }
+    function setSkipWeek(weekKey, flagged){
+      const map = loadSkipWeeks();
+      if(flagged) map[weekKey] = true; else delete map[weekKey];
+      LS.set(LS.skipWeeksKey, map);
+    }
+
     let weekAnchor = startOfWeek(new Date());
     const weekLabelEl = document.getElementById("weekLabel");
     const requestDateLabelEl = document.getElementById("requestDateLabel");
@@ -1825,6 +1844,22 @@
     });
 
     document.getElementById("printBtn").addEventListener("click", () => window.print());
+
+    const skipWeekBtn = document.getElementById("skipWeekBtn");
+    skipWeekBtn?.addEventListener("click", () => {
+      const wk = weekKeyFromDate(weekAnchor);
+      setSkipWeek(wk, !isSkipWeek(wk));
+      renderOrder();
+    });
+    function updateSkipWeekUI(){
+      const wk = weekKeyFromDate(weekAnchor);
+      const flagged = isSkipWeek(wk);
+      weekLabelEl.classList.toggle("isSkipWeek", flagged);
+      if(skipWeekBtn){
+        skipWeekBtn.classList.toggle("isActive", flagged);
+        skipWeekBtn.textContent = flagged ? "🚫 Skip Week (click to unflag)" : "🚫 Mark as Skip Week";
+      }
+    }
 
     /*********************************************************
      * Month bar (quick month navigation for the Order Tracker)
@@ -1872,7 +1907,8 @@
           const range = sun.getMonth() !== mon.getMonth()
             ? `${MONTHS[mon.getMonth()]} ${mon.getDate()} – ${MONTHS[sun.getMonth()]} ${sun.getDate()}`
             : `${MONTHS[mon.getMonth()]} ${mon.getDate()}–${sun.getDate()}`;
-          return `<button class="weekChip${key===curKey?" active":""}" data-key="${key}" type="button"><span class="wcNum">Wk ${wnum}</span><span class="wcRange">${range}</span></button>`;
+          const skipCls = isSkipWeek(key) ? " isSkipWeek" : "";
+          return `<button class="weekChip${key===curKey?" active":""}${skipCls}" data-key="${key}" type="button"><span class="wcNum">Wk ${wnum}</span><span class="wcRange">${range}</span></button>`;
         }).join("");
         wc.querySelectorAll(".weekChip").forEach(b => b.addEventListener("click", () => {
           weekAnchor = dateFromWeekKey(b.dataset.key);
@@ -1909,7 +1945,8 @@
         const mon = dateFromWeekKey(key);
         const sun = addDays(mon,6);
         const label = `W${pad2(w)}<br><span class="weekCellDates">${mon.getMonth()+1}/${mon.getDate()}–${sun.getMonth()+1}/${sun.getDate()}</span>`;
-        html += `<button class="weekCell${key===curKey?" active":""}" data-key="${key}" type="button">${label}</button>`;
+        const skipCls = isSkipWeek(key) ? " isSkipWeek" : "";
+        html += `<button class="weekCell${key===curKey?" active":""}${skipCls}" data-key="${key}" type="button">${label}</button>`;
       }
       grid.innerHTML = html;
       grid.querySelectorAll(".weekCell").forEach(b => b.addEventListener("click", () => {
@@ -2498,6 +2535,7 @@
       const wk = weekKeyFromDate(weekAnchor);
       weekLabelEl.textContent = weekLabel(weekAnchor);
       if(requestDateLabelEl) requestDateLabelEl.textContent = `Request date: ${requestDateLabel(weekAnchor)}`;
+      updateSkipWeekUI();
 
       const trucks = loadTrucks().filter(t => t.weekKey === wk);
       truckCountLabel.textContent = `${trucks.length} order${trucks.length===1?"":"s"}`;
