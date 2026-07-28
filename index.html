@@ -1451,6 +1451,14 @@
     function weekAnchorForRequestDate(date){
       return startOfWeek(date);
     }
+    // Default pickup date, derived from the request date + region: Homestead
+    // picks up the Monday before the request date; Apopka/Canada/New Jersey
+    // pick up the Tuesday before. This is just the suggested default — it's
+    // always editable per order.
+    function pickupDateForRequest(requestDate, region){
+      const daysBefore = (region === "Homestead") ? 7 : 6;
+      return addDays(requestDate, -daysBefore);
+    }
     function requestDateLabel(date){
       const rd = requestDateFor(date);
       const mo = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
@@ -2006,11 +2014,13 @@
     }
 
     function blankTruckData(){
+      const requestDate = fmtDate(requestDateFor(weekAnchor));
+      const region = "Homestead";
       return {
         id:null,
-        pickupDate: fmtDate(weekAnchor),
-        requestDate: fmtDate(requestDateFor(weekAnchor)),
-        region:"Homestead", orderType:"CC", trucking:"", price:"", notes:"",
+        pickupDate: fmtDate(pickupDateForRequest(requestDateFor(weekAnchor), region)),
+        requestDate,
+        region, orderType:"CC", trucking:"", price:"", notes:"",
         vendorBlocks:[{ name:"", po:"", status:"Open", items:[{ item:"", racks:"", cases:"", qty:"", notes:"" }] }]
       };
     }
@@ -2018,14 +2028,18 @@
       const vendorBlocks =
         truck?.vendorBlocks?.length ? truck.vendorBlocks :
         (truck ? [{ name:(truck.vendors || ""), po:(truck.po || ""), status:"Confirmed", items:(truck.items || []) }] : []);
+      const region = truck?.region ?? "Homestead";
+      // If this truck already has its own saved request date, keep it. Otherwise
+      // auto-generate one from the pickup date's week, same as a brand-new
+      // order would get.
+      const requestDate = truck?.requestDate ?? fmtDate(requestDateFor(parseDate(truck?.pickupDate) || weekAnchor));
       return {
         id: truck?.id || null,
-        pickupDate: truck?.pickupDate ?? fmtDate(weekAnchor),
-        // If this truck already has its own saved request date, keep it. Otherwise
-        // auto-generate one from the pickup date using the standard rule (Monday
-        // of the following week), same as a brand-new order would get.
-        requestDate: truck?.requestDate ?? fmtDate(requestDateFor(parseDate(truck?.pickupDate) || weekAnchor)),
-        region: truck?.region ?? "Homestead",
+        // If this truck already has its own saved pickup date, keep it.
+        // Otherwise derive one from the request date + region.
+        pickupDate: truck?.pickupDate ?? fmtDate(pickupDateForRequest(parseDate(requestDate), region)),
+        requestDate,
+        region,
         orderType: normalizeOrderType(truck),
         trucking: truck?.trucking ?? "",
         price: (truck?.price ?? ""),
@@ -2084,8 +2098,8 @@
           </div>
         </div>
         <div class="row">
-          <label><span class="lbl">Pickup Date</span><input class="tb_pickup" type="date"></label>
-          <label><span class="lbl">Request Date</span><input class="tb_request" type="date" title="Auto-generated from the pickup date — edit to override"></label>
+          <label><span class="lbl">Pickup Date</span><input class="tb_pickup" type="date" title="Auto-generated from the request date + region — edit to override"></label>
+          <label><span class="lbl">Request Date</span><input class="tb_request" type="date"></label>
           <label><span class="lbl">Location</span>
             <select class="tb_region">${REGIONS.map(r=>`<option ${data.region===r?"selected":""}>${escapeHtml(r)}</option>`).join("")}</select>
           </label>
@@ -2107,21 +2121,25 @@
       block._editId = data.id || null;
       const pickupInput = block.querySelector(".tb_pickup");
       const requestInput = block.querySelector(".tb_request");
+      const regionSelect = block.querySelector(".tb_region");
       pickupInput.value = data.pickupDate || "";
       requestInput.value = data.requestDate || "";
-      // Auto-linked as long as the request date still matches what the standard
-      // formula (Monday of the following week) would generate for this pickup
-      // date. A previously customized/specified date is left alone — it only
-      // stops being auto-linked once it no longer matches the formula, whether
-      // that's from a prior manual edit or from typing in this session.
-      const pdInit = parseDate(data.pickupDate);
-      requestInput.dataset.auto = (pdInit && data.requestDate === fmtDate(requestDateFor(pdInit))) ? "1" : "";
-      requestInput.addEventListener("input", () => { requestInput.dataset.auto = ""; });
-      pickupInput.addEventListener("change", () => {
-        if(requestInput.dataset.auto !== "1") return;
-        const pd = parseDate(pickupInput.value);
-        if(pd) requestInput.value = fmtDate(requestDateFor(pd));
-      });
+      // Pickup date is auto-suggested from the request date + region
+      // (Homestead: the Monday before; Apopka/Canada/New Jersey: the Tuesday
+      // before) as long as it still matches the formula. A previously
+      // customized/specified pickup date is left alone — it only stops being
+      // auto-linked once it no longer matches the formula, whether that's from
+      // a prior manual edit or from typing in this session.
+      const rdInit = parseDate(data.requestDate);
+      pickupInput.dataset.auto = (rdInit && data.pickupDate === fmtDate(pickupDateForRequest(rdInit, data.region))) ? "1" : "";
+      pickupInput.addEventListener("input", () => { pickupInput.dataset.auto = ""; });
+      function syncPickupFromRequest(){
+        if(pickupInput.dataset.auto !== "1") return;
+        const rd = parseDate(requestInput.value);
+        if(rd) pickupInput.value = fmtDate(pickupDateForRequest(rd, regionSelect.value));
+      }
+      requestInput.addEventListener("change", syncPickupFromRequest);
+      regionSelect.addEventListener("change", syncPickupFromRequest);
       block.querySelector(".tb_trucking").value = data.trucking || "";
       block.querySelector(".tb_price").value = (data.price ?? "");
       block.querySelector(".tb_notes").value = data.notes || "";
@@ -2133,7 +2151,7 @@
       vbs.forEach(vb => addVendorBlock(vendorWrapEl, block, vb));
 
       block.querySelector(".tb_addVendor").addEventListener("click", () => addVendorBlock(vendorWrapEl, block));
-      block.querySelector(".tb_region").addEventListener("change", () => rebuildItemColumns(block));
+      regionSelect.addEventListener("change", () => rebuildItemColumns(block));
       block.querySelector(".tb_type").addEventListener("change", () => rebuildItemColumns(block));
       block.querySelector(".tb_rm").addEventListener("click", () => {
         if(truckBlocksWrap.querySelectorAll(".truckBlock").length <= 1){ alert("An order needs at least one truck."); return; }
@@ -2337,8 +2355,9 @@
       const blocks = Array.from(truckBlocksWrap.querySelectorAll(".truckBlock"));
       const datas = blocks.map(readTruckBlock);
       for(const d of datas){
-        if(!d.pickupDate){ alert("Each truck needs a pickup date."); return; }
         if(!d.requestDate){ const pd = parseDate(d.pickupDate); if(pd) d.requestDate = fmtDate(requestDateFor(pd)); }
+        if(!d.pickupDate){ const rd = parseDate(d.requestDate); if(rd) d.pickupDate = fmtDate(pickupDateForRequest(rd, d.region)); }
+        if(!d.pickupDate){ alert("Each truck needs a pickup date."); return; }
         if(d.vendorBlocks.length === 0){ alert("Each truck needs at least one vendor and/or item line."); return; }
       }
       const trucks = loadTrucks();
@@ -2383,26 +2402,31 @@
     }
 
     /*********************************************************
-     * Duplicate a saved order (whole truck) to a new pickup date
+     * Duplicate a saved order (whole truck) to a new request date
      *********************************************************/
     function duplicateTruck(id){
       const trucks = loadTrucks();
       const t = trucks.find(x => x.id === id);
       if(!t) return;
-      const suggested = fmtDate(addDays(parseDate(t.pickupDate) || new Date(), 7));
-      const nd = prompt("New pickup date for the duplicated order (YYYY-MM-DD):", suggested);
+      const oldRd = parseDate(t.requestDate) || parseDate(t.pickupDate) || new Date();
+      const suggested = fmtDate(addDays(oldRd, 7));
+      const nd = prompt("New request date for the duplicated order (YYYY-MM-DD):", suggested);
       if(nd === null) return;
       const newDate = (nd.trim() || suggested);
-      const pd = parseDate(newDate);
-      if(!pd){ alert("That date isn't valid — use YYYY-MM-DD."); return; }
+      const rd = parseDate(newDate);
+      if(!rd){ alert("That date isn't valid — use YYYY-MM-DD."); return; }
       const clone = JSON.parse(JSON.stringify(t));
       clone.id = cryptoRandomId();
+      // If the original pickup date was just the standard formula (request date
+      // + region), regenerate it for the new request date. If it had been
+      // manually customized, shift it by the same number of days the request
+      // date is moving, so the custom offset is preserved.
       const oldPd = parseDate(t.pickupDate);
-      const wasAutoRequestDate = !t.requestDate || (oldPd && t.requestDate === fmtDate(requestDateFor(oldPd)));
-      clone.pickupDate = newDate;
-      clone.requestDate = wasAutoRequestDate ? fmtDate(requestDateFor(pd)) : t.requestDate;
-      const rd = parseDate(clone.requestDate);
-      const targetWeek = rd ? weekAnchorForRequestDate(rd) : pd;
+      const wasAutoPickupDate = !t.pickupDate || (oldPd && t.pickupDate === fmtDate(pickupDateForRequest(oldRd, t.region)));
+      const daysShift = Math.round((rd - oldRd) / 86400000);
+      clone.requestDate = newDate;
+      clone.pickupDate = wasAutoPickupDate ? fmtDate(pickupDateForRequest(rd, t.region)) : fmtDate(addDays(oldPd || rd, daysShift));
+      const targetWeek = weekAnchorForRequestDate(rd);
       clone.weekKey = weekKeyFromDate(targetWeek);
       trucks.push(clone);
       saveTrucks(trucks);
