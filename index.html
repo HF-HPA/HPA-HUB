@@ -953,11 +953,18 @@
               <button id="dashCmdBtn" class="btnGhost">⌘K Commands</button>
             </div>
           </div>
-          <div class="note" id="dashWeekNote"></div>
+          <div class="note" id="dashWeekNote" style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+            <span id="dashWeekNoteText"></span>
+            <span style="display:inline-flex; align-items:center; gap:6px;">
+              <button id="dashPrevWeek" class="tinyBtn" type="button" aria-label="Previous week">‹</button>
+              <button id="dashThisWeek" class="tinyBtn" type="button">This week</button>
+              <button id="dashNextWeek" class="tinyBtn" type="button" aria-label="Next week">›</button>
+            </span>
+          </div>
           <div class="dashGrid" id="dashStats"></div>
           <div class="dashRow">
             <div class="dashPanel" id="dashTodayPanel">
-              <div class="dashPanelHead"><span class="dashPanelTitle">🚛 Arriving this week</span></div>
+              <div class="dashPanelHead"><span class="dashPanelTitle" id="dashTodayTitle">🚛 Arriving this week</span></div>
               <div class="dashPanelBody" id="dashToday"></div>
             </div>
             <div class="dashPanel" id="dashActivityPanel">
@@ -1720,7 +1727,7 @@
       pages[key].style.display = "block";
       navBtns.forEach(b => b.classList.toggle("active", b.dataset.page === key));
       clearTabNotif(key);
-      if(key === "dashboard" && window.HPAExtras) window.HPAExtras.renderDashboard();
+      if(key === "dashboard" && window.HPAExtras){ dashWeekAnchor = startOfWeek(new Date()); window.HPAExtras.renderDashboard(); }
       if(key === "order") renderOrder();
       if(key === "photos") renderPhotosTab();
       if(key === "avail") renderAvailability();
@@ -1818,6 +1825,10 @@
     }
 
     let weekAnchor = startOfWeek(new Date());
+    // The Dashboard has its own "which week am I looking at" state, separate from
+    // the Order Tracker's weekAnchor above. It always starts on the real current
+    // week when you land on the page, but can be nudged forward/back from there.
+    let dashWeekAnchor = startOfWeek(new Date());
     const weekLabelEl = document.getElementById("weekLabel");
     const requestDateLabelEl = document.getElementById("requestDateLabel");
     const truckCountLabel = document.getElementById("truckCountLabel");
@@ -4939,12 +4950,28 @@
       const d = Math.round(h/24); return d + "d ago";
     }
 
+    document.getElementById("dashPrevWeek")?.addEventListener("click", () => {
+      dashWeekAnchor = addDays(dashWeekAnchor, -7);
+      if(window.HPAExtras) window.HPAExtras.renderDashboard();
+    });
+    document.getElementById("dashNextWeek")?.addEventListener("click", () => {
+      dashWeekAnchor = addDays(dashWeekAnchor, 7);
+      if(window.HPAExtras) window.HPAExtras.renderDashboard();
+    });
+    document.getElementById("dashThisWeek")?.addEventListener("click", () => {
+      dashWeekAnchor = startOfWeek(new Date());
+      if(window.HPAExtras) window.HPAExtras.renderDashboard();
+    });
+
     const HPAExtras = {
       /* ---------- Dashboard ---------- */
       renderDashboard(){
-        const wk = weekKeyFromDate(weekAnchor);
-        const note = document.getElementById("dashWeekNote");
-        if(note) note.textContent = weekLabel(weekAnchor) + " — your week at a glance.";
+        const wk = weekKeyFromDate(dashWeekAnchor);
+        const note = document.getElementById("dashWeekNoteText");
+        const isCurrentWeek = weekKeyFromDate(startOfWeek(new Date())) === wk;
+        if(note) note.textContent = weekLabel(dashWeekAnchor) + (isCurrentWeek ? " — your week at a glance." : " — viewing a different week.");
+        const thisWeekBtn = document.getElementById("dashThisWeek");
+        if(thisWeekBtn) thisWeekBtn.disabled = isCurrentWeek;
 
         const trucks = loadTrucks().filter(t => t.weekKey === wk);
         const totals = trucks.reduce((a,t) => {
@@ -4983,6 +5010,8 @@
         ).join("");
 
         // arriving this week
+        const todayTitle = document.getElementById("dashTodayTitle");
+        if(todayTitle) todayTitle.textContent = isCurrentWeek ? "🚛 Arriving this week" : "🚛 Arriving " + weekLabel(dashWeekAnchor).split(" · ")[0];
         const today = document.getElementById("dashToday");
         if(today){
           const sorted = trucks.slice().sort((a,b)=>(a.pickupDate||"").localeCompare(b.pickupDate||""));
