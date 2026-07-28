@@ -391,6 +391,10 @@
 
     .sheetTable tr.substituted td{ background:rgba(231,181,61,.16) !important; }
     .sheetTable tr.substituted td:first-child{ border-left:3px solid var(--gold); }
+    .sheetTable tr.itemChecked td{ background:rgba(43,212,154,.14) !important; }
+    .sheetTable tr.itemChecked td:first-child{ border-left:3px solid #2bd49a; }
+    .itemCheckCell{ text-align:center; width:34px; }
+    .itemCheckBox{ width:17px; height:17px; cursor:pointer; }
     .itemNameCell{ cursor:pointer; }
     .itemNameCell:hover{ text-decoration:underline dotted; text-underline-offset:3px; }
 
@@ -1010,6 +1014,7 @@
               <button id="newTruckBtn" class="btn">+ New Order</button>
               <button id="exportTruckBtn" class="btnGhost">Export Truck Order</button>
               <button id="exportCCBtn" class="btnGhost">Export CC Order</button>
+              <button id="exportBreakdownBtn" class="btnGhost">Export Order Breakdown</button>
               <button id="skipWeekBtn" class="btnGhost" type="button">🚫 Mark as Skip Week</button>
             </div>
             <details class="moreTools">
@@ -2246,6 +2251,7 @@
         const shelves = shelvesEl ? Number(shelvesEl.value || 0) : undefined;
         const rec = { item, racks, cases, qty, notes: lineNotes, unit, shelves };
         if(tr.dataset.substituted === "1"){ rec.substituted = true; rec.subbedFrom = tr.dataset.subbedFrom || ""; }
+        if(tr.dataset.checked === "1"){ rec.checked = true; }
         items.push(rec);
       });
       return { name, po, status, items };
@@ -2274,6 +2280,7 @@
         <td><button class="tinyBtn danger" type="button" title="Remove item">x</button></td>
       `;
       if(itemObj.substituted){ tr.dataset.substituted = "1"; tr.dataset.subbedFrom = itemObj.subbedFrom || ""; }
+      if(itemObj.checked){ tr.dataset.checked = "1"; }
       tr.querySelector("td:last-child button").addEventListener("click", () => {
         tr.remove();
         if(tbody.children.length === 0) addItemRowToVendor(tbody, block, { item:"", racks:"", cases:"", qty:"", notes:"" });
@@ -2336,6 +2343,7 @@
             if(unit) rec.unit = unit;
             if(shelves !== undefined) rec.shelves = shelves;
             if(tr.dataset.substituted === "1"){ rec.substituted = true; rec.subbedFrom = tr.dataset.subbedFrom || ""; }
+            if(tr.dataset.checked === "1"){ rec.checked = true; }
             items.push(rec);
           }
         });
@@ -2518,15 +2526,39 @@
     /*********************************************************
      * Vendor status toggle on saved orders
      *********************************************************/
-    function toggleVendorStatus(truckId, vIdx){
+    function toggleVendorStatus(truckId, vIdx, btnEl){
       const trucks = loadTrucks();
       const t = trucks.find(x => x.id === truckId);
       if(!t || !t.vendorBlocks || !t.vendorBlocks[vIdx]) return;
       const cur = t.vendorBlocks[vIdx].status || "Open";
-      t.vendorBlocks[vIdx].status = (cur === "Confirmed") ? "Open" : "Confirmed";
+      const next = (cur === "Confirmed") ? "Open" : "Confirmed";
+      t.vendorBlocks[vIdx].status = next;
       saveTrucks(trucks);
       markTabChanged("order");
-      renderOrder();
+      // Update just this button in place rather than calling renderOrder(),
+      // which rebuilds the whole sheet and re-triggers the week-chip
+      // scrollIntoView in renderPeriodPicker — that was causing the page to
+      // jump back up to the week picker every time you toggled a status.
+      if(btnEl){
+        btnEl.className = statusPillClass(next) + " statusToggle";
+        btnEl.textContent = next;
+      }
+    }
+
+    /*********************************************************
+     * Manual "added to order" checkbox on saved order items.
+     * Purely manual — never set automatically from anything else.
+     *********************************************************/
+    function toggleItemChecked(truckId, vIdx, iIdx, rowEl, checked){
+      const trucks = loadTrucks();
+      const t = trucks.find(x => x.id === truckId);
+      if(!t || !t.vendorBlocks || !t.vendorBlocks[vIdx] || !t.vendorBlocks[vIdx].items || !t.vendorBlocks[vIdx].items[iIdx]) return;
+      t.vendorBlocks[vIdx].items[iIdx].checked = !!checked;
+      saveTrucks(trucks);
+      markTabChanged("order");
+      // Toggle the row's highlight class in place instead of re-rendering the
+      // whole sheet, so the page doesn't jump.
+      if(rowEl) rowEl.classList.toggle("itemChecked", !!checked);
     }
 
     /*********************************************************
@@ -2805,10 +2837,11 @@
               <table class="sheetTable">
                 <thead>
                   <tr>
-                    <th style="width:42%;">Item</th>
-                    <th class="num nowrap" style="width:14%;">CC Racks</th>
-                    ${showCases ? `<th class="num nowrap" style="width:14%;">Cases</th>` : ``}
-                    <th class="num nowrap" style="width:14%;">Plant Qty</th>
+                    <th style="width:5%;" title="Mark as added to the order">Added</th>
+                    <th style="width:39%;">Item</th>
+                    <th class="num nowrap" style="width:13%;">CC Racks</th>
+                    ${showCases ? `<th class="num nowrap" style="width:13%;">Cases</th>` : ``}
+                    <th class="num nowrap" style="width:13%;">Plant Qty</th>
                     <th>Notes</th>
                   </tr>
                 </thead>
@@ -2816,7 +2849,8 @@
                   ${
                     items.length
                       ? items.map((it, iIdx) => `
-                        <tr class="itemRow${it.substituted ? " substituted" : ""}" data-tid="${t.id}" data-vidx="${vIdx}" data-iidx="${iIdx}">
+                        <tr class="itemRow${it.substituted ? " substituted" : ""}${it.checked ? " itemChecked" : ""}" data-tid="${t.id}" data-vidx="${vIdx}" data-iidx="${iIdx}">
+                          <td class="itemCheckCell"><input type="checkbox" class="itemCheckBox" data-tid="${t.id}" data-vidx="${vIdx}" data-iidx="${iIdx}" ${it.checked ? "checked" : ""} title="Mark as added to the order"></td>
                           <td class="itemNameCell" title="Click to substitute this item">${escapeHtml(it.item || "—")}</td>
                           <td class="num">${Number(it.racks || 0) ? Number(it.racks).toLocaleString() : ""}</td>
                           ${showCases ? `<td class="num">${Number(it.cases || 0) ? Number(it.cases).toLocaleString() : ""}</td>` : ``}
@@ -2824,7 +2858,7 @@
                           <td>${escapeHtml(it.notes || "")}</td>
                         </tr>
                       `).join("")
-                      : `<tr><td colspan="${showCases ? 5 : 4}" style="color:var(--ink-2); font-weight:600;">No lines.</td></tr>`
+                      : `<tr><td colspan="${showCases ? 6 : 5}" style="color:var(--ink-2); font-weight:600;">No lines.</td></tr>`
                   }
                 </tbody>
               </table>
@@ -2836,13 +2870,20 @@
             `;
 
             const stBtn = v.querySelector(".statusToggle");
-            if(stBtn) stBtn.addEventListener("click", (e) => { e.stopPropagation(); toggleVendorStatus(t.id, vIdx); });
+            if(stBtn) stBtn.addEventListener("click", (e) => { e.stopPropagation(); toggleVendorStatus(t.id, vIdx, stBtn); });
 
             v.querySelectorAll(".itemRow").forEach(row => {
               const cell = row.querySelector(".itemNameCell");
               if(cell){
                 cell.addEventListener("click", () => {
                   openSubModal(row.dataset.tid, Number(row.dataset.vidx), Number(row.dataset.iidx));
+                });
+              }
+              const checkBox = row.querySelector(".itemCheckBox");
+              if(checkBox){
+                checkBox.addEventListener("click", (e) => e.stopPropagation());
+                checkBox.addEventListener("change", () => {
+                  toggleItemChecked(row.dataset.tid, Number(row.dataset.vidx), Number(row.dataset.iidx), row, checkBox.checked);
                 });
               }
             });
@@ -2968,7 +3009,10 @@
     }
     const XL = {
       green: "FFD6E8C8", blue:  "FFBEE3F8", pink:  "FFEBD6F0", grey:  "FFBFBFBF",
-      totals:"FFBEE3F8", white: "FFFFFFFF", border:"FF000000"
+      totals:"FFBEE3F8", white: "FFFFFFFF", border:"FF000000",
+      // Order Breakdown export
+      brightYellow:"FFFFFF00", softYellow:"FFFFF2A6", peach:"FFF6D9C4",
+      itemGreen:"FFA9D18E", headerGrey:"FFD9D9D9"
     };
     function locationFill(loc){
       const l = (loc||"").toLowerCase();
@@ -3221,6 +3265,142 @@
         statusChip.textContent = `${unmatched.length} line(s) not on CC — see "Not on CC" tab`;
         setTimeout(()=>{ statusChip.textContent = "Ready"; }, 5000);
       }
+    });
+
+    /*********************************************************
+     * Export Order Breakdown — one colored section per truck,
+     * matching the classic vendor/item breakdown sheet layout.
+     *********************************************************/
+    function isoWeekNumOf(date){
+      return Number(weekKeyFromDate(date).split("-W")[1]);
+    }
+    document.getElementById("exportBreakdownBtn").addEventListener("click", async () => {
+      const wk = weekKeyFromDate(weekAnchor);
+      const trucks = loadTrucks().filter(t => t.weekKey === wk)
+        .slice().sort((a,b) => {
+          const prefer = ["Homestead","Apopka","New Jersey","Canada"];
+          const ai = prefer.indexOf(a.region), bi = prefer.indexOf(b.region);
+          if(ai !== bi) return (ai===-1?99:ai) - (bi===-1?99:bi);
+          return (a.pickupDate||"").localeCompare(b.pickupDate||"");
+        });
+      if(!trucks.length){ alert("No orders in this week to export."); return; }
+      let ExcelJS;
+      try { ExcelJS = await loadExcelJS(); }
+      catch(e){ alert(e.message); return; }
+
+      const wb = new ExcelJS.Workbook();
+      const ws = wb.addWorksheet(`Week ${isoWeekNumOf(weekAnchor)}`);
+      const NUM_COLS = 6; // Vendor, Item, CC Rack Count, Plant Qty, Notes, Status
+      ws.columns = [ { width: 20 }, { width: 30 }, { width: 16 }, { width: 14 }, { width: 24 }, { width: 16 } ];
+
+      const centered = { horizontal:"center", vertical:"middle" };
+      function fillRow(r, c1, c2, argb){
+        for(let c=c1;c<=c2;c++){ ws.getCell(r,c).fill = { type:"pattern", pattern:"solid", fgColor:{argb} }; ws.getCell(r,c).border = thinBox(); }
+      }
+
+      let r = 1;
+      // Top week banner — spans the whole sheet.
+      ws.mergeCells(r,1,r,NUM_COLS);
+      const wkMon = startOfWeek(weekAnchor), wkSun = addDays(wkMon,6);
+      const rangeTxt = (wkMon.getMonth()===wkSun.getMonth())
+        ? `${MONTHS[wkMon.getMonth()]} ${wkMon.getDate()}-${wkSun.getDate()}, ${wkSun.getFullYear()}`
+        : `${MONTHS[wkMon.getMonth()]} ${wkMon.getDate()} - ${MONTHS[wkSun.getMonth()]} ${wkSun.getDate()}, ${wkSun.getFullYear()}`;
+      const bannerCell = ws.getCell(r,1);
+      bannerCell.value = `WEEK ${isoWeekNumOf(weekAnchor)} - ${rangeTxt}`;
+      bannerCell.font = { bold:true, size:12 };
+      bannerCell.alignment = { horizontal:"left", vertical:"middle" };
+      fillRow(r,1,NUM_COLS, XL.softYellow);
+      r++;
+
+      trucks.forEach(t => {
+        const vendorBlocks = t.vendorBlocks || [];
+        const anyRacks = vendorBlocks.some(vb => (vb.items||[]).some(it => Number(it.racks||0) > 0));
+        const cols = anyRacks ? (NUM_COLS - 1) : (NUM_COLS - 2); // table columns only; Status sits at cols+1
+
+        // Section bar: REGION - ORDER TYPE ... PU <date> ... TRUCKING - $PRICE
+        ws.mergeCells(r,1,r,NUM_COLS);
+        const bar = ws.getCell(r,1);
+        const left = `${(t.region||"").toUpperCase()} - ${orderTypeLabel(normalizeOrderType(t)).toUpperCase()}`;
+        const mid = `PU ${weekdayShort(t.pickupDate)}`;
+        const right = `${(t.trucking||"—").toUpperCase()} - ${money(t.price||0)}`;
+        bar.value = { richText: [
+          { text: left + "   ", font:{ bold:true } },
+          { text: mid + "   ", font:{ italic:true } },
+          { text: right, font:{ bold:true } }
+        ]};
+        fillRow(r,1,NUM_COLS, XL.brightYellow);
+        r++;
+
+        // Column headers (span full width, including the Status label)
+        const headers = anyRacks
+          ? ["VENDOR","ITEM","CC RACK COUNT","PLANT QTY","NOTES"]
+          : ["VENDOR","ITEM","PLANT QTY","NOTES"];
+        headers.forEach((h,i) => {
+          const cell = ws.getCell(r, i+1);
+          cell.value = h;
+          cell.font = { bold:true };
+          cell.alignment = centered;
+        });
+        ws.getCell(r, cols+1).value = "STATUS";
+        ws.getCell(r, cols+1).font = { bold:true };
+        ws.getCell(r, cols+1).alignment = centered;
+        fillRow(r,1,NUM_COLS, XL.headerGrey);
+        r++;
+
+        let totalPrimary = 0;
+        vendorBlocks.forEach(vb => {
+          const po = (vb.po||"").trim();
+          // Vendor header row
+          ws.getCell(r,1).value = vb.name || "—";
+          ws.getCell(r,1).font = { bold:true };
+          const notesColIdx = anyRacks ? 5 : 4;
+          if(po) ws.getCell(r, notesColIdx).value = `PO ${po}`;
+          ws.getCell(r, notesColIdx).alignment = { horizontal:"right", vertical:"middle" };
+          if((vb.status||"") === "Confirmed"){
+            const stCell = ws.getCell(r, cols+1);
+            stCell.value = "CONFIRMED";
+            stCell.font = { bold:true, color:{argb:"FF00A651"} };
+            stCell.alignment = centered;
+          }
+          fillRow(r,1,cols, XL.peach);
+          ws.getCell(r,cols+1).border = thinBox();
+          r++;
+          (vb.items||[]).forEach(it => {
+            const racks = Number(it.racks||0);
+            const qty = Number(it.qty||0);
+            ws.getCell(r,2).value = it.item || "";
+            if(anyRacks){
+              if(racks) ws.getCell(r,3).value = racks;
+              ws.getCell(r,4).value = qty || "";
+              ws.getCell(r,5).value = it.notes || "";
+            } else {
+              ws.getCell(r,3).value = qty || "";
+              ws.getCell(r,4).value = it.notes || "";
+            }
+            totalPrimary += anyRacks ? racks : qty;
+            const rowFill = it.substituted ? XL.brightYellow : XL.itemGreen;
+            fillRow(r,1,cols, rowFill);
+            ws.getCell(r,cols+1).border = thinBox();
+            ws.getCell(r,2).alignment = { vertical:"middle" };
+            ws.getCell(r,3).alignment = centered;
+            ws.getCell(r,4).alignment = centered;
+            r++;
+          });
+        });
+
+        r++; // blank spacer row
+        // Total row
+        ws.getCell(r,2).value = "TOTAL RACKS";
+        ws.getCell(r,2).font = { bold:true };
+        ws.getCell(r,3).value = totalPrimary;
+        ws.getCell(r,3).font = { bold:true };
+        ws.getCell(r,3).alignment = centered;
+        for(let c=1;c<=cols;c++) ws.getCell(r,c).border = { top:{style:"medium",color:{argb:"FF000000"}}, bottom:thinBox().bottom, left:thinBox().left, right:thinBox().right };
+        r++;
+        r++; // blank spacer between trucks
+      });
+
+      await downloadWorkbook(wb, `order-breakdown_${wk}.xlsx`);
     });
 
     /*********************************************************
@@ -5087,6 +5267,7 @@
           { icon:"🔗", title:"Add training link", tag:"Action", run:()=>{ showPage("training"); document.getElementById("trainingAddLinkBtn")?.click(); } },
           { icon:"📄", title:"Export Truck Order", tag:"Export", run:()=>{ showPage("order"); document.getElementById("exportTruckBtn")?.click(); } },
           { icon:"📄", title:"Export CC Order", tag:"Export", run:()=>{ showPage("order"); document.getElementById("exportCCBtn")?.click(); } },
+          { icon:"📄", title:"Export Order Breakdown", tag:"Export", run:()=>{ showPage("order"); document.getElementById("exportBreakdownBtn")?.click(); } },
           { icon:"📥", title:"Import PO Analysis", tag:"Import", run:()=>{ showPage("checkin"); document.getElementById("checkinImportBtn")?.click(); } },
           { icon:"💾", title:"Backup all data", tag:"Data", run:()=>window.HPABackup.export() },
           { icon:"↺", title:"Restore from backup", tag:"Data", run:()=>document.getElementById("restoreBtn")?.click() },
