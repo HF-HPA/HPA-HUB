@@ -1446,6 +1446,11 @@
     function requestDateFor(date){
       return addDays(startOfWeek(date), 7);
     }
+    // Inverse of requestDateFor: given a request date, which week does it belong
+    // to? (Monday of the week 7 days before the request date's Monday.)
+    function weekAnchorForRequestDate(date){
+      return startOfWeek(addDays(startOfWeek(date), -7));
+    }
     function requestDateLabel(date){
       const rd = requestDateFor(date);
       const mo = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
@@ -2337,8 +2342,11 @@
         if(d.vendorBlocks.length === 0){ alert("Each truck needs at least one vendor and/or item line."); return; }
       }
       const trucks = loadTrucks();
+      let lastWk = null;
       for(const d of datas){
-        const wk = weekKeyFromDate(parseDate(d.pickupDate));
+        const rd = parseDate(d.requestDate);
+        const wk = rd ? weekKeyFromDate(weekAnchorForRequestDate(rd)) : weekKeyFromDate(parseDate(d.pickupDate));
+        lastWk = wk;
         const totals = computeTotals(d.vendorBlocks);
         if(d.id){
           const idx = trucks.findIndex(t => t.id === d.id);
@@ -2352,6 +2360,9 @@
       saveTrucks(trucks);
       markTabChanged("order");
       closeTruckModal();
+      // Jump the tracker to whichever week the order now belongs to, so a
+      // customized request date takes you straight to that week's view.
+      if(lastWk) weekAnchor = dateFromWeekKey(lastWk);
       renderAll();
       renderOrder();
     });
@@ -2390,11 +2401,13 @@
       const wasAutoRequestDate = !t.requestDate || (oldPd && t.requestDate === fmtDate(requestDateFor(oldPd)));
       clone.pickupDate = newDate;
       clone.requestDate = wasAutoRequestDate ? fmtDate(requestDateFor(pd)) : t.requestDate;
-      clone.weekKey = weekKeyFromDate(pd);
+      const rd = parseDate(clone.requestDate);
+      const targetWeek = rd ? weekAnchorForRequestDate(rd) : pd;
+      clone.weekKey = weekKeyFromDate(targetWeek);
       trucks.push(clone);
       saveTrucks(trucks);
       markTabChanged("order");
-      weekAnchor = startOfWeek(pd);
+      weekAnchor = startOfWeek(targetWeek);
       renderAll();
       renderOrder();
     }
