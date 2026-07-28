@@ -1004,7 +1004,7 @@
             <div class="weekBanner">
               <div class="chip" id="weekLabel">Week</div>
               <div class="chip subtle" id="truckCountLabel">0 orders</div>
-              <div class="chip subtle" id="requestDateLabel" title="Automatically set to the Monday after this week">Request date —</div>
+              <div class="chip subtle" id="requestDateLabel" title="Automatically set to the Monday of this week">Request date —</div>
             </div>
             <div class="weekActions">
               <button id="newTruckBtn" class="btn">+ New Order</button>
@@ -1441,15 +1441,15 @@
       const right = (s.getMonth() === e.getMonth()) ? `${e.getDate()}` : `${mo[e.getMonth()]} ${e.getDate()}`;
       return `Week ${wk} · ${left} – ${right}, ${e.getFullYear()}`;
     }
-    // The request date for a week is always the Monday of the *following* week
-    // (e.g. a week starting Mon 7/13 has a request date of Mon 7/20).
+    // The request date for a week is the Monday of that same week (e.g. Week 32,
+    // Aug 3-9, has a request date of Mon Aug 3 — the same day the week starts).
     function requestDateFor(date){
-      return addDays(startOfWeek(date), 7);
+      return startOfWeek(date);
     }
     // Inverse of requestDateFor: given a request date, which week does it belong
-    // to? (Monday of the week 7 days before the request date's Monday.)
+    // to? Since requestDateFor is just startOfWeek, this is the same week.
     function weekAnchorForRequestDate(date){
-      return startOfWeek(addDays(startOfWeek(date), -7));
+      return startOfWeek(date);
     }
     function requestDateLabel(date){
       const rd = requestDateFor(date);
