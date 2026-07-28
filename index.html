@@ -1993,6 +1993,7 @@
       return {
         id:null,
         pickupDate: fmtDate(weekAnchor),
+        requestDate: fmtDate(requestDateFor(weekAnchor)),
         region:"Homestead", orderType:"CC", trucking:"", price:"", notes:"",
         vendorBlocks:[{ name:"", po:"", status:"Open", items:[{ item:"", racks:"", cases:"", qty:"", notes:"" }] }]
       };
@@ -2004,6 +2005,10 @@
       return {
         id: truck?.id || null,
         pickupDate: truck?.pickupDate ?? fmtDate(weekAnchor),
+        // If this truck already has its own saved request date, keep it. Otherwise
+        // auto-generate one from the pickup date using the standard rule (Monday
+        // of the following week), same as a brand-new order would get.
+        requestDate: truck?.requestDate ?? fmtDate(requestDateFor(parseDate(truck?.pickupDate) || weekAnchor)),
         region: truck?.region ?? "Homestead",
         orderType: normalizeOrderType(truck),
         trucking: truck?.trucking ?? "",
@@ -2064,6 +2069,7 @@
         </div>
         <div class="row">
           <label><span class="lbl">Pickup Date</span><input class="tb_pickup" type="date"></label>
+          <label><span class="lbl">Request Date</span><input class="tb_request" type="date" title="Auto-generated from the pickup date — edit to override"></label>
           <label><span class="lbl">Location</span>
             <select class="tb_region">${REGIONS.map(r=>`<option ${data.region===r?"selected":""}>${escapeHtml(r)}</option>`).join("")}</select>
           </label>
@@ -2083,7 +2089,23 @@
         <div class="tb_vendorWrap" style="margin-top:10px;"></div>
       `;
       block._editId = data.id || null;
-      block.querySelector(".tb_pickup").value = data.pickupDate || "";
+      const pickupInput = block.querySelector(".tb_pickup");
+      const requestInput = block.querySelector(".tb_request");
+      pickupInput.value = data.pickupDate || "";
+      requestInput.value = data.requestDate || "";
+      // Auto-linked as long as the request date still matches what the standard
+      // formula (Monday of the following week) would generate for this pickup
+      // date. A previously customized/specified date is left alone — it only
+      // stops being auto-linked once it no longer matches the formula, whether
+      // that's from a prior manual edit or from typing in this session.
+      const pdInit = parseDate(data.pickupDate);
+      requestInput.dataset.auto = (pdInit && data.requestDate === fmtDate(requestDateFor(pdInit))) ? "1" : "";
+      requestInput.addEventListener("input", () => { requestInput.dataset.auto = ""; });
+      pickupInput.addEventListener("change", () => {
+        if(requestInput.dataset.auto !== "1") return;
+        const pd = parseDate(pickupInput.value);
+        if(pd) requestInput.value = fmtDate(requestDateFor(pd));
+      });
       block.querySelector(".tb_trucking").value = data.trucking || "";
       block.querySelector(".tb_price").value = (data.price ?? "");
       block.querySelector(".tb_notes").value = data.notes || "";
@@ -2253,6 +2275,7 @@
 
     function readTruckBlock(block){
       const pickupDate = block.querySelector(".tb_pickup").value;
+      const requestDate = block.querySelector(".tb_request").value;
       const region = block.querySelector(".tb_region").value;
       const orderType = block.querySelector(".tb_type").value;
       const trucking = block.querySelector(".tb_trucking").value.trim();
@@ -2284,7 +2307,7 @@
         });
         if(name || po || items.length) vendorBlocks.push({ name, po, status, items });
       });
-      return { id: block._editId || null, pickupDate, region, orderType, trucking, price, notes, vendorBlocks };
+      return { id: block._editId || null, pickupDate, requestDate, region, orderType, trucking, price, notes, vendorBlocks };
     }
 
     function computeTotals(vendorBlocks){
@@ -2299,6 +2322,7 @@
       const datas = blocks.map(readTruckBlock);
       for(const d of datas){
         if(!d.pickupDate){ alert("Each truck needs a pickup date."); return; }
+        if(!d.requestDate){ const pd = parseDate(d.pickupDate); if(pd) d.requestDate = fmtDate(requestDateFor(pd)); }
         if(d.vendorBlocks.length === 0){ alert("Each truck needs at least one vendor and/or item line."); return; }
       }
       const trucks = loadTrucks();
@@ -2308,10 +2332,10 @@
         if(d.id){
           const idx = trucks.findIndex(t => t.id === d.id);
           if(idx >= 0){
-            trucks[idx] = { ...trucks[idx], pickupDate:d.pickupDate, weekKey:wk, region:d.region, orderType:d.orderType, trucking:d.trucking, price:Number(d.price||0), notes:d.notes, vendorBlocks:d.vendorBlocks, totals };
+            trucks[idx] = { ...trucks[idx], pickupDate:d.pickupDate, requestDate:d.requestDate, weekKey:wk, region:d.region, orderType:d.orderType, trucking:d.trucking, price:Number(d.price||0), notes:d.notes, vendorBlocks:d.vendorBlocks, totals };
           }
         } else {
-          trucks.push({ id:cryptoRandomId(), pickupDate:d.pickupDate, weekKey:wk, region:d.region, orderType:d.orderType, trucking:d.trucking, price:Number(d.price||0), notes:d.notes, vendorBlocks:d.vendorBlocks, totals });
+          trucks.push({ id:cryptoRandomId(), pickupDate:d.pickupDate, requestDate:d.requestDate, weekKey:wk, region:d.region, orderType:d.orderType, trucking:d.trucking, price:Number(d.price||0), notes:d.notes, vendorBlocks:d.vendorBlocks, totals });
         }
       }
       saveTrucks(trucks);
@@ -2351,7 +2375,10 @@
       if(!pd){ alert("That date isn't valid — use YYYY-MM-DD."); return; }
       const clone = JSON.parse(JSON.stringify(t));
       clone.id = cryptoRandomId();
+      const oldPd = parseDate(t.pickupDate);
+      const wasAutoRequestDate = !t.requestDate || (oldPd && t.requestDate === fmtDate(requestDateFor(oldPd)));
       clone.pickupDate = newDate;
+      clone.requestDate = wasAutoRequestDate ? fmtDate(requestDateFor(pd)) : t.requestDate;
       clone.weekKey = weekKeyFromDate(pd);
       trucks.push(clone);
       saveTrucks(trucks);
@@ -4394,7 +4421,7 @@
     const SYNC_KEYS = [
       LS.trucksKey, LS.issuesKey,
       LS.trainingKey, LS.availLinkKey, LS.catalogKey, LS.checkinKey,
-      LS.availKey, LS.availOrdersKey
+      LS.availKey, LS.availOrdersKey, LS.skipWeeksKey
     ];
     const MAX_SYNC_BYTES = 900000; // stay under Firestore's ~1MB document cap
 
@@ -4642,10 +4669,11 @@
         if(local === data.value) return;          // already in sync — no loop
         // Is the person looking at the very thing that just changed under them?
         const editingThis =
-          (key === LS.trucksKey   && currentPage === "order")   ||
-          (key === LS.issuesKey   && currentPage === "issues")  ||
-          (key === LS.checkinKey  && currentPage === "checkin") ||
-          (key === LS.trainingKey && currentPage === "training");
+          (key === LS.trucksKey     && currentPage === "order")   ||
+          (key === LS.skipWeeksKey  && currentPage === "order")   ||
+          (key === LS.issuesKey     && currentPage === "issues")  ||
+          (key === LS.checkinKey    && currentPage === "checkin") ||
+          (key === LS.trainingKey   && currentPage === "training");
         if(!rawStorageSet(key, data.value)) return; // direct write: no re-push
         this.lastReceived = Date.now(); this.applies++;
         this.rerender(key);
@@ -4689,12 +4717,15 @@
         try { if(typeof refreshNotifDots === "function") refreshNotifDots(); } catch(e){}
         const k = (typeof currentPage !== "undefined") ? currentPage : null;
         try {
-          if(k === "order" && (key === LS.trucksKey)) renderOrder();
+          if(k === "order" && (key === LS.trucksKey || key === LS.skipWeeksKey)) renderOrder();
           else if(k === "issues" && key === LS.issuesKey) renderIssues();
           else if(k === "checkin" && (key === LS.checkinKey || key === LS.trucksKey)) renderCheckIn();
           else if(k === "training" && key === LS.trainingKey) renderTraining();
           else if(k === "photos" && key === LS.catalogKey) renderPhotosTab();
           else if(k === "avail" && key === LS.availLinkKey) refreshAvailLinkUI();
+        } catch(e){}
+        try {
+          if(key === LS.skipWeeksKey && weekPickModal && weekPickModal.classList.contains("active")) renderWeekPick();
         } catch(e){}
       },
       async changeTeam(){
