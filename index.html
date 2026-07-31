@@ -3121,6 +3121,10 @@
       await downloadWorkbook(wb, `truck-order_${wk}.xlsx`);
     });
 
+    // Floor-stock sizes that get summarized as "X" Tropicals" — anything else
+    // without a rack count (e.g. a stray 4"/6"/8" line) falls into the generic
+    // "plants" count instead of creating a new size bucket.
+    const TROPICAL_SIZES = ["10","12","14"];
     function vendorLineDesc(items){
       let ccRacks = 0, pallets = 0;
       const bySize = new Map(); // size (e.g. "10") -> summed qty, for non-rack floor-stock items
@@ -3134,8 +3138,8 @@
           const qty = Number(it.qty || 0);
           const name = (it.item || "").trim();
           const m = name.match(/(\d+)\s*["”']/); // grabs the leading size, e.g. 10" Sans -> 10
-          if(m){
-            const size = m[1];
+          const size = m ? m[1] : null;
+          if(size && TROPICAL_SIZES.includes(size)){
             bySize.set(size, (bySize.get(size) || 0) + qty);
           } else {
             unsized += qty;
