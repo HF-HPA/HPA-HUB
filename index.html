@@ -3054,50 +3054,77 @@
 
     document.getElementById("exportTruckBtn").addEventListener("click", async () => {
       const wk = weekKeyFromDate(weekAnchor);
-      const trucks = loadTrucks().filter(t => t.weekKey === wk && includedInExports(t))
-        .slice().sort((a,b) => (a.pickupDate||"").localeCompare(b.pickupDate||""));
+      const trucks = loadTrucks().filter(t => t.weekKey === wk && includedInExports(t));
       if(!trucks.length){ alert("No Homestead/Apopka orders in this week to export.\n(Canada and New Jersey are excluded from the guides.)"); return; }
       let ExcelJS;
       try { ExcelJS = await loadExcelJS(); }
       catch(e){ alert(e.message); return; }
       const wb = new ExcelJS.Workbook();
       const ws = wb.addWorksheet("Truck Order");
-      ws.columns = [ { width: 30 }, { width: 26 }, { width: 16 } ];
+      ws.columns = [ { width: 30 }, { width: 30 }, { width: 16 } ];
+
+      // Group by trucking company so each carrier's runs are kept together.
+      const byTrucking = new Map();
+      for(const t of trucks){
+        const key = (t.trucking || "").trim() || "— No trucking company set —";
+        if(!byTrucking.has(key)) byTrucking.set(key, []);
+        byTrucking.get(key).push(t);
+      }
+      const truckingNames = Array.from(byTrucking.keys()).sort((a,b) => a.localeCompare(b));
+
       let r = 1;
-      trucks.forEach((t, i) => {
-        const fill = locationFill(t.region);
-        const headerText = `TRUCK ${i+1}: ${(t.region||"").toUpperCase()} - ${weekdayShort(t.pickupDate)}`;
-        const blockStart = r;
-        ws.mergeCells(r, 1, r, 3);
-        const hCell = ws.getCell(r, 1);
-        hCell.value = headerText;
-        hCell.font = { bold:true, size:13 };
-        hCell.alignment = { horizontal:"center", vertical:"middle" };
-        hCell.fill = { type:"pattern", pattern:"solid", fgColor:{argb:fill} };
+      let truckNum = 0;
+      truckingNames.forEach(truckingName => {
+        const group = byTrucking.get(truckingName).slice().sort((a,b) => (a.pickupDate||"").localeCompare(b.pickupDate||""));
+
+        // Trucking company divider banner
+        ws.mergeCells(r,1,r,3);
+        const divCell = ws.getCell(r,1);
+        divCell.value = `TRUCKING: ${truckingName.toUpperCase()}`;
+        divCell.font = { bold:true, size:13, color:{argb:"FFFFFFFF"} };
+        divCell.alignment = { horizontal:"center", vertical:"middle" };
+        divCell.fill = { type:"pattern", pattern:"solid", fgColor:{argb:"FF3A5F4A"} };
         for(let c=1;c<=3;c++) ws.getCell(r,c).border = thinBox();
-        ws.getRow(r).height = 22;
+        ws.getRow(r).height = 24;
         r++;
-        (t.vendorBlocks||[]).forEach(vb => {
-          const vendor = (vb.name||"").trim();
-          const po = (vb.po||"").trim();
-          const items = (vb.items||[]);
-          const row = ws.getRow(r);
-          row.getCell(1).value = vendor;
-          row.getCell(2).value = items.length ? vendorLineDesc(items) : "";
-          row.getCell(3).value = po ? `PO# ${po}` : "";
-          styleTruckRow(ws, r);
+
+        group.forEach(t => {
+          truckNum++;
+          const fill = locationFill(t.region);
+          const headerText = `TRUCK ${truckNum}: ${(t.region||"").toUpperCase()} - ${weekdayShort(t.pickupDate)} - ${money(t.price||0)}`;
+          const blockStart = r;
+          ws.mergeCells(r, 1, r, 3);
+          const hCell = ws.getCell(r, 1);
+          hCell.value = headerText;
+          hCell.font = { bold:true, size:13 };
+          hCell.alignment = { horizontal:"center", vertical:"middle" };
+          hCell.fill = { type:"pattern", pattern:"solid", fgColor:{argb:fill} };
+          for(let c=1;c<=3;c++) ws.getCell(r,c).border = thinBox();
+          ws.getRow(r).height = 22;
+          r++;
+          (t.vendorBlocks||[]).forEach(vb => {
+            const vendor = (vb.name||"").trim();
+            const po = (vb.po||"").trim();
+            const items = (vb.items||[]);
+            const row = ws.getRow(r);
+            row.getCell(1).value = vendor;
+            row.getCell(2).value = items.length ? vendorLineDesc(items) : "";
+            row.getCell(3).value = po ? `PO# ${po}` : "";
+            styleTruckRow(ws, r);
+            r++;
+          });
+          const blockEnd = r - 1;
+          outlineBlock(ws, blockStart, blockEnd, 1, 3);
           r++;
         });
-        const blockEnd = r - 1;
-        outlineBlock(ws, blockStart, blockEnd, 1, 3);
-        r++;
       });
       await downloadWorkbook(wb, `truck-order_${wk}.xlsx`);
     });
 
     function vendorLineDesc(items){
       let ccRacks = 0, pallets = 0;
-      const others = [];
+      const bySize = new Map(); // size (e.g. "10") -> summed qty, for non-rack floor-stock items
+      let unsized = 0; // non-rack items with no detectable size in the name
       for(const it of items){
         const racks = Number(it.racks || 0);
         if(racks){
@@ -3106,14 +3133,22 @@
         } else {
           const qty = Number(it.qty || 0);
           const name = (it.item || "").trim();
-          if(qty) others.push(`${qty.toLocaleString()} ${name}`.trim());
-          else if(name) others.push(name);
+          const m = name.match(/(\d+)\s*["”']/); // grabs the leading size, e.g. 10" Sans -> 10
+          if(m){
+            const size = m[1];
+            bySize.set(size, (bySize.get(size) || 0) + qty);
+          } else {
+            unsized += qty;
+          }
         }
       }
       const parts = [];
       if(ccRacks) parts.push(`${ccRacks.toLocaleString()} CC RACKS`);
       if(pallets) parts.push(`${pallets.toLocaleString()} PALLETS`);
-      parts.push(...others);
+      Array.from(bySize.keys()).sort((a,b) => Number(a)-Number(b)).forEach(size => {
+        parts.push(`${bySize.get(size).toLocaleString()} ${size}" Tropicals`);
+      });
+      if(unsized) parts.push(`${unsized.toLocaleString()} plants`);
       return parts.join(", ");
     }
     function outlineBlock(ws, r1, r2, c1, c2){
