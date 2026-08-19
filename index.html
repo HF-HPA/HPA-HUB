@@ -1009,6 +1009,8 @@
               <div class="chip" id="weekLabel">Week</div>
               <div class="chip subtle" id="truckCountLabel">0 orders</div>
               <div class="chip subtle" id="requestDateLabel" title="Automatically set to the Monday of this week">Request date —</div>
+              <div class="chip subtle" id="weekMetaLabel" style="display:none;" title="Store grades shipping and store count for this week"></div>
+              <button id="editWeekBtn" class="tinyBtn" type="button" title="Set store grades shipping and store count for this week">✏️ Edit Week</button>
             </div>
             <div class="weekActions">
               <button id="newTruckBtn" class="btn">+ New Order</button>
@@ -1263,6 +1265,21 @@
     </div>
   </div>
 
+  <div id="weekMetaModal" class="modal" aria-hidden="true">
+    <div class="modalCard" style="width:min(480px,96vw);">
+      <div class="modalHead">
+        <div>
+          <h3 id="weekMetaModalTitle">Edit Week</h3>
+          <div class="note" id="weekMetaModalSub">Store grades shipping and store count for this week.</div>
+        </div>
+        <button id="weekMetaCloseBtn" class="closeX">Close</button>
+      </div>
+      <label><span class="lbl">Store grades shipping</span><input id="wm_grades" placeholder="e.g., A, B, C"/></label>
+      <label><span class="lbl">Quantity of stores</span><input id="wm_storeCount" type="number" min="0" step="1" placeholder="e.g., 42"/></label>
+      <button id="weekMetaSaveBtn" class="btn">Save</button>
+    </div>
+  </div>
+
   <div id="trainingModal" class="modal" aria-hidden="true">
     <div class="modalCard" style="width:min(560px,96vw);">
       <div class="modalHead">
@@ -1376,6 +1393,7 @@
       contrastKey:"hpa_contrast_v1",
       lastBackupKey:"hpa_last_backup_v1",
       skipWeeksKey:"hpa_skip_weeks_v1",
+      weekMetaKey:"hpa_week_meta_v1",
       get(key, fallback){
         try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; }
       },
@@ -1842,6 +1860,22 @@
       LS.set(LS.skipWeeksKey, map);
     }
 
+    /*********************************************************
+     * Per-week metadata: store grades shipping + store count,
+     * set from the "✏️ Edit Week" button next to the request date.
+     *********************************************************/
+    function loadWeekMeta(){ return LS.get(LS.weekMetaKey, {}); }
+    function getWeekMeta(weekKey){ return loadWeekMeta()[weekKey] || null; }
+    function setWeekMeta(weekKey, data){
+      const map = loadWeekMeta();
+      if(data && (data.grades || (data.storeCount !== null && data.storeCount !== undefined && data.storeCount !== ""))){
+        map[weekKey] = data;
+      } else {
+        delete map[weekKey];
+      }
+      LS.set(LS.weekMetaKey, map);
+    }
+
     let weekAnchor = startOfWeek(new Date());
     // The Dashboard has its own "which week am I looking at" state, separate from
     // the Order Tracker's weekAnchor above. It always starts on the real current
@@ -1887,6 +1921,59 @@
       if(skipWeekBtn){
         skipWeekBtn.classList.toggle("isActive", flagged);
         skipWeekBtn.textContent = flagged ? "🚫 Skip Week (click to unflag)" : "🚫 Mark as Skip Week";
+      }
+    }
+
+    /*********************************************************
+     * Edit Week modal — store grades shipping + store count
+     *********************************************************/
+    const weekMetaModal = document.getElementById("weekMetaModal");
+    const weekMetaLabelEl = document.getElementById("weekMetaLabel");
+    const editWeekBtn = document.getElementById("editWeekBtn");
+    editWeekBtn?.addEventListener("click", openWeekMetaModal);
+    document.getElementById("weekMetaCloseBtn")?.addEventListener("click", closeWeekMetaModal);
+    weekMetaModal?.addEventListener("click", (e) => { if(e.target === weekMetaModal) closeWeekMetaModal(); });
+    function openWeekMetaModal(){
+      const wk = weekKeyFromDate(weekAnchor);
+      const meta = getWeekMeta(wk) || {};
+      const sub = document.getElementById("weekMetaModalSub");
+      if(sub) sub.textContent = `For ${weekLabel(weekAnchor)}`;
+      document.getElementById("wm_grades").value = meta.grades || "";
+      document.getElementById("wm_storeCount").value = (meta.storeCount === null || meta.storeCount === undefined) ? "" : meta.storeCount;
+      weekMetaModal.classList.add("active");
+      weekMetaModal.setAttribute("aria-hidden","false");
+      setTimeout(() => document.getElementById("wm_grades").focus(), 50);
+    }
+    function closeWeekMetaModal(){
+      weekMetaModal.classList.remove("active");
+      weekMetaModal.setAttribute("aria-hidden","true");
+    }
+    document.getElementById("weekMetaSaveBtn")?.addEventListener("click", () => {
+      const wk = weekKeyFromDate(weekAnchor);
+      const grades = document.getElementById("wm_grades").value.trim();
+      const countRaw = document.getElementById("wm_storeCount").value;
+      const storeCount = countRaw === "" ? null : Number(countRaw);
+      setWeekMeta(wk, { grades, storeCount });
+      markTabChanged("order");
+      closeWeekMetaModal();
+      renderOrder();
+    });
+    function updateWeekMetaUI(){
+      if(!weekMetaLabelEl) return;
+      const wk = weekKeyFromDate(weekAnchor);
+      const meta = getWeekMeta(wk);
+      const parts = [];
+      if(meta && meta.grades) parts.push(`Grades: ${meta.grades}`);
+      if(meta && meta.storeCount !== null && meta.storeCount !== undefined && meta.storeCount !== ""){
+        const n = Number(meta.storeCount);
+        parts.push(`${n.toLocaleString()} store${n===1?"":"s"}`);
+      }
+      if(parts.length){
+        weekMetaLabelEl.textContent = parts.join(" · ");
+        weekMetaLabelEl.style.display = "";
+      } else {
+        weekMetaLabelEl.textContent = "";
+        weekMetaLabelEl.style.display = "none";
       }
     }
 
@@ -2546,6 +2633,24 @@
     }
 
     /*********************************************************
+     * Invoice paid toggle on saved orders — per truck/order
+     *********************************************************/
+    function toggleInvoicePaid(truckId, btnEl){
+      const trucks = loadTrucks();
+      const t = trucks.find(x => x.id === truckId);
+      if(!t) return;
+      t.invoicePaid = !t.invoicePaid;
+      saveTrucks(trucks);
+      markTabChanged("order");
+      // Update just this button in place rather than calling renderOrder(),
+      // for the same reason as toggleVendorStatus above.
+      if(btnEl){
+        btnEl.className = (t.invoicePaid ? "statusPill statusConfirmed" : "statusPill statusOpen") + " statusToggle";
+        btnEl.textContent = t.invoicePaid ? "✅ Invoice Paid" : "💲 Invoice Unpaid";
+      }
+    }
+
+    /*********************************************************
      * Manual "added to order" checkbox on saved order items.
      * Purely manual — never set automatically from anything else.
      *********************************************************/
@@ -2643,6 +2748,7 @@
       weekLabelEl.textContent = weekLabel(weekAnchor);
       if(requestDateLabelEl) requestDateLabelEl.textContent = `Request date: ${requestDateLabel(weekAnchor)}`;
       updateSkipWeekUI();
+      updateWeekMetaUI();
 
       const trucks = loadTrucks().filter(t => t.weekKey === wk);
       truckCountLabel.textContent = `${trucks.length} order${trucks.length===1?"":"s"}`;
@@ -2758,6 +2864,7 @@
 
           const searchParts = [
             t.pickupDate, t.region, t.orderType, t.trucking, t.notes, String(t.price || ""),
+            t.invoicePaid ? "Invoice Paid" : "Invoice Unpaid",
             ...(t.vendorBlocks || []).flatMap(vb => [
               vb.name, vb.po, vb.status,
               ...(vb.items || []).flatMap(it => [it.item, it.notes, String(it.qty||""), String(it.racks||""), String(it.cases||"")])
@@ -2774,6 +2881,7 @@
                   <span class="pillMini editablePill" data-action="editPrice" title="Click to edit truck price">${money(t.price || 0)}</span>
                   <span class="pillMini">${vendorCount} vendor(s)</span>
                   <span class="pillMini">${itemLines} line(s)</span>
+                  <button type="button" class="${t.invoicePaid ? "statusPill statusConfirmed" : "statusPill statusOpen"} statusToggle" data-action="toggleInvoicePaid" title="Click to toggle whether this truck's invoice has been paid">${t.invoicePaid ? "✅ Invoice Paid" : "💲 Invoice Unpaid"}</button>
                 </div>
               </div>
               <div class="pickupRight">
@@ -2794,6 +2902,8 @@
           editTruckingEl.addEventListener("click", (e) => { e.stopPropagation(); inlineEdit(editTruckingEl, t.id, "trucking"); });
           const editPriceEl = pickup.querySelector("[data-action='editPrice']");
           editPriceEl.addEventListener("click", (e) => { e.stopPropagation(); inlineEdit(editPriceEl, t.id, "price"); });
+          const invoicePaidBtn = pickup.querySelector("[data-action='toggleInvoicePaid']");
+          if(invoicePaidBtn) invoicePaidBtn.addEventListener("click", (e) => { e.stopPropagation(); toggleInvoicePaid(t.id, invoicePaidBtn); });
 
           const pickupToggle = pickup.querySelector("[data-action='togglePickup']");
           pickupToggle.addEventListener("click", () => {
@@ -4688,7 +4798,7 @@
     const SYNC_KEYS = [
       LS.trucksKey, LS.issuesKey,
       LS.trainingKey, LS.availLinkKey, LS.catalogKey, LS.checkinKey,
-      LS.availKey, LS.availOrdersKey, LS.skipWeeksKey
+      LS.availKey, LS.availOrdersKey, LS.skipWeeksKey, LS.weekMetaKey
     ];
     const MAX_SYNC_BYTES = 900000; // stay under Firestore's ~1MB document cap
 
@@ -4938,6 +5048,7 @@
         const editingThis =
           (key === LS.trucksKey     && currentPage === "order")   ||
           (key === LS.skipWeeksKey  && currentPage === "order")   ||
+          (key === LS.weekMetaKey   && currentPage === "order")   ||
           (key === LS.issuesKey     && currentPage === "issues")  ||
           (key === LS.checkinKey    && currentPage === "checkin") ||
           (key === LS.trainingKey   && currentPage === "training");
@@ -4984,7 +5095,7 @@
         try { if(typeof refreshNotifDots === "function") refreshNotifDots(); } catch(e){}
         const k = (typeof currentPage !== "undefined") ? currentPage : null;
         try {
-          if(k === "order" && (key === LS.trucksKey || key === LS.skipWeeksKey)) renderOrder();
+          if(k === "order" && (key === LS.trucksKey || key === LS.skipWeeksKey || key === LS.weekMetaKey)) renderOrder();
           else if(k === "issues" && key === LS.issuesKey) renderIssues();
           else if(k === "checkin" && (key === LS.checkinKey || key === LS.trucksKey)) renderCheckIn();
           else if(k === "training" && key === LS.trainingKey) renderTraining();
