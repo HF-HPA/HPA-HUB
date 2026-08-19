@@ -130,7 +130,7 @@
 
     .weekHeader{ display:flex; gap:10px; align-items:center; justify-content:space-between; margin-bottom:14px; flex-wrap:wrap; }
     .weekHeader .chip{ background:var(--paper-3); color:var(--moss); border:1px solid var(--line); backdrop-filter:none; font-weight:600; }
-    #weekLabel.isSkipWeek{ background:#dc2626 !important; color:#fff !important; border-color:#dc2626 !important; }
+    #weekLabel.isSkipWeek{ color:#dc2626 !important; text-decoration:line-through; text-decoration-thickness:2px; }
     #skipWeekBtn.isActive{ background:#dc2626; border-color:#dc2626; color:#fff; }
 
     .density-comfortable{ --cellPad:10px; --headerPad:10px 12px; --tableFont:14px; --blockGap:12px; --pickupStickyTop:0px; --theadStickyTop:50px; }
@@ -320,7 +320,6 @@
     .orderHead h2{ margin:0 0 14px; font-size:24px; color:var(--ink); }
     .periodPicker{ display:flex; flex-direction:column; gap:13px; background:var(--paper-2); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow-sm); padding:15px 16px; margin-bottom:16px; }
     .ppStep{ display:flex; flex-direction:column; gap:7px; }
-    .ppStepLabel{ font-family:var(--sans); font-size:11px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--moss); opacity:.78; }
     .ppYearRow{ display:flex; align-items:center; gap:10px; }
     .ppArrow{ width:38px; height:38px; flex:none; border-radius:10px; border:1px solid var(--line); background:var(--paper); color:var(--moss); font-size:20px; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:background .15s, border-color .15s; }
     .ppArrow:hover{ background:var(--rowHover); border-color:var(--fern); }
@@ -341,9 +340,46 @@
     .weekChip.active .wcRange{ opacity:.92; }
 
     .weekZone{ display:block; }
-    .weekBanner{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:13px; }
-    .weekBanner #weekLabel{ font-weight:600; font-size:14px; background:rgba(43,212,154,.12); border:1px solid rgba(43,212,154,.32); color:var(--moss); }
-    .weekActions{ display:flex; gap:9px; flex-wrap:wrap; margin-bottom:14px; }
+
+    /* ===== Order Tracker: title card (week + request date + grades + actions) ===== */
+    .orderTitleCard{
+      display:flex; flex-direction:column; gap:16px;
+      background:linear-gradient(160deg, var(--paper-2) 0%, var(--paper-3) 100%);
+      border:1px solid var(--line); border-radius:var(--radius);
+      box-shadow:var(--shadow-sm); padding:20px 22px 18px; margin-bottom:16px;
+      position:relative;
+    }
+    .orderTitleCard::before{
+      content:""; position:absolute; left:0; top:0; bottom:0; width:5px;
+      border-radius:var(--radius) 0 0 var(--radius);
+      background:linear-gradient(180deg, var(--mint), var(--fern));
+    }
+    .otcMain{ display:flex; flex-wrap:wrap; align-items:flex-end; gap:20px 28px; }
+    .otcHeading{ display:flex; flex-direction:column; gap:4px; }
+    .otcEyebrow{ font-family:var(--sans); font-size:11px; font-weight:700; letter-spacing:.13em; text-transform:uppercase; color:var(--moss); opacity:.72; }
+    .otcWeekTitle{ font-family:var(--display); font-weight:600; font-size:25px; color:var(--ink); line-height:1.15; letter-spacing:-.01em; }
+    .otcWeekTitle.isSkipWeek{ color:#dc2626; }
+    .otcStats{ display:flex; gap:24px; flex-wrap:wrap; }
+    .otcStat{ display:flex; flex-direction:column; gap:3px; min-width:92px; }
+    .otcStatLabel{ font-family:var(--sans); font-size:10.5px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-2); opacity:.72; }
+    .otcStatValue{ font-family:var(--sans); font-size:15px; font-weight:700; color:var(--moss); font-variant-numeric:tabular-nums; }
+    .otcEditBtn{ margin-left:auto; align-self:flex-start; }
+    .otcActions{ display:flex; gap:9px; flex-wrap:wrap; align-items:center; padding-top:14px; border-top:1px solid var(--line-soft); }
+    .otcActions .btn{ width:auto; flex:0 0 auto; padding:10px 20px; }
+    .otcSkipBtn{ margin-left:auto; border-color:rgba(224,86,63,.35); color:#a8341f; }
+
+    .exportMenu{ position:relative; }
+    .exportMenu > summary{ list-style:none; display:inline-flex; align-items:center; gap:5px; }
+    .exportMenu > summary::-webkit-details-marker{ display:none; }
+    .exportMenu > summary::after{ content:"▾"; font-size:10px; opacity:.7; }
+    .exportMenu .exportMenuPanel{
+      position:absolute; top:calc(100% + 6px); left:0; z-index:5;
+      display:flex; flex-direction:column; gap:6px; min-width:200px;
+      background:var(--paper-2); border:1px solid var(--line); border-radius:var(--radius-sm);
+      box-shadow:var(--shadow-sm); padding:8px;
+    }
+    .exportMenu .exportMenuPanel .btnGhost{ width:100%; text-align:left; }
+
     .moreTools{ margin-bottom:14px; border:1px solid var(--line); border-radius:var(--radius-sm); background:var(--paper-2); overflow:hidden; }
     .moreTools > summary{ cursor:pointer; padding:11px 14px; font-weight:600; font-size:13px; color:var(--moss); list-style:none; user-select:none; }
     .moreTools > summary::-webkit-details-marker{ display:none; }
@@ -357,9 +393,13 @@
     @media (max-width:980px){
       .periodPicker{ padding:13px; gap:12px; }
       .ppYear{ font-size:21px; min-width:62px; }
-      .weekActions{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
-      .weekActions .btn{ grid-column:1 / -1; width:100%; }
-      .weekActions .btnGhost{ width:100%; }
+      .orderTitleCard{ padding:16px 16px 14px; }
+      .otcMain{ align-items:flex-start; }
+      .otcEditBtn{ margin-left:0; }
+      .otcActions{ display:grid; grid-template-columns:1fr 1fr; }
+      .otcActions .btn, .otcActions .exportMenu, .otcActions .exportMenu summary{ width:100%; }
+      .otcActions .btn{ grid-column:1 / -1; }
+      .otcSkipBtn{ margin-left:0; grid-column:1 / -1; width:100%; }
       .moreToolsBtns{ display:grid; grid-template-columns:1fr 1fr; }
       .moreToolsBtns .btnGhost{ width:100%; }
     }
@@ -982,7 +1022,6 @@
 
           <div class="periodPicker">
             <div class="ppStep">
-              <div class="ppStepLabel">1 · Year</div>
               <div class="ppYearRow">
                 <button id="ppPrevYear" class="ppArrow" type="button" aria-label="Previous year">‹</button>
                 <span id="ppYearLabel" class="ppYear">2026</span>
@@ -991,11 +1030,9 @@
               </div>
             </div>
             <div class="ppStep">
-              <div class="ppStepLabel">2 · Month</div>
           <div class="monthBar" id="monthBar"></div>
             </div>
             <div class="ppStep">
-              <div class="ppStepLabel">3 · Week</div>
               <div class="ppWeekRow">
                 <button id="prevWeek" class="ppArrow" type="button" aria-label="Previous week">‹</button>
                 <div class="weekChips" id="weekChips"></div>
@@ -1005,27 +1042,47 @@
           </div>
 
           <div class="weekZone">
-            <div class="weekBanner">
-              <div class="chip" id="weekLabel">Week</div>
-              <div class="chip subtle" id="truckCountLabel">0 orders</div>
-              <div class="chip subtle" id="requestDateLabel" title="Automatically set to the Monday of this week">Request date —</div>
-              <div class="chip subtle" id="weekMetaLabel" style="display:none;" title="Store grades shipping and store count for this week"></div>
-              <button id="editWeekBtn" class="tinyBtn" type="button" title="Set store grades shipping and store count for this week">✏️ Edit Week</button>
-            </div>
-            <div class="weekActions">
-              <button id="newTruckBtn" class="btn">+ New Order</button>
-              <button id="exportTruckBtn" class="btnGhost">Export Truck Order</button>
-              <button id="exportCCBtn" class="btnGhost">Export CC Order</button>
-              <button id="exportBreakdownBtn" class="btnGhost">Export Order Breakdown</button>
-              <button id="skipWeekBtn" class="btnGhost" type="button">🚫 Mark as Skip Week</button>
+            <div class="orderTitleCard">
+              <div class="otcMain">
+                <div class="otcHeading">
+                  <span class="otcEyebrow">Selected Week</span>
+                  <div class="otcWeekTitle" id="weekLabel">Week</div>
+                </div>
+                <div class="otcStats">
+                  <div class="otcStat">
+                    <span class="otcStatLabel">Orders</span>
+                    <span class="otcStatValue" id="truckCountLabel">0</span>
+                  </div>
+                  <div class="otcStat">
+                    <span class="otcStatLabel">Request date</span>
+                    <span class="otcStatValue" id="requestDateLabel" title="Automatically set to the Monday of this week">—</span>
+                  </div>
+                  <div class="otcStat" id="otcGradesStat" style="display:none;">
+                    <span class="otcStatLabel">Grades shipping</span>
+                    <span class="otcStatValue" id="weekMetaLabel" title="Store grades shipping and store count for this week"></span>
+                  </div>
+                </div>
+                <button id="editWeekBtn" class="tinyBtn otcEditBtn" type="button" title="Set store grades shipping and store count for this week">✏️ Edit Week</button>
+              </div>
+              <div class="otcActions">
+                <button id="newTruckBtn" class="btn" type="button">+ New Order</button>
+                <details class="exportMenu">
+                  <summary class="btnGhost">⬇ Export</summary>
+                  <div class="exportMenuPanel">
+                    <button id="exportTruckBtn" class="btnGhost" type="button">Truck Order</button>
+                    <button id="exportCCBtn" class="btnGhost" type="button">CC Order</button>
+                    <button id="exportBreakdownBtn" class="btnGhost" type="button">Order Breakdown</button>
+                  </div>
+                </details>
+                <button id="skipWeekBtn" class="btnGhost otcSkipBtn" type="button">🚫 Mark as Skip Week</button>
+              </div>
             </div>
             <details class="moreTools">
               <summary>More tools &amp; filters</summary>
               <div class="moreToolsInner">
                 <input id="orderFilter" class="filterInput" placeholder="Search vendor, item, PO, location, type..." />
                 <div class="moreToolsBtns">
-                  <button id="expandAllBtn" class="btnGhost">Expand All</button>
-                  <button id="collapseAllBtn" class="btnGhost">Collapse All</button>
+                  <button id="expandCollapseAllBtn" class="btnGhost" type="button">Collapse All</button>
                   <button id="densityBtn" class="btnGhost">Comfortable</button>
                   <button id="printBtn" class="btnGhost">Print</button>
                   <button id="deleteWeekBtn" class="btnGhost" style="border-color:rgba(224,86,63,.3); color:#a8341f;">Delete Week</button>
@@ -1209,7 +1266,7 @@
     <div class="modalCard">
       <div class="modalHead">
         <div>
-          <h3>New Issue</h3>
+          <h3 id="issueModalTitle">New Issue</h3>
           <div class="note">Track shortages, damages, delivery issues, and more.</div>
         </div>
         <button id="issueCloseBtn" class="closeX">Close</button>
@@ -1226,6 +1283,7 @@
             <option>Delivery</option>
             <option>Pest</option>
             <option>Spec/Quality</option>
+            <option>Label Error</option>
             <option>Other</option>
           </select>
         </label>
@@ -1962,20 +2020,36 @@
       if(!weekMetaLabelEl) return;
       const wk = weekKeyFromDate(weekAnchor);
       const meta = getWeekMeta(wk);
+      const gradesStat = document.getElementById("otcGradesStat");
       const parts = [];
-      if(meta && meta.grades) parts.push(`Grades: ${meta.grades}`);
+      if(meta && meta.grades) parts.push(meta.grades);
       if(meta && meta.storeCount !== null && meta.storeCount !== undefined && meta.storeCount !== ""){
         const n = Number(meta.storeCount);
         parts.push(`${n.toLocaleString()} store${n===1?"":"s"}`);
       }
       if(parts.length){
         weekMetaLabelEl.textContent = parts.join(" · ");
-        weekMetaLabelEl.style.display = "";
+        if(gradesStat) gradesStat.style.display = "";
       } else {
         weekMetaLabelEl.textContent = "";
-        weekMetaLabelEl.style.display = "none";
+        if(gradesStat) gradesStat.style.display = "none";
       }
     }
+
+    /*********************************************************
+     * Export dropdown (Truck / CC / Breakdown) in the order title card —
+     * closes itself after a choice, or on an outside click.
+     *********************************************************/
+    document.querySelectorAll(".exportMenu").forEach(menu => {
+      menu.querySelectorAll(".exportMenuPanel button").forEach(btn => {
+        btn.addEventListener("click", () => menu.removeAttribute("open"));
+      });
+    });
+    document.addEventListener("click", (e) => {
+      document.querySelectorAll(".exportMenu[open]").forEach(menu => {
+        if(!menu.contains(e.target)) menu.removeAttribute("open");
+      });
+    });
 
     /*********************************************************
      * Month bar (quick month navigation for the Order Tracker)
@@ -2689,8 +2763,14 @@
         if(btn) btn.setAttribute("aria-expanded", String(!collapsed));
       });
     }
-    document.getElementById("expandAllBtn").addEventListener("click", () => { setAllSectionsCollapsed(false); setAllPickupsCollapsed(false); });
-    document.getElementById("collapseAllBtn").addEventListener("click", () => { setAllSectionsCollapsed(true); setAllPickupsCollapsed(true); });
+    const expandCollapseAllBtn = document.getElementById("expandCollapseAllBtn");
+    let allSectionsCollapsed = false;
+    expandCollapseAllBtn?.addEventListener("click", () => {
+      allSectionsCollapsed = !allSectionsCollapsed;
+      setAllSectionsCollapsed(allSectionsCollapsed);
+      setAllPickupsCollapsed(allSectionsCollapsed);
+      expandCollapseAllBtn.textContent = allSectionsCollapsed ? "Expand All" : "Collapse All";
+    });
 
     const densityBtn = document.getElementById("densityBtn");
     densityBtn.addEventListener("click", () => {
@@ -2746,12 +2826,12 @@
       renderPeriodPicker();
       const wk = weekKeyFromDate(weekAnchor);
       weekLabelEl.textContent = weekLabel(weekAnchor);
-      if(requestDateLabelEl) requestDateLabelEl.textContent = `Request date: ${requestDateLabel(weekAnchor)}`;
+      if(requestDateLabelEl) requestDateLabelEl.textContent = requestDateLabel(weekAnchor);
       updateSkipWeekUI();
       updateWeekMetaUI();
 
       const trucks = loadTrucks().filter(t => t.weekKey === wk);
-      truckCountLabel.textContent = `${trucks.length} order${trucks.length===1?"":"s"}`;
+      truckCountLabel.textContent = String(trucks.length);
 
       const wrap = document.getElementById("orderSheet");
       wrap.innerHTML = "";
@@ -2854,6 +2934,16 @@
         sectionTrucks.forEach(t => {
           const vendorCount = (t.vendorBlocks || []).length;
           const itemLines = (t.vendorBlocks || []).reduce((n,v) => n + (v.items?.length || 0), 0);
+          const truckRacks = Number(t.totals?.racks || 0);
+          const truckCases = Number(t.totals?.cases || 0);
+          const truckQty = Number(t.totals?.qty || 0);
+          const statsParts = [
+            `${vendorCount} vendor${vendorCount===1?"":"s"}`,
+            `${itemLines} line${itemLines===1?"":"s"}`,
+            `${truckRacks.toLocaleString()} rack${truckRacks===1?"":"s"}`
+          ];
+          if(truckCases) statsParts.push(`${truckCases.toLocaleString()} case${truckCases===1?"":"s"}`);
+          statsParts.push(`${truckQty.toLocaleString()} plant${truckQty===1?"":"s"}`);
 
           const pickup = document.createElement("div");
           pickup.className = "pickupBlock";
@@ -2879,15 +2969,11 @@
                 <div class="pickupChips">
                   <span class="pillMini editablePill" data-action="editTrucking" title="Click to edit trucking company">${escapeHtml(t.trucking || "Trucking —")}</span>
                   <span class="pillMini editablePill" data-action="editPrice" title="Click to edit truck price">${money(t.price || 0)}</span>
-                  <span class="pillMini">${vendorCount} vendor(s)</span>
-                  <span class="pillMini">${itemLines} line(s)</span>
-                  <button type="button" class="${t.invoicePaid ? "statusPill statusConfirmed" : "statusPill statusOpen"} statusToggle" data-action="toggleInvoicePaid" title="Click to toggle whether this truck's invoice has been paid">${t.invoicePaid ? "✅ Invoice Paid" : "💲 Invoice Unpaid"}</button>
+                  <span class="pillMini" title="Vendors, lines, and totals for this order">${statsParts.join(" · ")}</span>
                 </div>
               </div>
               <div class="pickupRight">
-                <span class="pillMini">${Number(t.totals?.racks||0).toLocaleString()} racks</span>
-                <span class="pillMini">${Number(t.totals?.cases||0).toLocaleString()} cases</span>
-                <span class="pillMini">${Number(t.totals?.qty||0).toLocaleString()} plants</span>
+                <button type="button" class="${t.invoicePaid ? "statusPill statusConfirmed" : "statusPill statusOpen"} statusToggle" data-action="toggleInvoicePaid" title="Click to toggle whether this truck's invoice has been paid">${t.invoicePaid ? "✅ Invoice Paid" : "💲 Invoice Unpaid"}</button>
                 <button class="tinyBtn" data-action="togglePickup" aria-expanded="true">Collapse</button>
                 <button class="tinyBtn" data-action="duplicate">Duplicate</button>
                 <button class="tinyBtn" data-action="edit">Edit</button>
@@ -4098,7 +4184,8 @@
      * Issue Tracker
      *********************************************************/
     const issueModal = document.getElementById("issueModal");
-    document.getElementById("newIssueBtn").addEventListener("click", openIssueModal);
+    let editingIssueId = null;
+    document.getElementById("newIssueBtn").addEventListener("click", () => openIssueModal(null));
     document.getElementById("issueCloseBtn").addEventListener("click", closeIssueModal);
     issueModal.addEventListener("click", (e) => { if(e.target === issueModal) closeIssueModal(); });
     document.getElementById("issueStatusFilter").addEventListener("change", renderIssues);
@@ -4140,25 +4227,37 @@
       prev.style.display = "block";
     });
 
-    function openIssueModal(){
+    function openIssueModal(issue){
+      editingIssueId = issue?.id ?? null;
       refreshWeekSelectors();
       populateIssueTruckOptions();
       populateIssuePhotoOptions();
-      document.getElementById("i_date").value = fmtDate(new Date());
-      document.getElementById("i_status").value = "Open";
-      document.getElementById("i_type").value = "Shortage";
-      document.getElementById("i_vendor").value = "";
-      document.getElementById("i_truck").value = "";
-      document.getElementById("i_item").value = "";
-      document.getElementById("i_notes").value = "";
-      document.getElementById("i_photo").value = "";
+      const titleEl = document.getElementById("issueModalTitle");
+      if(titleEl) titleEl.textContent = editingIssueId ? "Edit Issue" : "New Issue";
+      document.getElementById("i_date").value = issue?.date || fmtDate(new Date());
+      document.getElementById("i_status").value = issue?.status || "Open";
+      document.getElementById("i_type").value = issue?.type || "Shortage";
+      document.getElementById("i_vendor").value = issue?.vendor || "";
+      document.getElementById("i_truck").value = issue?.truckId || "";
+      document.getElementById("i_item").value = issue?.item || "";
+      document.getElementById("i_notes").value = issue?.notes || "";
+      document.getElementById("i_photo").value = issue?.photoId || "";
       resetIssuePhotoUpload();
+      if(issue?.photoDataUrl){
+        const prev = document.getElementById("i_photoPreview");
+        prev.dataset.url = issue.photoDataUrl;
+        prev.innerHTML = `<img src="${issue.photoDataUrl}" style="max-height:130px; border-radius:8px; border:1px solid var(--line);">`;
+        prev.style.display = "block";
+      }
+      const saveBtn = document.getElementById("issueSaveBtn");
+      if(saveBtn) saveBtn.textContent = editingIssueId ? "Save Changes" : "Save Issue";
       issueModal.classList.add("active");
       issueModal.setAttribute("aria-hidden","false");
     }
     function closeIssueModal(){
       issueModal.classList.remove("active");
       issueModal.setAttribute("aria-hidden","true");
+      editingIssueId = null;
     }
     document.getElementById("issueSaveBtn").addEventListener("click", () => {
       const date = document.getElementById("i_date").value;
@@ -4174,12 +4273,24 @@
       const truckLabel = t ? `PU ${t.pickupDate} • ${t.region||"—"} • ${orderTypeLabel(t.orderType||"CC")}` : "";
       if(!date || !vendor || !item){ alert("Date, Vendor, and Item are required."); return; }
       const issues = loadIssues();
-      issues.push({
-        id: cryptoRandomId(), date, status, type, vendor,
-        truckId: truckId || "", truckLabel, item, notes,
-        photoId: photoId || "", photoDataUrl: uploadedUrl,
-        createdAt: new Date().toISOString()
-      });
+      if(editingIssueId){
+        const idx = issues.findIndex(x => x.id === editingIssueId);
+        if(idx >= 0){
+          issues[idx] = {
+            ...issues[idx],
+            date, status, type, vendor,
+            truckId: truckId || "", truckLabel, item, notes,
+            photoId: photoId || "", photoDataUrl: uploadedUrl
+          };
+        }
+      } else {
+        issues.push({
+          id: cryptoRandomId(), date, status, type, vendor,
+          truckId: truckId || "", truckLabel, item, notes,
+          photoId: photoId || "", photoDataUrl: uploadedUrl,
+          createdAt: new Date().toISOString()
+        });
+      }
       saveIssues(issues);
       markTabChanged("issues");
       closeIssueModal();
@@ -4222,14 +4333,20 @@
           <td>${escapeHtml(i.type)}</td>
           <td>${escapeHtml(i.notes || "—")}</td>
           <td style="white-space:nowrap;">
+            <button class="tinyBtn iv_edit">Edit</button>
             ${hasPhoto ? `<button class="tinyBtn iv_photo">Photo</button>` : ``}
             <button class="tinyBtn iv_toggle">Toggle Status</button>
             <button class="tinyBtn danger iv_del">Delete</button>
           </td>
         `;
+        const editBtn = tr.querySelector(".iv_edit");
         const toggleBtn = tr.querySelector(".iv_toggle");
         const delBtn = tr.querySelector(".iv_del");
         const photoBtn = tr.querySelector(".iv_photo");
+        editBtn.addEventListener("click", () => {
+          const fresh = loadIssues().find(x => x.id === i.id);
+          openIssueModal(fresh || i);
+        });
         if(photoBtn){
           photoBtn.addEventListener("click", () => {
             const url = issuePhotoUrl(i);
