@@ -224,7 +224,8 @@
     .availVendorName{ font-family:var(--display); font-weight:600; font-size:16px; color:var(--ink); }
     .availItemGroupHead{ padding:9px 13px 3px; font-family:var(--display); font-weight:600; font-size:13.5px; color:var(--moss); border-top:1px solid var(--line-soft); }
     .availVendorHead + .availItemGroupHead, .availColHead + .availItemGroupHead{ border-top:none; }
-    .availRow{ display:grid; grid-template-columns:36px 1fr 90px auto; gap:10px; align-items:center; padding:7px 13px 7px 26px; }
+    .availVendorScroll{ overflow-x:auto; }
+    .availRow{ display:grid; grid-template-columns:1.5fr repeat(var(--availWeeks,4), minmax(104px,132px)) 70px; gap:10px; align-items:center; padding:7px 13px 7px 20px; }
     .availRow.checked{ background:rgba(43,212,154,.10); }
     .availRow input[type="checkbox"]{ width:20px; height:20px; accent-color:var(--mint-deep); cursor:pointer; }
     .availItemName{ font-weight:600; color:var(--ink); }
@@ -235,16 +236,15 @@
     .availAmtInput:focus{ outline:none; border-color:var(--moss); box-shadow:0 0 0 3px rgba(43,212,154,.15); }
     .availAmtInput::placeholder{ font-weight:400; color:var(--ink-2); }
     .availRowActions{ display:flex; gap:6px; justify-content:flex-end; flex-wrap:wrap; }
-    .availColHead{ display:grid; grid-template-columns:36px 1fr 90px auto; gap:10px; padding:8px 13px; color:var(--moss); font-size:11.5px; font-weight:600; text-transform:uppercase; letter-spacing:.04em; background:var(--thead); border-bottom:1px solid var(--line); }
+    .availColHead{ display:grid; grid-template-columns:1.5fr repeat(var(--availWeeks,4), minmax(104px,132px)) 70px; gap:10px; padding:8px 13px; color:var(--moss); font-size:11.5px; font-weight:600; text-transform:uppercase; letter-spacing:.04em; background:var(--thead); border-bottom:1px solid var(--line); }
     .availColHead .availAmt{ color:var(--moss); font-weight:600; }
-    @media (max-width:560px){
-      .availRow, .availColHead{ grid-template-columns:32px 1fr auto; }
-      .availColHead > span:nth-child(3){ display:none; }
-      .availRow > .availRowActions{ grid-column:2 / 4; justify-content:flex-start; }
-    }
+    .availWeekCell{ display:flex; align-items:center; gap:6px; }
+    .availWeekCell input[type="checkbox"]{ width:18px; height:18px; flex:none; accent-color:var(--mint-deep); cursor:pointer; }
+    .availWeekCell .availAmtInput{ width:auto; flex:1 1 auto; min-width:0; }
+    .availWeekHead{ text-align:center; }
     .availItemsHead{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin:14px 0 6px; }
     .availItemsHead .lbl{ margin:0; }
-    .availEntryRow{ display:grid; grid-template-columns:1.6fr 1.2fr 90px 40px; gap:8px; align-items:center; margin-bottom:8px; }
+    .availEntryRow{ display:grid; grid-template-columns:1.8fr 1fr 40px; gap:8px; align-items:center; margin-bottom:8px; }
     .availEntryRow input{ margin:0; }
     .availEntryRow .rmItem{ width:40px; height:40px; padding:0; line-height:1; display:flex; align-items:center; justify-content:center; }
     @media (max-width:560px){
@@ -1147,8 +1147,8 @@
             <div class="orderTitleCard">
               <div class="otcMain">
                 <div class="otcHeading">
-                  <span class="otcEyebrow">Viewing Week</span>
-                  <div class="otcWeekTitle" id="availWeekTitle">Week</div>
+                  <span class="otcEyebrow">Viewing Month</span>
+                  <div class="otcWeekTitle" id="availMonthTitle">Month</div>
                 </div>
                 <div class="otcStats">
                   <div class="otcStat">
@@ -1167,10 +1167,10 @@
               </div>
               <div class="otcActions">
                 <div class="otcWeekNav">
-                  <button id="availPrevWeek" class="btnGhost" title="Previous week">‹</button>
-                  <select id="availWeekSelect"></select>
-                  <button id="availNextWeek" class="btnGhost" title="Next week">›</button>
-                  <button id="availThisWeek" class="btnGhost">This Week</button>
+                  <button id="availPrevMonth" class="btnGhost" title="Previous month">‹</button>
+                  <select id="availMonthSelect"></select>
+                  <button id="availNextMonth" class="btnGhost" title="Next month">›</button>
+                  <button id="availThisMonth" class="btnGhost">This Month</button>
                 </div>
                 <input id="availSearch" placeholder="Search vendor or item..." />
                 <button id="availAddBtn" class="btn">+ Add Availability</button>
@@ -1179,7 +1179,7 @@
               </div>
             </div>
           </div>
-          <div class="note" id="availNote">Showing this week. Grouped by vendor — check an item to flag it to order this week.</div>
+          <div class="note" id="availNote">Showing this month. Grouped by vendor — check a week's box to flag it to order that week.</div>
           <div id="availTabs"></div>
           <div id="availWrap"></div>
         </div>
@@ -1611,6 +1611,53 @@
       const target = new Date(week1Mon);
       target.setUTCDate(week1Mon.getUTCDate() + (week - 1) * 7);
       return new Date(target.getUTCFullYear(), target.getUTCMonth(), target.getUTCDate());
+    }
+    // Month helpers — used by the Availability month view.
+    function startOfMonth(date){
+      const d = new Date(date);
+      return new Date(d.getFullYear(), d.getMonth(), 1);
+    }
+    function addMonths(date, n){
+      const d = new Date(date);
+      d.setMonth(d.getMonth() + n);
+      return d;
+    }
+    function monthKeyFromDate(date){
+      const d = new Date(date);
+      return `${d.getFullYear()}-${pad2(d.getMonth()+1)}`;
+    }
+    function dateFromMonthKey(key){
+      const m = /^(\d{4})-(\d{2})$/.exec(key || "");
+      if(!m) return startOfMonth(new Date());
+      return new Date(Number(m[1]), Number(m[2]) - 1, 1);
+    }
+    function monthLabel(date){
+      const mo = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+      const d = new Date(date);
+      return `${mo[d.getMonth()]} ${d.getFullYear()}`;
+    }
+    // Every ISO week (as its Monday start date) that touches the given month —
+    // including a week that spills a few days into the next/previous month.
+    // Named availWeeksInMonth (not weeksInMonth) to avoid colliding with the
+    // pre-existing weeksInMonth(year, month) helper used by the Order
+    // Tracker's period picker further down this file — same name, different
+    // signature, and the later declaration would otherwise silently win.
+    function availWeeksInMonth(monthAnchor){
+      const start = startOfMonth(monthAnchor);
+      const end = new Date(start.getFullYear(), start.getMonth() + 1, 0); // last day of month
+      const weeks = [];
+      const lastWeekStart = startOfWeek(end);
+      let cur = startOfWeek(start);
+      while(cur <= lastWeekStart){
+        weeks.push(new Date(cur));
+        cur = addDays(cur, 7);
+      }
+      return weeks;
+    }
+    function shortWeekLabel(weekStartDate){
+      const wkNum = Number(weekKeyFromDate(weekStartDate).split("-W")[1]);
+      const mo = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+      return `Wk ${wkNum} · ${mo[weekStartDate.getMonth()]} ${weekStartDate.getDate()}`;
     }
     // How many ISO weeks are in a given year (52 or 53). Dec 28 is always in the last week.
     function isoWeeksInYear(year){
@@ -3231,18 +3278,11 @@
     function getAllWeeks(){
       const trucks = loadTrucks();
       const photos = loadPhotos();
-      const avail  = (LS.get(LS.availKey, []) || []);
-      const availAmounts = LS.get(LS.availAmountsKey, {});
-      const availOrders  = LS.get(LS.availOrdersKey, {});
       const set = new Set();
       trucks.forEach(t => set.add(t.weekKey));
       photos.forEach(p => set.add(p.week));
-      avail.forEach(a => set.add(a.week));
-      Object.keys(availAmounts || {}).forEach(wk => set.add(wk));
-      Object.keys(availOrders || {}).forEach(wk => set.add(wk));
       set.add(weekKeyFromDate(new Date()));
       set.add(weekKeyFromDate(weekAnchor));
-      set.add(weekKeyFromDate(availAnchor));
       return Array.from(set).filter(Boolean).sort().reverse();
     }
 
@@ -3258,10 +3298,26 @@
       const pWeek = document.getElementById("p_week");
       pWeek.innerHTML = weeks.map(w => `<option value="${w}">${w}</option>`).join("");
       pWeek.value = currentWk;
+    }
 
-      const availWeekSelect = document.getElementById("availWeekSelect");
-      availWeekSelect.innerHTML = weeks.map(w => `<option value="${w}">${w}</option>`).join("");
-      availWeekSelect.value = weekKeyFromDate(availAnchor);
+    // Every month that has recorded Availability activity (an amount typed
+    // in, or something checked to order), plus the current month and
+    // whichever month is on screen — populates the Availability month picker.
+    function getAllAvailMonths(){
+      const availAmounts = LS.get(LS.availAmountsKey, {});
+      const availOrders  = LS.get(LS.availOrdersKey, {});
+      const set = new Set();
+      Object.keys(availAmounts || {}).forEach(wk => { const d = dateFromWeekKey(wk); if(d) set.add(monthKeyFromDate(d)); });
+      Object.keys(availOrders  || {}).forEach(wk => { const d = dateFromWeekKey(wk); if(d) set.add(monthKeyFromDate(d)); });
+      set.add(monthKeyFromDate(new Date()));
+      set.add(monthKeyFromDate(availMonthAnchor));
+      return Array.from(set).filter(Boolean).sort().reverse();
+    }
+    function refreshAvailMonthSelector(){
+      const months = getAllAvailMonths();
+      const sel = document.getElementById("availMonthSelect");
+      sel.innerHTML = months.map(m => `<option value="${m}">${monthLabel(dateFromMonthKey(m))}</option>`).join("");
+      sel.value = monthKeyFromDate(availMonthAnchor);
     }
 
     /*********************************************************
@@ -4335,7 +4391,7 @@
      *********************************************************/
     const AVAIL_CATEGORIES = ['4" Foliage', '6" Foliage', '10" Foliage', "Hanging Baskets", "Bromeliads"];
     let availActiveCat = AVAIL_CATEGORIES[0];
-    let availAnchor = startOfWeek(new Date());
+    let availMonthAnchor = startOfMonth(new Date());
 
     // Hardcoded plant catalog, pulled from the Hampshire Farms availability
     // reference sheet. This is the permanent list of vendor + item + size
@@ -4799,26 +4855,76 @@
     // physical size rarely changes): { [catalogId]: "spec value" }
     function loadAvailSpecOverrides(){ return LS.get(LS.availSpecOverridesKey, {}); }
     function saveAvailSpecOverrides(obj){ LS.set(LS.availSpecOverridesKey, obj); }
-    function availWeek(){ return weekKeyFromDate(availAnchor); }
-
-    // This week's full entry list: every hardcoded catalog item (always
-    // present) plus any one-off items added just for this week.
+    // The full item list — every hardcoded catalog item (code-managed, always
+    // present) plus every custom item added via "+ Add Availability" (user-
+    // managed, also always present going forward — it's a permanent addition
+    // to the list, not a one-week note). Only Amount and the order checkbox
+    // are week-specific; those live in availAmounts/availOrders, looked up
+    // separately per week by whoever renders this.
+    function getAllCatalogAndCustom(){
+      const catalog = AVAIL_CATALOG.map(c => ({ id:c.id, category:c.category, vendor:c.vendor, item:c.item, spec:c.spec, isCatalog:true }));
+      const custom = loadAvail().map(e => ({ id:e.id, category:e.category, vendor:e.vendor, item:e.item, spec:e.spec, isCatalog:false }));
+      return catalog.concat(custom);
+    }
+    // The full item list with each row's live spec (catalog items pick up any
+    // saved override) and this one week's Amount resolved in.
     function getWeekEntries(wk){
       const overrides = loadAvailSpecOverrides();
       const amounts = loadAvailAmounts()[wk] || {};
-      const catalog = AVAIL_CATALOG.map(c => ({
-        id: c.id, category: c.category, vendor: c.vendor, item: c.item,
-        spec: (overrides[c.id] !== undefined ? overrides[c.id] : c.spec),
-        amount: amounts[c.id] || "",
-        isCatalog: true
+      return getAllCatalogAndCustom().map(r => ({
+        ...r,
+        spec: (r.isCatalog && overrides[r.id] !== undefined) ? overrides[r.id] : r.spec,
+        amount: amounts[r.id] || ""
       }));
-      const custom = loadAvail().filter(e => e.week === wk).map(e => ({ ...e, isCatalog:false }));
-      return catalog.concat(custom);
+    }
+    // Same as getWeekEntries, but resolves every week in the given list at
+    // once (for the month view's side-by-side week columns): each entry
+    // comes back with a weekData map of { [weekKey]: { amount, checked } }.
+    function getMonthEntries(weeks){
+      const overrides = loadAvailSpecOverrides();
+      const amounts = loadAvailAmounts();
+      const orders = loadAvailOrders();
+      const weekKeys = weeks.map(w => weekKeyFromDate(w));
+      return getAllCatalogAndCustom().map(r => {
+        const spec = (r.isCatalog && overrides[r.id] !== undefined) ? overrides[r.id] : r.spec;
+        const weekData = {};
+        weekKeys.forEach(wk => {
+          weekData[wk] = {
+            amount: (amounts[wk] && amounts[wk][r.id]) || "",
+            checked: !!(orders[wk] && orders[wk][r.id])
+          };
+        });
+        return { ...r, spec, weekData };
+      });
+    }
+    // The label shown next to each row's checkbox column. Most categories
+    // just show the spec (size); a few need their own formatting:
+    //  - 4" Foliage: spec is a wholesale price, not a size — show it as $X.XX
+    //  - Hanging Baskets: spec is a bare number — show it with the inch mark
+    //  - Bromeliads: size is already baked into the item name — show that
+    //  - anything with no spec at all: fall back to the item name (still
+    //    clickable to open the same order-notes popup) instead of "Details"
+    function availRowLabel(e){
+      const cat = e.category || "";
+      const spec = (e.spec != null) ? String(e.spec).trim() : "";
+      if(cat === '4" Foliage'){
+        const n = Number(spec);
+        if(spec !== "" && !isNaN(n)) return `$${n.toFixed(2)}`;
+        return spec || e.item || "Details";
+      }
+      if(cat === "Hanging Baskets"){
+        if(spec !== "" && !isNaN(Number(spec))) return `${spec}"`;
+        return spec || e.item || "Details";
+      }
+      if(cat === "Bromeliads"){
+        return e.item || "Details";
+      }
+      return spec || e.item || "Details";
     }
 
-    document.getElementById("availPrevWeek").addEventListener("click", () => { availAnchor = addDays(availAnchor, -7); renderAvailability(); });
-    document.getElementById("availNextWeek").addEventListener("click", () => { availAnchor = addDays(availAnchor,  7); renderAvailability(); });
-    document.getElementById("availThisWeek").addEventListener("click", () => { availAnchor = startOfWeek(new Date()); renderAvailability(); });
+    document.getElementById("availPrevMonth").addEventListener("click", () => { availMonthAnchor = addMonths(availMonthAnchor, -1); renderAvailability(); });
+    document.getElementById("availNextMonth").addEventListener("click", () => { availMonthAnchor = addMonths(availMonthAnchor,  1); renderAvailability(); });
+    document.getElementById("availThisMonth").addEventListener("click", () => { availMonthAnchor = startOfMonth(new Date()); renderAvailability(); });
 
     const availModal = document.getElementById("availModal");
     let editingAvailId = null;
@@ -4831,14 +4937,13 @@
       const sel = document.getElementById("a_category");
       sel.innerHTML = AVAIL_CATEGORIES.map(c => `<option ${c===selected?"selected":""}>${escapeHtml(c)}</option>`).join("");
     }
-    function addAvailItemRow(item = "", spec = "", amount = ""){
+    function addAvailItemRow(item = "", spec = ""){
       const rows = document.getElementById("a_itemRows");
       const row = document.createElement("div");
       row.className = "availEntryRow";
       row.innerHTML = `
         <input class="ai_item" placeholder='Item (e.g., Monstera Deliciosa)' value="${escapeHtml(item)}">
         <input class="ai_spec" type="number" step="0.5" min="0" inputmode="decimal" placeholder="Spec (e.g., 12)" value="${escapeHtml(spec)}">
-        <input class="ai_amount" placeholder="Amount" value="${escapeHtml(amount)}">
         <button class="tinyBtn danger rmItem" type="button" title="Remove item">x</button>
       `;
       row.querySelector(".rmItem").addEventListener("click", () => {
@@ -4855,15 +4960,14 @@
     function openAvailModal(entry){
       editingAvailId = entry?.id ?? null;
       document.getElementById("availModalTitle").textContent = editingAvailId ? "Edit Availability" : "Add Availability";
-      const wk = availWeek();
       document.getElementById("availModalSub").textContent = editingAvailId
-        ? `Editing one item in week ${wk}.`
-        : `Add one or more items for a vendor — all save to week ${wk}.`;
+        ? `Editing one custom item. Amount is entered per week directly in the grid.`
+        : `Add one or more items for a vendor — they'll show up every month from now on, same as the rest of the list. Amount is entered per week directly in the grid.`;
       fillAvailCategoryOptions(entry?.category || availActiveCat);
       document.getElementById("a_vendor").value = entry?.vendor ?? "";
       const rows = document.getElementById("a_itemRows");
       rows.innerHTML = "";
-      if(entry){ addAvailItemRow(entry.item ?? "", entry.spec ?? "", entry.amount ?? ""); }
+      if(entry){ addAvailItemRow(entry.item ?? "", entry.spec ?? ""); }
       else { addAvailItemRow(); }
       document.getElementById("a_addItemBtn").style.display = editingAvailId ? "none" : "";
       availModal.classList.add("active");
@@ -4880,9 +4984,8 @@
       if(!vendor){ alert("Vendor is required."); return; }
       const rows = Array.from(document.querySelectorAll("#a_itemRows .availEntryRow"));
       const items = rows.map(r => ({
-        item:   r.querySelector(".ai_item").value.trim(),
-        spec:   r.querySelector(".ai_spec").value.trim(),
-        amount: r.querySelector(".ai_amount").value.trim()
+        item: r.querySelector(".ai_item").value.trim(),
+        spec: r.querySelector(".ai_spec").value.trim()
       })).filter(x => x.item);
       if(items.length === 0){ alert("Add at least one item (the Item field can't be blank)."); return; }
       const list = loadAvail();
@@ -4890,11 +4993,11 @@
         const idx = list.findIndex(e => e.id === editingAvailId);
         if(idx >= 0){
           const it = items[0];
-          list[idx] = { ...list[idx], category, vendor, item: it.item, spec: it.spec, amount: it.amount };
+          list[idx] = { ...list[idx], category, vendor, item: it.item, spec: it.spec };
         }
       } else {
         for(const it of items){
-          list.push({ id: cryptoRandomId(), week: availWeek(), category, vendor, item: it.item, spec: it.spec, amount: it.amount, createdAt: new Date().toISOString() });
+          list.push({ id: cryptoRandomId(), category, vendor, item: it.item, spec: it.spec, createdAt: new Date().toISOString() });
         }
         availActiveCat = category;
       }
@@ -4904,32 +5007,40 @@
       renderAvailability();
     });
 
-    document.getElementById("availWeekSelect").addEventListener("change", (e) => { availAnchor = dateFromWeekKey(e.target.value); renderAvailability(); });
+    document.getElementById("availMonthSelect").addEventListener("change", (e) => { availMonthAnchor = dateFromMonthKey(e.target.value); renderAvailability(); });
     document.getElementById("availSearch").addEventListener("input", renderAvailability);
     document.getElementById("availExportBtn").addEventListener("click", () => {
-      const wk = availWeek();
-      const orders = loadAvailOrders()[wk] || {};
-      const rows = getWeekEntries(wk)
-        .sort((a,b) => (a.category+a.vendor+a.item).localeCompare(b.category+b.vendor+b.item))
-        .map(e => ({ Week: wk, Category: e.category, Vendor: e.vendor, Item: e.item, Spec: e.spec || "", Amount: e.amount || "", Ordering: orders[e.id] ? "YES" : "NO" }));
-      if(!rows.length){ alert("No availability for this week to export."); return; }
-      downloadCSV(`availability_${wk}.csv`, rows, ["Week","Category","Vendor","Item","Spec","Amount","Ordering"]);
+      const weeks = availWeeksInMonth(availMonthAnchor);
+      const mk = monthKeyFromDate(availMonthAnchor);
+      const rows = [];
+      weeks.forEach(w => {
+        const wk = weekKeyFromDate(w);
+        const orders = loadAvailOrders()[wk] || {};
+        getWeekEntries(wk)
+          .filter(e => (e.amount && e.amount.trim()) || orders[e.id])
+          .sort((a,b) => (a.category+a.vendor+a.item).localeCompare(b.category+b.vendor+b.item))
+          .forEach(e => rows.push({ Week: wk, Category: e.category, Vendor: e.vendor, Item: e.item, Spec: e.spec || "", Amount: e.amount || "", Ordering: orders[e.id] ? "YES" : "NO" }));
+      });
+      if(!rows.length){ alert("No availability reported this month to export."); return; }
+      downloadCSV(`availability_${mk}.csv`, rows, ["Week","Category","Vendor","Item","Spec","Amount","Ordering"]);
     });
 
     // Create Order from Checked Items: gathers every item checked "to order"
-    // this Availability week, groups it by vendor, and opens a brand-new
-    // Order Tracker order with vendor + item names pre-filled. Qty, racks,
-    // cases and PO are left blank on purpose — those depend on the plant,
-    // the truck's remaining rack space, and info Availability doesn't
-    // capture, so they stay exactly as manual as a normal new order. The
-    // Availability "Amount" is carried over as a line note for reference.
+    // on any week shown this month, groups it by vendor (deduping an item
+    // checked on more than one week down to a single order line), and opens
+    // a brand-new Order Tracker order with vendor + item names pre-filled.
+    // Qty, racks, cases and PO are left blank on purpose — those depend on
+    // the plant, the truck's remaining rack space, and info Availability
+    // doesn't capture, so they stay exactly as manual as a normal new order.
+    // The most recent non-blank Amount across the checked weeks is carried
+    // over as a line note for reference.
     document.getElementById("availCreateOrderBtn").addEventListener("click", () => {
-      const wk = availWeek();
-      const weekEntries = getWeekEntries(wk);
-      const weekOrders = loadAvailOrders()[wk] || {};
-      const checked = weekEntries.filter(e => weekOrders[e.id]);
+      const weeks = availWeeksInMonth(availMonthAnchor);
+      const monthEntries = getMonthEntries(weeks);
+      const weekKeys = weeks.map(w => weekKeyFromDate(w));
+      const checked = monthEntries.filter(e => weekKeys.some(wk => e.weekData[wk].checked));
       if(checked.length === 0){
-        alert('No items are checked to order this week yet. Check the items you want on the Availability grid, then click "Create Order from Checked" again.');
+        alert('No items are checked to order this month yet. Check the items you want on the Availability grid, then click "Create Order from Checked" again.');
         return;
       }
       const byVendor = new Map();
@@ -4942,18 +5053,26 @@
         name: v, po: "", status: "Open",
         items: byVendor.get(v)
           .sort((a,b) => (a.item||"").localeCompare(b.item||""))
-          .map(e => ({
-            item: e.item || "", racks: "", cases: "", qty: "",
-            notes: e.amount ? `Available: ${e.amount}` : "",
-            // Carried through only so Racks (and Case Count, where the
-            // rack guide gives a tray count) can auto-suggest once a
-            // Plant Qty is typed in — see findRackRule/tryAutoCalcRack.
-            avCategory: e.category || "", avSpec: e.spec ?? ""
-          }))
+          .map(e => {
+            // Most recent checked week with a non-blank amount, for the note.
+            let lastAmount = "";
+            for(let i = weekKeys.length - 1; i >= 0; i--){
+              const wd = e.weekData[weekKeys[i]];
+              if(wd.checked && wd.amount){ lastAmount = wd.amount; break; }
+            }
+            return {
+              item: e.item || "", racks: "", cases: "", qty: "",
+              notes: lastAmount ? `Available: ${lastAmount}` : "",
+              // Carried through only so Racks (and Case Count, where the
+              // rack guide gives a tray count) can auto-suggest once a
+              // Plant Qty is typed in — see findRackRule/tryAutoCalcRack.
+              avCategory: e.category || "", avSpec: e.spec ?? ""
+            };
+          })
       }));
       const data = blankTruckData();
       data.vendorBlocks = vendorBlocks;
-      data.notes = `Created from ${checked.length} checked Availability item(s) — week ${wk}.`;
+      data.notes = `Created from ${checked.length} checked Availability item(s) — ${monthLabel(availMonthAnchor)}.`;
       showPage("order");
       openTruckModal(null, data);
     });
@@ -4970,48 +5089,45 @@
         tabsEl.appendChild(btn);
       });
     }
-    // Saves one entry's Amount for this week — a catalog item writes into the
-    // per-week amounts store; a one-off (custom) item updates its own record.
+    // Saves one entry's Amount for one specific week. Catalog items and
+    // custom items are both permanent, always-listed rows now — only the
+    // Amount (and the "want to order" checkbox) are week-specific, so both
+    // kinds write into the same per-week amounts store, keyed by entry id.
     function saveAvailAmountFor(entry, wk, value){
-      if(entry.isCatalog){
-        const all = loadAvailAmounts();
-        all[wk] = all[wk] || {};
-        if(value) all[wk][entry.id] = value; else delete all[wk][entry.id];
-        saveAvailAmounts(all);
-      } else {
-        const list = loadAvail();
-        const rec = list.find(x => x.id === entry.id);
-        if(rec){ rec.amount = value; saveAvail(list); }
-      }
+      const all = loadAvailAmounts();
+      all[wk] = all[wk] || {};
+      if(value) all[wk][entry.id] = value; else delete all[wk][entry.id];
+      saveAvailAmounts(all);
       markTabChanged("avail");
     }
     function renderAvailability(){
-      refreshWeekSelectors();
-      const wk = availWeek();
-      const weekTitleEl = document.getElementById("availWeekTitle");
-      if(weekTitleEl) weekTitleEl.textContent = weekLabel(availAnchor);
+      refreshAvailMonthSelector();
+      const weeks = availWeeksInMonth(availMonthAnchor); // every ISO week touching this month, as Date objects
+      const weekKeys = weeks.map(w => weekKeyFromDate(w));
+      const monthTitleEl = document.getElementById("availMonthTitle");
+      if(monthTitleEl) monthTitleEl.textContent = monthLabel(availMonthAnchor);
       const noteEl = document.getElementById("availNote");
       if(noteEl){
-        const s = startOfWeek(availAnchor), e = addDays(s, 6);
-        noteEl.textContent = `Showing ${wk} (${s.toLocaleDateString()} – ${e.toLocaleDateString()}). Grouped by vendor, then by item — fill in an Amount and check a size to flag it to order this week.`;
+        noteEl.textContent = `Showing ${monthLabel(availMonthAnchor)} — ${weeks.length} week(s). Grouped by vendor, then by item — fill in an Amount and check a week's box to flag it to order that week.`;
       }
       const search = (document.getElementById("availSearch").value || "").trim().toLowerCase();
-      const weekEntries = getWeekEntries(wk); // every catalog item (always present) + this week's one-off items
-      const weekOrdersForStats = loadAvailOrders()[wk] || {};
-      // "Items"/"Vendors" count what's actually been reported this week
-      // (an amount typed in, or checked to order) — not the full catalog
-      // size, which is always ~constant and wouldn't say anything useful.
-      const reported = weekEntries.filter(e => (e.amount && e.amount.trim()) || weekOrdersForStats[e.id]);
+      const monthEntries = getMonthEntries(weeks); // every catalog item (always present) + every custom item, with all this month's weeks resolved in
+      // "Items"/"Vendors" count what's actually been reported somewhere this
+      // month (an amount typed in on any week, or checked on any week) — not
+      // the full catalog size, which is always ~constant and wouldn't say
+      // anything useful.
+      const reported = monthEntries.filter(e => weekKeys.some(wk => (e.weekData[wk].amount && e.weekData[wk].amount.trim()) || e.weekData[wk].checked));
       const itemCountEl = document.getElementById("availItemCountLabel");
       const vendorCountEl = document.getElementById("availVendorCountLabel");
       const toOrderCountEl = document.getElementById("availToOrderCountLabel");
       if(itemCountEl) itemCountEl.textContent = String(reported.length);
       if(vendorCountEl) vendorCountEl.textContent = String(new Set(reported.map(e => (e.vendor||"—").trim() || "—")).size);
-      if(toOrderCountEl) toOrderCountEl.textContent = String(weekEntries.filter(e => weekOrdersForStats[e.id]).length);
-      renderAvailTabs(weekEntries);
+      if(toOrderCountEl) toOrderCountEl.textContent = String(monthEntries.filter(e => weekKeys.some(wk => e.weekData[wk].checked)).length);
+      renderAvailTabs(monthEntries);
       const wrap = document.getElementById("availWrap");
       wrap.innerHTML = "";
-      let entries = weekEntries.filter(e => e.category === availActiveCat);
+      wrap.style.setProperty("--availWeeks", String(weeks.length));
+      let entries = monthEntries.filter(e => e.category === availActiveCat);
       if(search){
         entries = entries.filter(e => (e.vendor||"").toLowerCase().includes(search) || (e.item||"").toLowerCase().includes(search));
       }
@@ -5025,13 +5141,12 @@
         if(!byVendor.has(v)) byVendor.set(v, []);
         byVendor.get(v).push(e);
       }
-      const orders = loadAvailOrders();
-      const weekOrders = orders[wk] || {};
       Array.from(byVendor.keys()).sort((a,b)=>a.localeCompare(b)).forEach(vendor => {
         const items = byVendor.get(vendor).sort((a,b)=>(a.item||"").localeCompare(b.item||""));
-        const checkedCount = items.filter(e => weekOrders[e.id]).length;
+        const checkedCount = items.filter(e => weekKeys.some(wk => e.weekData[wk].checked)).length;
         const box = document.createElement("div");
         box.className = "availVendor";
+        const weekHeadHtml = weeks.map(w => `<span class="availWeekHead">${escapeHtml(shortWeekLabel(w))}</span>`).join("");
         box.innerHTML = `
           <div class="availVendorHead">
             <span class="availVendorName">${escapeHtml(vendor)}</span>
@@ -5040,11 +5155,12 @@
               <span class="pillMini">${checkedCount} to order</span>
             </span>
           </div>
+          <div class="availVendorScroll">
           <div class="availColHead">
-            <span></span><span>Size</span>
-            <span class="availAmt">Amount</span><span></span>
+            <span>Size</span>${weekHeadHtml}<span></span>
           </div>
         `;
+        const scrollEl = box.querySelector(".availVendorScroll");
         // Group this vendor's entries by item name, like the reference sheet:
         // the item name is listed once, with each size/spec underneath it as
         // its own indented row instead of repeating the item name per row.
@@ -5066,44 +5182,60 @@
           const groupHead = document.createElement("div");
           groupHead.className = "availItemGroupHead";
           groupHead.textContent = group.label;
-          box.appendChild(groupHead);
+          scrollEl.appendChild(groupHead);
           group.entries.forEach(e => {
-            const checked = !!weekOrders[e.id];
+            const anyChecked = weekKeys.some(wk => e.weekData[wk].checked);
             const row = document.createElement("div");
-            row.className = "availRow" + (checked ? " checked" : "");
+            row.className = "availRow" + (anyChecked ? " checked" : "");
             // Catalog items are code-managed (no Edit/Delete — see the
             // catalog comment above); one-off items added via "+ Add
             // Availability" keep full Edit/Delete like before.
             const actionsHtml = e.isCatalog ? `` : `
                 <button class="tinyBtn av_edit">Edit</button>
                 <button class="tinyBtn danger av_del">Delete</button>`;
+            const weekCellsHtml = weekKeys.map(wk => {
+              const wd = e.weekData[wk];
+              return `
+                <div class="availWeekCell" data-wk="${escapeHtml(wk)}">
+                  <input type="checkbox" ${wd.checked ? "checked" : ""} title="Mark to order ${escapeHtml(wk)}"/>
+                  <input class="availAmtInput" type="text" placeholder="Amt" value="${escapeHtml(wd.amount || "")}" title="This week's amount — saves automatically"/>
+                </div>`;
+            }).join("");
             row.innerHTML = `
-              <div><input type="checkbox" ${checked ? "checked" : ""} title="Mark to order this week"/></div>
-              <button type="button" class="availItemName availItemNameBtn" title="Click for order notes">${escapeHtml(e.spec || "Details")}</button>
-              <input class="availAmtInput" type="text" placeholder="Amount" value="${escapeHtml(e.amount || "")}" title="Type this week's amount — saves automatically"/>
+              <button type="button" class="availItemName availItemNameBtn" title="Click for order notes">${escapeHtml(availRowLabel(e))}</button>
+              ${weekCellsHtml}
               <div class="availRowActions">${actionsHtml}</div>
             `;
             row.querySelector(".availItemNameBtn").addEventListener("click", () => openAvailItemDetail(e));
-            row.querySelector('input[type="checkbox"]').addEventListener("change", (ev) => {
-              const all = loadAvailOrders();
-              all[wk] = all[wk] || {};
-              if(ev.target.checked) all[wk][e.id] = true;
-              else delete all[wk][e.id];
-              saveAvailOrders(all);
-              row.classList.toggle("checked", ev.target.checked);
+            function refreshVendorCheckedPill(){
               const head = box.querySelector(".availVendorHead .sectionMeta .pillMini:last-child");
-              const n = box.querySelectorAll('input[type="checkbox"]:checked').length;
+              const n = scrollEl.querySelectorAll(".availRow.checked").length;
               if(head) head.textContent = `${n} to order`;
+            }
+            row.querySelectorAll(".availWeekCell").forEach(cell => {
+              const wk = cell.dataset.wk;
+              const chk = cell.querySelector('input[type="checkbox"]');
+              chk.addEventListener("change", (ev) => {
+                const all = loadAvailOrders();
+                all[wk] = all[wk] || {};
+                if(ev.target.checked) all[wk][e.id] = true;
+                else delete all[wk][e.id];
+                saveAvailOrders(all);
+                e.weekData[wk].checked = ev.target.checked;
+                const rowAnyChecked = weekKeys.some(k => e.weekData[k].checked);
+                row.classList.toggle("checked", rowAnyChecked);
+                refreshVendorCheckedPill();
+              });
+              const amtInput = cell.querySelector(".availAmtInput");
+              const commitAmount = () => {
+                const v = amtInput.value.trim();
+                if(v === (e.weekData[wk].amount || "")) return;
+                e.weekData[wk].amount = v;
+                saveAvailAmountFor(e, wk, v);
+              };
+              amtInput.addEventListener("blur", commitAmount);
+              amtInput.addEventListener("keydown", (ev) => { if(ev.key === "Enter"){ ev.preventDefault(); amtInput.blur(); } });
             });
-            const amtInput = row.querySelector(".availAmtInput");
-            const commitAmount = () => {
-              const v = amtInput.value.trim();
-              if(v === (e.amount || "")) return;
-              e.amount = v;
-              saveAvailAmountFor(e, wk, v);
-            };
-            amtInput.addEventListener("blur", commitAmount);
-            amtInput.addEventListener("keydown", (ev) => { if(ev.key === "Enter"){ ev.preventDefault(); amtInput.blur(); } });
             if(!e.isCatalog){
               row.querySelector(".av_edit").addEventListener("click", () => { openAvailModal(e); });
               row.querySelector(".av_del").addEventListener("click", () => {
@@ -5116,7 +5248,7 @@
                 renderAvailability();
               });
             }
-            box.appendChild(row);
+            scrollEl.appendChild(row);
           });
         });
         wrap.appendChild(box);
