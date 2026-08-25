@@ -3666,10 +3666,16 @@
       return _jspdfPromise;
     }
 
-    // Delivery (arrival) date = pickup date + 2 days, for every day of the week.
-    function arrivalDateFor(pickupDateStr){
+    // Delivery (arrival) date = pickup date + 2 days, for every day of the
+    // week — EXCEPT Canada and New Jersey, where the "pickup date" field on
+    // the order is actually already the delivery/arrival date, so it's used
+    // as-is with no offset.
+    const TB_ARRIVAL_IS_PICKUP_REGIONS = ["Canada", "New Jersey"];
+    function arrivalDateFor(pickupDateStr, region){
       const pu = parseDate(pickupDateStr);
-      return pu ? addDays(pu, 2) : null;
+      if(!pu) return null;
+      if(TB_ARRIVAL_IS_PICKUP_REGIONS.includes((region||"").trim())) return pu;
+      return addDays(pu, 2);
     }
     const TB_WEEKDAY_ABBR = ["Sun.","Mon.","Tues.","Wed.","Thurs.","Fri.","Sat."];
     function tbArrivalLabel(d){
@@ -3720,7 +3726,7 @@
       // Jersey); its vendor blocks share the merged Arrival Date + Truck
       // Type cells, same as the reference sheet.
       const groups = trucks.map(t => {
-        const arrival = arrivalDateFor(t.pickupDate);
+        const arrival = arrivalDateFor(t.pickupDate, t.region);
         const vendorRows = (t.vendorBlocks || []).length
           ? t.vendorBlocks.map(vb => ({ vendor: (vb.name||"").trim() || "—", po: (vb.po||"").trim() }))
           : [{ vendor:"—", po:"" }];
