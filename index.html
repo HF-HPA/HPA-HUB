@@ -227,6 +227,8 @@
     .availRow.checked{ background:rgba(43,212,154,.10); }
     .availRow input[type="checkbox"]{ width:20px; height:20px; accent-color:var(--mint-deep); cursor:pointer; }
     .availItemName{ font-weight:600; color:var(--ink); }
+    .availItemNameBtn{ appearance:none; background:none; border:none; padding:0; margin:0; font:inherit; text-align:left; cursor:pointer; text-decoration:underline; text-decoration-color:transparent; transition:text-decoration-color .15s, color .15s; }
+    .availItemNameBtn:hover, .availItemNameBtn:focus-visible{ color:var(--moss); text-decoration-color:currentColor; }
     .availSpec{ color:var(--ink-2); font-size:13px; }
     .availAmt{ font-weight:700; color:var(--ink); font-variant-numeric:tabular-nums; text-align:right; }
     .availRowActions{ display:flex; gap:6px; justify-content:flex-end; flex-wrap:wrap; }
@@ -366,6 +368,8 @@
     .otcEditBtn{ margin-left:auto; align-self:flex-start; }
     .otcActions{ display:flex; gap:9px; flex-wrap:wrap; align-items:center; padding-top:14px; border-top:1px solid var(--line-soft); }
     .otcActions .btn{ width:auto; flex:0 0 auto; padding:10px 20px; }
+    .otcWeekNav{ display:flex; gap:6px; align-items:center; }
+    .otcWeekNav select{ width:auto; }
     .otcSkipBtn{ margin-left:auto; border-color:rgba(224,86,63,.35); color:#a8341f; }
 
     .exportMenu{ position:relative; }
@@ -399,6 +403,8 @@
       .otcActions{ display:grid; grid-template-columns:1fr 1fr; }
       .otcActions .btn, .otcActions .exportMenu, .otcActions .exportMenu summary{ width:100%; }
       .otcActions .btn{ grid-column:1 / -1; }
+      .otcWeekNav{ grid-column:1 / -1; justify-content:space-between; }
+      .otcWeekNav select{ flex:1; min-width:0; }
       .otcSkipBtn{ margin-left:0; grid-column:1 / -1; width:100%; }
       .moreToolsBtns{ display:grid; grid-template-columns:1fr 1fr; }
       .moreToolsBtns .btnGhost{ width:100%; }
@@ -1133,16 +1139,40 @@
         </div>
 
         <div id="page-avail" class="page" style="display:none;">
-          <div class="toolbar">
-            <h2>Availability</h2>
-            <div class="tools">
-              <button id="availPrevWeek" class="btnGhost" title="Previous week">‹</button>
-              <select id="availWeekSelect"></select>
-              <button id="availNextWeek" class="btnGhost" title="Next week">›</button>
-              <button id="availThisWeek" class="btnGhost">This Week</button>
-              <input id="availSearch" placeholder="Search vendor or item..." />
-              <button id="availAddBtn" class="btnGhost">+ Add Availability</button>
-              <button id="availExportBtn" class="btnGhost">⬇ Export CSV</button>
+          <div class="orderHead"><h2>Availability</h2></div>
+          <div class="weekZone">
+            <div class="orderTitleCard">
+              <div class="otcMain">
+                <div class="otcHeading">
+                  <span class="otcEyebrow">Viewing Week</span>
+                  <div class="otcWeekTitle" id="availWeekTitle">Week</div>
+                </div>
+                <div class="otcStats">
+                  <div class="otcStat">
+                    <span class="otcStatLabel">Items</span>
+                    <span class="otcStatValue" id="availItemCountLabel">0</span>
+                  </div>
+                  <div class="otcStat">
+                    <span class="otcStatLabel">Vendors</span>
+                    <span class="otcStatValue" id="availVendorCountLabel">0</span>
+                  </div>
+                  <div class="otcStat">
+                    <span class="otcStatLabel">To order</span>
+                    <span class="otcStatValue" id="availToOrderCountLabel">0</span>
+                  </div>
+                </div>
+              </div>
+              <div class="otcActions">
+                <div class="otcWeekNav">
+                  <button id="availPrevWeek" class="btnGhost" title="Previous week">‹</button>
+                  <select id="availWeekSelect"></select>
+                  <button id="availNextWeek" class="btnGhost" title="Next week">›</button>
+                  <button id="availThisWeek" class="btnGhost">This Week</button>
+                </div>
+                <input id="availSearch" placeholder="Search vendor or item..." />
+                <button id="availAddBtn" class="btn">+ Add Availability</button>
+                <button id="availExportBtn" class="btnGhost">⬇ Export CSV</button>
+              </div>
             </div>
           </div>
           <div class="note" id="availNote">Showing this week. Grouped by vendor — check an item to flag it to order this week.</div>
@@ -1314,6 +1344,29 @@
       </div>
       <div id="a_itemRows"></div>
       <button id="availSaveBtn" class="btn">Save Availability</button>
+    </div>
+  </div>
+
+  <div id="availDetailModal" class="modal" aria-hidden="true">
+    <div class="modalCard" style="width:min(440px,96vw);">
+      <div class="modalHead">
+        <div>
+          <h3 id="availDetailTitle">Item</h3>
+          <div class="note" id="availDetailSub">Order notes</div>
+        </div>
+        <button id="availDetailCloseBtn" class="closeX">Close</button>
+      </div>
+      <div class="otcStats" style="margin:4px 0 2px;">
+        <div class="otcStat">
+          <span class="otcStatLabel">Spec size</span>
+          <span class="otcStatValue" id="availDetailSpec">—</span>
+        </div>
+        <div class="otcStat">
+          <span class="otcStatLabel">Last order date</span>
+          <span class="otcStatValue" id="availDetailLastOrder">—</span>
+        </div>
+      </div>
+      <div class="note" id="availDetailLastOrderNote" style="margin-top:10px;"></div>
     </div>
   </div>
 
@@ -4297,6 +4350,8 @@
     function renderAvailability(){
       refreshWeekSelectors();
       const wk = availWeek();
+      const weekTitleEl = document.getElementById("availWeekTitle");
+      if(weekTitleEl) weekTitleEl.textContent = weekLabel(availAnchor);
       const noteEl = document.getElementById("availNote");
       if(noteEl){
         const s = startOfWeek(availAnchor), e = addDays(s, 6);
@@ -4304,6 +4359,13 @@
       }
       const search = (document.getElementById("availSearch").value || "").trim().toLowerCase();
       const weekEntries = loadAvail().filter(e => e.week === wk);
+      const weekOrdersForStats = loadAvailOrders()[wk] || {};
+      const itemCountEl = document.getElementById("availItemCountLabel");
+      const vendorCountEl = document.getElementById("availVendorCountLabel");
+      const toOrderCountEl = document.getElementById("availToOrderCountLabel");
+      if(itemCountEl) itemCountEl.textContent = String(weekEntries.length);
+      if(vendorCountEl) vendorCountEl.textContent = String(new Set(weekEntries.map(e => (e.vendor||"—").trim() || "—")).size);
+      if(toOrderCountEl) toOrderCountEl.textContent = String(weekEntries.filter(e => weekOrdersForStats[e.id]).length);
       renderAvailTabs(weekEntries);
       const wrap = document.getElementById("availWrap");
       wrap.innerHTML = "";
@@ -4337,7 +4399,7 @@
             </span>
           </div>
           <div class="availColHead">
-            <span></span><span>Item</span><span>Spec</span>
+            <span></span><span>Item</span><span>Notes</span>
             <span class="availAmt">Amount</span><span></span>
           </div>
         `;
@@ -4347,7 +4409,7 @@
           row.className = "availRow" + (checked ? " checked" : "");
           row.innerHTML = `
             <div><input type="checkbox" ${checked ? "checked" : ""} title="Mark to order this week"/></div>
-            <div class="availItemName">${escapeHtml(e.item || "—")}</div>
+            <button type="button" class="availItemName availItemNameBtn" title="Click for order notes">${escapeHtml(e.item || "—")}</button>
             <div class="availSpec">${escapeHtml(e.spec || "")}</div>
             <div class="availAmt">${escapeHtml(e.amount || "")}</div>
             <div class="availRowActions">
@@ -4355,6 +4417,7 @@
               <button class="tinyBtn danger av_del">Delete</button>
             </div>
           `;
+          row.querySelector(".availItemNameBtn").addEventListener("click", () => openAvailItemDetail(e));
           row.querySelector('input[type="checkbox"]').addEventListener("change", (ev) => {
             const all = loadAvailOrders();
             all[wk] = all[wk] || {};
@@ -4381,6 +4444,60 @@
         wrap.appendChild(box);
       });
     }
+
+    /*********************************************************
+     * Availability — item order notes popup (spec + last order
+     * date). Last order date is looked up live from the Order
+     * Tracker: the most recent truck whose vendor and item line
+     * match this availability entry, so it's never manually
+     * maintained and can't go stale.
+     *********************************************************/
+    function lastOrderDateForItem(vendor, itemName){
+      const v = (vendor || "").trim().toLowerCase();
+      const it = (itemName || "").trim().toLowerCase();
+      if(!v || !it) return null;
+      let best = null; // { date, pickupDate, weekKey }
+      loadTrucks().forEach(t => {
+        if(!t.pickupDate) return;
+        (t.vendorBlocks || []).forEach(vb => {
+          if((vb.name || "").trim().toLowerCase() !== v) return;
+          (vb.items || []).forEach(line => {
+            const li = (line.item || "").trim().toLowerCase();
+            if(!li) return;
+            const isMatch = li === it || li.includes(it) || it.includes(li);
+            if(!isMatch) return;
+            const d = parseDate(t.pickupDate);
+            if(!d) return;
+            if(!best || d > best.date) best = { date: d, pickupDate: t.pickupDate, weekKey: t.weekKey };
+          });
+        });
+      });
+      return best;
+    }
+    const availDetailModal = document.getElementById("availDetailModal");
+    function openAvailItemDetail(entry){
+      document.getElementById("availDetailTitle").textContent = entry.item || "Item";
+      document.getElementById("availDetailSub").textContent = `${entry.vendor || "—"} · ${entry.category || ""}`;
+      document.getElementById("availDetailSpec").textContent = entry.spec || "—";
+      const last = lastOrderDateForItem(entry.vendor, entry.item);
+      const lastEl = document.getElementById("availDetailLastOrder");
+      const noteEl = document.getElementById("availDetailLastOrderNote");
+      if(last){
+        lastEl.textContent = last.date.toLocaleDateString(undefined, { month:"short", day:"numeric", year:"numeric" });
+        noteEl.textContent = `From the Order Tracker — ${weekLabel(last.date)} (PU ${last.pickupDate}).`;
+      } else {
+        lastEl.textContent = "—";
+        noteEl.textContent = "No matching order found yet in the Order Tracker for this vendor + item.";
+      }
+      availDetailModal.classList.add("active");
+      availDetailModal.setAttribute("aria-hidden","false");
+    }
+    function closeAvailItemDetail(){
+      availDetailModal.classList.remove("active");
+      availDetailModal.setAttribute("aria-hidden","true");
+    }
+    document.getElementById("availDetailCloseBtn").addEventListener("click", closeAvailItemDetail);
+    availDetailModal.addEventListener("click", (e) => { if(e.target === availDetailModal) closeAvailItemDetail(); });
 
     /*********************************************************
      * Issue Tracker
