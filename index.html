@@ -222,23 +222,21 @@
     .availVendor{ border:1px solid var(--line); background:var(--paper-2); border-radius:var(--radius-sm); margin-top:12px; box-shadow:var(--shadow-sm); overflow:hidden; }
     .availVendorHead{ display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; padding:11px 13px; background:#edf4ec; border-bottom:1px solid var(--line-soft); }
     .availVendorName{ font-family:var(--display); font-weight:600; font-size:16px; color:var(--ink); }
-    .availRow{ display:grid; grid-template-columns:36px 1.6fr 1.2fr 90px auto; gap:10px; align-items:center; padding:11px 13px; border-top:1px solid var(--line-soft); }
-    .availRow:first-of-type{ border-top:none; }
+    .availItemGroupHead{ padding:9px 13px 3px; font-family:var(--display); font-weight:600; font-size:13.5px; color:var(--moss); border-top:1px solid var(--line-soft); }
+    .availVendorHead + .availItemGroupHead, .availColHead + .availItemGroupHead{ border-top:none; }
+    .availRow{ display:grid; grid-template-columns:36px 1fr 90px auto; gap:10px; align-items:center; padding:7px 13px 7px 26px; }
     .availRow.checked{ background:rgba(43,212,154,.10); }
     .availRow input[type="checkbox"]{ width:20px; height:20px; accent-color:var(--mint-deep); cursor:pointer; }
     .availItemName{ font-weight:600; color:var(--ink); }
     .availItemNameBtn{ appearance:none; background:none; border:none; padding:0; margin:0; font:inherit; text-align:left; cursor:pointer; text-decoration:underline; text-decoration-color:transparent; transition:text-decoration-color .15s, color .15s; }
     .availItemNameBtn:hover, .availItemNameBtn:focus-visible{ color:var(--moss); text-decoration-color:currentColor; }
-    .availSpec{ color:var(--ink-2); font-size:13px; }
     .availAmt{ font-weight:700; color:var(--ink); font-variant-numeric:tabular-nums; text-align:right; }
     .availRowActions{ display:flex; gap:6px; justify-content:flex-end; flex-wrap:wrap; }
-    .availColHead{ display:grid; grid-template-columns:36px 1.6fr 1.2fr 90px auto; gap:10px; padding:8px 13px; color:var(--moss); font-size:11.5px; font-weight:600; text-transform:uppercase; letter-spacing:.04em; background:var(--thead); border-bottom:1px solid var(--line); }
+    .availColHead{ display:grid; grid-template-columns:36px 1fr 90px auto; gap:10px; padding:8px 13px; color:var(--moss); font-size:11.5px; font-weight:600; text-transform:uppercase; letter-spacing:.04em; background:var(--thead); border-bottom:1px solid var(--line); }
     .availColHead .availAmt{ color:var(--moss); font-weight:600; }
     @media (max-width:560px){
       .availRow, .availColHead{ grid-template-columns:32px 1fr auto; }
-      .availColHead > span:nth-child(3), .availColHead > span:nth-child(4){ display:none; }
-      .availRow > .availSpec{ grid-column:2; font-size:12px; }
-      .availRow > .availAmt{ grid-column:3; }
+      .availColHead > span:nth-child(3){ display:none; }
       .availRow > .availRowActions{ grid-column:2 / 4; justify-content:flex-start; }
     }
     .availItemsHead{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin:14px 0 6px; }
@@ -4499,7 +4497,7 @@
       const noteEl = document.getElementById("availNote");
       if(noteEl){
         const s = startOfWeek(availAnchor), e = addDays(s, 6);
-        noteEl.textContent = `Showing ${wk} (${s.toLocaleDateString()} – ${e.toLocaleDateString()}). Grouped by vendor — check an item to flag it to order this week.`;
+        noteEl.textContent = `Showing ${wk} (${s.toLocaleDateString()} – ${e.toLocaleDateString()}). Grouped by vendor, then by item — check a size to flag it to order this week.`;
       }
       const search = (document.getElementById("availSearch").value || "").trim().toLowerCase();
       const weekEntries = loadAvail().filter(e => e.week === wk);
@@ -4543,47 +4541,69 @@
             </span>
           </div>
           <div class="availColHead">
-            <span></span><span>Item</span><span>Notes</span>
+            <span></span><span>Size</span>
             <span class="availAmt">Amount</span><span></span>
           </div>
         `;
+        // Group this vendor's entries by item name, like the reference sheet:
+        // the item name is listed once, with each size/spec underneath it as
+        // its own indented row instead of repeating the item name per row.
+        const byItem = new Map();
         items.forEach(e => {
-          const checked = !!weekOrders[e.id];
-          const row = document.createElement("div");
-          row.className = "availRow" + (checked ? " checked" : "");
-          row.innerHTML = `
-            <div><input type="checkbox" ${checked ? "checked" : ""} title="Mark to order this week"/></div>
-            <button type="button" class="availItemName availItemNameBtn" title="Click for order notes">${escapeHtml(e.item || "—")}</button>
-            <div class="availSpec">${escapeHtml(e.spec || "")}</div>
-            <div class="availAmt">${escapeHtml(e.amount || "")}</div>
-            <div class="availRowActions">
-              <button class="tinyBtn av_edit">Edit</button>
-              <button class="tinyBtn danger av_del">Delete</button>
-            </div>
-          `;
-          row.querySelector(".availItemNameBtn").addEventListener("click", () => openAvailItemDetail(e));
-          row.querySelector('input[type="checkbox"]').addEventListener("change", (ev) => {
-            const all = loadAvailOrders();
-            all[wk] = all[wk] || {};
-            if(ev.target.checked) all[wk][e.id] = true;
-            else delete all[wk][e.id];
-            saveAvailOrders(all);
-            row.classList.toggle("checked", ev.target.checked);
-            const head = box.querySelector(".availVendorHead .sectionMeta .pillMini:last-child");
-            const n = box.querySelectorAll('input[type="checkbox"]:checked').length;
-            if(head) head.textContent = `${n} to order`;
+          const key = (e.item || "—").trim().toLowerCase();
+          if(!byItem.has(key)) byItem.set(key, { label: e.item || "—", entries: [] });
+          byItem.get(key).entries.push(e);
+        });
+        Array.from(byItem.values()).forEach(group => {
+          group.entries.sort((a,b) => {
+            const as = (a.spec !== "" && a.spec != null && !isNaN(Number(a.spec))) ? Number(a.spec) : null;
+            const bs = (b.spec !== "" && b.spec != null && !isNaN(Number(b.spec))) ? Number(b.spec) : null;
+            if(as == null && bs == null) return 0;
+            if(as == null) return 1;
+            if(bs == null) return -1;
+            return as - bs;
           });
-          row.querySelector(".av_edit").addEventListener("click", () => { openAvailModal(e); });
-          row.querySelector(".av_del").addEventListener("click", () => {
-            if(!confirm(`Delete "${e.item}" from ${vendor}?`)) return;
-            saveAvail(loadAvail().filter(x => x.id !== e.id));
-            const all = loadAvailOrders();
-            for(const k of Object.keys(all)){ if(all[k]) delete all[k][e.id]; }
-            saveAvailOrders(all);
-            markTabChanged("avail");
-            renderAvailability();
+          const groupHead = document.createElement("div");
+          groupHead.className = "availItemGroupHead";
+          groupHead.textContent = group.label;
+          box.appendChild(groupHead);
+          group.entries.forEach(e => {
+            const checked = !!weekOrders[e.id];
+            const row = document.createElement("div");
+            row.className = "availRow" + (checked ? " checked" : "");
+            row.innerHTML = `
+              <div><input type="checkbox" ${checked ? "checked" : ""} title="Mark to order this week"/></div>
+              <button type="button" class="availItemName availItemNameBtn" title="Click for order notes">${escapeHtml(e.spec || "Details")}</button>
+              <div class="availAmt">${escapeHtml(e.amount || "")}</div>
+              <div class="availRowActions">
+                <button class="tinyBtn av_edit">Edit</button>
+                <button class="tinyBtn danger av_del">Delete</button>
+              </div>
+            `;
+            row.querySelector(".availItemNameBtn").addEventListener("click", () => openAvailItemDetail(e));
+            row.querySelector('input[type="checkbox"]').addEventListener("change", (ev) => {
+              const all = loadAvailOrders();
+              all[wk] = all[wk] || {};
+              if(ev.target.checked) all[wk][e.id] = true;
+              else delete all[wk][e.id];
+              saveAvailOrders(all);
+              row.classList.toggle("checked", ev.target.checked);
+              const head = box.querySelector(".availVendorHead .sectionMeta .pillMini:last-child");
+              const n = box.querySelectorAll('input[type="checkbox"]:checked').length;
+              if(head) head.textContent = `${n} to order`;
+            });
+            row.querySelector(".av_edit").addEventListener("click", () => { openAvailModal(e); });
+            row.querySelector(".av_del").addEventListener("click", () => {
+              if(!confirm(`Delete "${e.item}"${e.spec ? ` (${e.spec})` : ""} from ${vendor}?`)) return;
+              saveAvail(loadAvail().filter(x => x.id !== e.id));
+              const all = loadAvailOrders();
+              for(const k of Object.keys(all)){ if(all[k]) delete all[k][e.id]; }
+              saveAvailOrders(all);
+              markTabChanged("avail");
+              renderAvailability();
+            });
+            box.appendChild(row);
           });
-          box.appendChild(row);
         });
         wrap.appendChild(box);
       });
