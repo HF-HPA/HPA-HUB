@@ -1072,6 +1072,7 @@
                     <button id="exportTruckBtn" class="btnGhost" type="button">Truck Order</button>
                     <button id="exportCCBtn" class="btnGhost" type="button">CC Order</button>
                     <button id="exportBreakdownBtn" class="btnGhost" type="button">Order Breakdown</button>
+                    <button id="exportTruckBreakdownBtn" class="btnGhost" type="button">Truck Breakdown</button>
                   </div>
                 </details>
                 <button id="skipWeekBtn" class="btnGhost otcSkipBtn" type="button">🚫 Mark as Skip Week</button>
@@ -2827,6 +2828,8 @@
       const wk = weekKeyFromDate(weekAnchor);
       weekLabelEl.textContent = weekLabel(weekAnchor);
       if(requestDateLabelEl) requestDateLabelEl.textContent = requestDateLabel(weekAnchor);
+      const exportTruckBreakdownBtnEl = document.getElementById("exportTruckBreakdownBtn");
+      if(exportTruckBreakdownBtnEl) exportTruckBreakdownBtnEl.textContent = `Truck Breakdown WK ${isoWeekNumOf(weekAnchor)}`;
       updateSkipWeekUI();
       updateWeekMetaUI();
 
@@ -3636,6 +3639,195 @@
       });
 
       await downloadWorkbook(wb, `order-breakdown_${wk}.xlsx`);
+    });
+
+    /*********************************************************
+     * Export Truck Breakdown — a PDF list of every arrival for
+     * the week (Arrival Date / Truck Type / Vendor / PO number),
+     * grouped per order and color-coded by delivery day.
+     * Arrival (delivery) date = pickup date + 2 days, e.g. a
+     * Monday pickup arrives Wednesday, a Tuesday pickup arrives
+     * Thursday, and so on for every day of the week.
+     *********************************************************/
+    let _jspdfPromise = null;
+    function loadJsPDF(){
+      if(window.jspdf && window.jspdf.jsPDF) return Promise.resolve(window.jspdf.jsPDF);
+      if(_jspdfPromise) return _jspdfPromise;
+      _jspdfPromise = new Promise((resolve, reject) => {
+        const s = document.createElement("script");
+        s.src = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
+        s.onload = () => {
+          if(window.jspdf && window.jspdf.jsPDF) resolve(window.jspdf.jsPDF);
+          else reject(new Error("PDF library loaded but jsPDF wasn't found."));
+        };
+        s.onerror = () => reject(new Error("Could not load the PDF library. Check your internet connection and try again."));
+        document.head.appendChild(s);
+      });
+      return _jspdfPromise;
+    }
+
+    // Delivery (arrival) date = pickup date + 2 days, for every day of the week.
+    function arrivalDateFor(pickupDateStr){
+      const pu = parseDate(pickupDateStr);
+      return pu ? addDays(pu, 2) : null;
+    }
+    const TB_WEEKDAY_ABBR = ["Sun.","Mon.","Tues.","Wed.","Thurs.","Fri.","Sat."];
+    function tbArrivalLabel(d){
+      return `${TB_WEEKDAY_ABBR[d.getDay()]} ${d.getMonth()+1}/${d.getDate()}`;
+    }
+    // One pastel fill per delivery weekday, so the sheet reads at a glance.
+    const TB_DAY_FILL = {
+      0: [233,216,240], // Sun — lavender
+      1: [246,217,196], // Mon — peach
+      2: [248,208,214], // Tue — rose
+      3: [214,232,200], // Wed — green
+      4: [190,227,248], // Thu — blue
+      5: [252,233,168], // Fri — gold
+      6: [214,214,214], // Sat — grey
+    };
+    function tbTruckTypeDisplay(orderType){
+      const t = (orderType || "CC").trim().toUpperCase();
+      const map = {
+        "CC":"CC Racks", "CC RACKS":"CC Racks", "FLOOR STACK":"Floor Stack",
+        "CC/FLOOR STACK":"CC Racks/Floor Stack", "CC RACKS/PALLETS":"CC Racks/Pallets",
+        "PALLETS":"Pallets", "DIRECT SHIP":"Direct Ship"
+      };
+      return map[t] || (orderType || "CC Racks");
+    }
+    // Shrinks the font just enough for `text` to fit `maxWidth`, down to a floor,
+    // so a long vendor name or truck type never spills across a column border.
+    function tbFitText(doc, text, maxWidth, baseSize, floor = 7){
+      let size = baseSize;
+      doc.setFontSize(size);
+      while(size > floor && doc.getTextWidth(text) > maxWidth){
+        size -= 0.5;
+        doc.setFontSize(size);
+      }
+      return size;
+    }
+
+    document.getElementById("exportTruckBreakdownBtn").addEventListener("click", async () => {
+      const wk = weekKeyFromDate(weekAnchor);
+      const weekNum = isoWeekNumOf(weekAnchor);
+      const trucks = loadTrucks().filter(t => t.weekKey === wk && includedInExports(t));
+      if(!trucks.length){ alert("No Homestead/Apopka orders in this week to export.\n(Canada and New Jersey are excluded from the guides.)"); return; }
+
+      let jsPDFCtor;
+      try { jsPDFCtor = await loadJsPDF(); }
+      catch(e){ alert(e.message); return; }
+
+      // One group per order/truck; its vendor blocks share the merged
+      // Arrival Date + Truck Type cells, same as the reference sheet.
+      const groups = trucks.map(t => {
+        const arrival = arrivalDateFor(t.pickupDate);
+        const vendorRows = (t.vendorBlocks || []).length
+          ? t.vendorBlocks.map(vb => ({ vendor: (vb.name||"").trim() || "—", po: (vb.po||"").trim() }))
+          : [{ vendor:"—", po:"" }];
+        return {
+          arrival,
+          arrivalLabel: arrival ? tbArrivalLabel(arrival) : "—",
+          truckType: tbTruckTypeDisplay(t.orderType),
+          vendorRows
+        };
+      }).sort((a,b) => {
+        const at = a.arrival ? a.arrival.getTime() : Infinity;
+        const bt = b.arrival ? b.arrival.getTime() : Infinity;
+        return at - bt;
+      });
+
+      const doc = new jsPDFCtor({ unit:"pt", format:"letter" });
+      const pageW = doc.internal.pageSize.getWidth();
+      const pageBottom = doc.internal.pageSize.getHeight() - 40;
+      const marginX = 40;
+      const tableW = pageW - marginX*2;
+      const colW = { date: tableW*0.19, type: tableW*0.30, vendor: tableW*0.35, po: tableW*0.16 };
+      const colX = {
+        date: marginX,
+        type: marginX + colW.date,
+        vendor: marginX + colW.date + colW.type,
+        po: marginX + colW.date + colW.type + colW.vendor
+      };
+      const PAD = 5;
+      const ROW_H = 20;
+      const HEADER_H = 22;
+
+      // Title
+      doc.setFont("helvetica","bold");
+      doc.setFontSize(22);
+      const title = `WEEK ${weekNum}`;
+      const titleW = doc.getTextWidth(title);
+      let y = 54;
+      doc.setTextColor(0,0,0);
+      doc.text(title, pageW/2, y, { align:"center" });
+      doc.setDrawColor(0,0,0);
+      doc.setLineWidth(1.3);
+      doc.line(pageW/2 - titleW/2 - 2, y+4, pageW/2 + titleW/2 + 2, y+4);
+      y += 24;
+
+      function drawHeader(){
+        doc.setDrawColor(0,0,0);
+        doc.setLineWidth(0.75);
+        doc.setFillColor(191,191,191);
+        doc.rect(marginX, y, tableW, HEADER_H, "F");
+        doc.rect(colX.date, y, colW.date, HEADER_H);
+        doc.rect(colX.type, y, colW.type, HEADER_H);
+        doc.rect(colX.vendor, y, colW.vendor, HEADER_H);
+        doc.rect(colX.po, y, colW.po, HEADER_H);
+        doc.setFont("helvetica","bold");
+        doc.setFontSize(11);
+        doc.setTextColor(0,0,0);
+        doc.text("Arrival Date", colX.date+PAD, y+HEADER_H/2+4);
+        doc.text("Truck Type", colX.type+PAD, y+HEADER_H/2+4);
+        doc.text("Vendor", colX.vendor+PAD, y+HEADER_H/2+4);
+        doc.text("PO number", colX.po+PAD, y+HEADER_H/2+4);
+        y += HEADER_H;
+      }
+      drawHeader();
+
+      groups.forEach(g => {
+        const n = g.vendorRows.length;
+        const groupH = n * ROW_H;
+        if(y + groupH > pageBottom){
+          doc.addPage();
+          y = 40;
+          drawHeader();
+        }
+        const fill = g.arrival ? TB_DAY_FILL[g.arrival.getDay()] : [235,235,235];
+        doc.setFillColor(fill[0], fill[1], fill[2]);
+        doc.rect(marginX, y, tableW, groupH, "F");
+
+        doc.setDrawColor(0,0,0);
+        doc.setLineWidth(0.75);
+        doc.rect(colX.date, y, colW.date, groupH);
+        doc.rect(colX.type, y, colW.type, groupH);
+        doc.setFont("helvetica","normal");
+        doc.setTextColor(0,0,0);
+
+        tbFitText(doc, g.arrivalLabel, colW.date - PAD*2, 10);
+        doc.text(g.arrivalLabel, colX.date+PAD, y+groupH/2+3);
+
+        const typeSize = tbFitText(doc, g.truckType, colW.type - PAD*2, 10);
+        doc.setFontSize(typeSize);
+        doc.text(g.truckType, colX.type+PAD, y+groupH/2+3);
+
+        g.vendorRows.forEach((vr, i) => {
+          const ry = y + i*ROW_H;
+          doc.rect(colX.vendor, ry, colW.vendor, ROW_H);
+          doc.rect(colX.po, ry, colW.po, ROW_H);
+          const vendorSize = tbFitText(doc, vr.vendor, colW.vendor - PAD*2, 10);
+          doc.setFontSize(vendorSize);
+          doc.text(vr.vendor, colX.vendor+PAD, ry+ROW_H/2+3);
+          if(vr.po){
+            const poSize = tbFitText(doc, vr.po, colW.po - PAD*2, 10);
+            doc.setFontSize(poSize);
+            doc.text(vr.po, colX.po+PAD, ry+ROW_H/2+3);
+          }
+        });
+
+        y += groupH;
+      });
+
+      doc.save(`Truck_Breakdown_WK_${weekNum}.pdf`);
     });
 
     /*********************************************************
@@ -5461,9 +5653,12 @@
         const totals = trucks.reduce((a,t) => {
           a.racks += Number(t.totals?.racks||0); a.cases += Number(t.totals?.cases||0);
           a.qty += Number(t.totals?.qty||0); a.price += Number(t.price||0);
-          (t.vendorBlocks||[]).forEach(v => { a.vendors++; if((v.status||"")==="Confirmed") a.confirmed++; else a.open++; });
+          (t.vendorBlocks||[]).forEach(v => {
+            a.vendors++; if((v.status||"")==="Confirmed") a.confirmed++; else a.open++;
+            if((v.po||"").trim()) a.poCount++;
+          });
           return a;
-        }, { racks:0, cases:0, qty:0, price:0, vendors:0, confirmed:0, open:0 });
+        }, { racks:0, cases:0, qty:0, price:0, vendors:0, confirmed:0, open:0, poCount:0 });
 
         const issues = loadIssues();
         const openIssues = issues.filter(i => i.status !== "Resolved").length;
@@ -5481,7 +5676,8 @@
         } catch(_){}
 
         const stats = [
-          { num: trucks.length, lbl:"Orders this week", sub: totals.vendors + " vendor block(s)", accent:"var(--moss)" },
+          { num: totals.poCount, lbl:"Orders this week", sub: totals.poCount===1 ? "1 PO" : totals.poCount + " POs", accent:"var(--moss)" },
+          { num: trucks.length, lbl:"Number of trucks", sub: trucks.length===1 ? "1 truck" : trucks.length + " trucks", accent:"var(--gold)" },
           { num: totals.confirmed + "/" + (totals.confirmed+totals.open), lbl:"Vendors confirmed", sub: totals.open + " still open", accent: totals.open ? "var(--state-warn-fg)" : "var(--state-ok-fg)" },
           { num: totals.racks.toLocaleString(), lbl:"CC racks", sub: totals.qty.toLocaleString() + " plants", accent:"var(--fern)" },
           { num: money(totals.price), lbl:"Trucking spend", sub: trucks.length + " load(s)", accent:"var(--gold)" },
@@ -5535,6 +5731,7 @@
           { icon:"📄", title:"Export Truck Order", tag:"Export", run:()=>{ showPage("order"); document.getElementById("exportTruckBtn")?.click(); } },
           { icon:"📄", title:"Export CC Order", tag:"Export", run:()=>{ showPage("order"); document.getElementById("exportCCBtn")?.click(); } },
           { icon:"📄", title:"Export Order Breakdown", tag:"Export", run:()=>{ showPage("order"); document.getElementById("exportBreakdownBtn")?.click(); } },
+          { icon:"📄", title:"Export Truck Breakdown", tag:"Export", run:()=>{ showPage("order"); document.getElementById("exportTruckBreakdownBtn")?.click(); } },
           { icon:"📥", title:"Import PO Analysis", tag:"Import", run:()=>{ showPage("checkin"); document.getElementById("checkinImportBtn")?.click(); } },
           { icon:"💾", title:"Backup all data", tag:"Data", run:()=>window.HPABackup.export() },
           { icon:"↺", title:"Restore from backup", tag:"Data", run:()=>document.getElementById("restoreBtn")?.click() },
