@@ -370,7 +370,7 @@
     .otcActions .btn{ width:auto; flex:0 0 auto; padding:10px 20px; }
     .otcWeekNav{ display:flex; gap:6px; align-items:center; }
     .otcWeekNav select{ width:auto; }
-    .availDetailSpecInput{ font-family:var(--sans); font-size:15px; font-weight:700; color:var(--moss); background:var(--paper-2); border:1px solid var(--line); border-radius:8px; padding:6px 9px; width:100%; }
+    .availDetailSpecInput{ font-family:var(--sans); font-size:15px; font-weight:700; color:var(--moss); background:var(--paper-2); border:1px solid var(--line); border-radius:8px; padding:6px 9px; width:100%; min-width:0; }
     .availDetailSpecInput:focus{ outline:none; border-color:var(--moss); box-shadow:0 0 0 3px rgba(43,212,154,.15); }
     .otcSkipBtn{ margin-left:auto; border-color:rgba(224,86,63,.35); color:#a8341f; }
 
@@ -1173,6 +1173,7 @@
                 </div>
                 <input id="availSearch" placeholder="Search vendor or item..." />
                 <button id="availAddBtn" class="btn">+ Add Availability</button>
+                <button id="availCreateOrderBtn" class="btnGhost" title="Build a new Order Tracker order from every checked item this week">📦 Create Order from Checked</button>
                 <button id="availExportBtn" class="btnGhost">⬇ Export CSV</button>
               </div>
             </div>
@@ -1360,8 +1361,8 @@
       </div>
       <div class="otcStats" style="margin:4px 0 2px; align-items:flex-start;">
         <div class="otcStat" style="flex:1 1 180px;">
-          <span class="otcStatLabel">Spec size</span>
-          <input type="text" id="availDetailSpecInput" class="availDetailSpecInput" placeholder="e.g., 6&quot; Hanging Baskets" />
+          <span class="otcStatLabel">Spec</span>
+          <input type="number" step="0.5" min="0" inputmode="decimal" id="availDetailSpecInput" class="availDetailSpecInput" />
         </div>
         <div class="otcStat">
           <span class="otcStatLabel">Last order date</span>
@@ -2274,7 +2275,7 @@
       };
     }
 
-    function openTruckModal(truck){
+    function openTruckModal(truck, prefillNewData){
       editingTruckId = truck?.id ?? null;
       const editing = !!editingTruckId;
       truckModalTitle.textContent = editing ? "Edit Order" : "New Order";
@@ -2282,7 +2283,7 @@
       truckDeleteBtn.style.display = editing ? "inline-block" : "none";
       addTruckBtn.style.display = editing ? "none" : "";
       truckBlocksWrap.innerHTML = "";
-      addTruckBlock(editing ? truckToData(truck) : blankTruckData());
+      addTruckBlock(editing ? truckToData(truck) : (prefillNewData || blankTruckData()));
       truckModal.classList.add("active");
       truckModal.setAttribute("aria-hidden","false");
     }
@@ -2480,12 +2481,13 @@
 
     function addItemRowToVendor(tbody, block, itemObj){
       const tr = document.createElement("tr");
+      const avHintHtml = itemObj.avCategory ? `<div class="avRackHint" style="font-size:11px; color:var(--moss); margin-top:3px;"></div>` : "";
       let rackCell;
       if(blockUsesUnitChoice(block)){
         const unit = itemObj.unit || "CC Rack";
-        rackCell = `<td><select class="it_unit" style="margin-bottom:4px;"><option ${unit==="CC Rack"?"selected":""}>CC Rack</option><option ${unit==="Pallet"?"selected":""}>Pallet</option></select><input class="it_racks" type="number" step="1" placeholder="0" value="${escapeHtml(itemObj.racks ?? "")}"></td>`;
+        rackCell = `<td><select class="it_unit" style="margin-bottom:4px;"><option ${unit==="CC Rack"?"selected":""}>CC Rack</option><option ${unit==="Pallet"?"selected":""}>Pallet</option></select><input class="it_racks" type="number" step="1" placeholder="0" value="${escapeHtml(itemObj.racks ?? "")}">${avHintHtml}</td>`;
       } else {
-        rackCell = `<td><input class="it_racks" type="number" step="1" placeholder="0" value="${escapeHtml(itemObj.racks ?? "")}"></td>`;
+        rackCell = `<td><input class="it_racks" type="number" step="1" placeholder="0" value="${escapeHtml(itemObj.racks ?? "")}">${avHintHtml}</td>`;
       }
       let shelvesCell = "";
       if(blockUsesShelves(block)){
@@ -2502,6 +2504,15 @@
       `;
       if(itemObj.substituted){ tr.dataset.substituted = "1"; tr.dataset.subbedFrom = itemObj.subbedFrom || ""; }
       if(itemObj.checked){ tr.dataset.checked = "1"; }
+      // Rack auto-calc bookkeeping — only active on rows created from
+      // checked Availability items (those carry avCategory/avSpec).
+      // "Auto" flags start on and flip off the instant a person types
+      // directly into Racks or Case Count, so a manual correction is
+      // never fought or overwritten.
+      tr.dataset.avCategory = itemObj.avCategory || "";
+      tr.dataset.avSpec = (itemObj.avSpec ?? "");
+      tr.dataset.racksAuto = itemObj.avCategory ? "1" : "0";
+      tr.dataset.casesAuto = itemObj.avCategory ? "1" : "0";
       tr.querySelector("td:last-child button").addEventListener("click", () => {
         tr.remove();
         if(tbody.children.length === 0) addItemRowToVendor(tbody, block, { item:"", racks:"", cases:"", qty:"", notes:"" });
@@ -2514,10 +2525,35 @@
           postsEl.textContent = `Posts: ${racks * 4}`;
         }
       };
+      const tryAutoCalcRack = () => {
+        const cat = tr.dataset.avCategory;
+        const hintEl = tr.querySelector(".avRackHint");
+        if(!cat) return;
+        const itemText = tr.querySelector(".it_item")?.value || "";
+        const rule = findRackRule(cat, itemText, tr.dataset.avSpec);
+        const qtyVal = Number(tr.querySelector(".it_qty")?.value || 0);
+        const racksInput = tr.querySelector(".it_racks");
+        const casesInput = tr.querySelector(".it_cases");
+        if(rule && qtyVal > 0){
+          if(racksInput && tr.dataset.racksAuto === "1") racksInput.value = Math.ceil(qtyVal / rule.plantsPerRack);
+          if(casesInput && rule.traysPerRack && tr.dataset.casesAuto === "1"){
+            const plantsPerTray = rule.plantsPerRack / rule.traysPerRack;
+            casesInput.value = Math.ceil(qtyVal / plantsPerTray);
+          }
+          if(hintEl) hintEl.textContent = `Auto: ${rule.label} — ${rule.plantsPerRack}/rack`;
+        } else if(hintEl){
+          hintEl.textContent = cat ? "No rack guide match — set racks manually" : "";
+        }
+      };
       updateAutoPosts();
+      tryAutoCalcRack();
+      const racksInputEl = tr.querySelector(".it_racks");
+      const casesInputEl = tr.querySelector(".it_cases");
+      if(racksInputEl) racksInputEl.addEventListener("input", () => { tr.dataset.racksAuto = "0"; });
+      if(casesInputEl) casesInputEl.addEventListener("input", () => { tr.dataset.casesAuto = "0"; });
       tr.querySelectorAll("input, select").forEach(inp => {
-        inp.addEventListener("input", () => { updateAutoPosts(); recalcTotals(block); });
-        inp.addEventListener("change", () => { updateAutoPosts(); recalcTotals(block); });
+        inp.addEventListener("input", () => { tryAutoCalcRack(); updateAutoPosts(); recalcTotals(block); });
+        inp.addEventListener("change", () => { tryAutoCalcRack(); updateAutoPosts(); recalcTotals(block); });
       });
       tbody.appendChild(tr);
     }
@@ -2532,7 +2568,21 @@
         });
       });
       const el = block.querySelector(".tb_totals");
-      if(el) el.textContent = `Totals: ${racks.toLocaleString()} racks • ${cases.toLocaleString()} cases • ${qty.toLocaleString()} plants`;
+      if(el){
+        const over = racks > 45;
+        el.textContent = `Totals: ${racks.toLocaleString()} racks • ${cases.toLocaleString()} cases • ${qty.toLocaleString()} plants${over ? `  ⚠ over 45-rack truck limit` : ""}`;
+        if(over){
+          el.style.background = "#fde2e1";
+          el.style.color = "#a4241f";
+          el.style.border = "1px solid #e8a6a3";
+          el.title = "This truck has more than 45 CC racks. Consider splitting items onto another truck with + Add Truck.";
+        } else {
+          el.style.background = "var(--paper-3)";
+          el.style.color = "var(--moss)";
+          el.style.border = "1px solid var(--line)";
+          el.title = "";
+        }
+      }
     }
 
     function readTruckBlock(block){
@@ -3241,6 +3291,55 @@
       if(hasSize(4)) return { shelves:6, posts:4, extenders:0, label:"4\" Foliage" };
       if(hasSize(6)) return { shelves:4, posts:4, extenders:0, label:"6\" Foliage" };
       return null; // 8"/10"/12" foliage are Floor Stack, not CC — intentionally left unmatched
+    }
+
+    /*********************************************************
+     * CC Rack Reference — Total Plants per Rack by category/size,
+     * from the shop's rack guide. Used ONLY to auto-suggest the
+     * Racks (and Case/Tray Count, where known) field on order
+     * lines created from checked Availability items — never on
+     * items typed in normally. The suggestion is always editable
+     * and stops re-calculating the moment you type over it, same
+     * as the pickup-date auto-link elsewhere in this app.
+     *********************************************************/
+    const RACK_REF_DEFAULTS = [
+      // Bromeliads
+      { category:'Bromeliads', label:'2" Minis',       plantsPerRack:420, traysPerRack:21,   shelves:6, extenders:false,
+        match:(t,spec)=> t.includes("mini") || spec===2 },
+      { category:'Bromeliads', label:'4" in clay',      plantsPerRack:225, traysPerRack:15,   shelves:4, extenders:false,
+        match:(t,spec)=> t.includes("clay") || spec===4 },
+      { category:'Bromeliads', label:'6" in cover pot',  plantsPerRack:144, traysPerRack:12,   shelves:3, extenders:true,
+        match:(t,spec)=> t.includes("cover") || spec===6 },
+      { category:'Bromeliads', label:'10" Garden',      plantsPerRack:40,  traysPerRack:null,  shelves:3, extenders:true,
+        match:(t,spec)=> t.includes("garden") || spec===10 },
+      // 6" Foliage — split by plant height (the Spec field)
+      { category:'6" Foliage', label:'Under 13"',  plantsPerRack:216, traysPerRack:18, shelves:5, extenders:false,
+        match:(t,spec)=> t.includes("under 13") || (spec!=null && spec < 13) },
+      { category:'6" Foliage', label:'Around 15"', plantsPerRack:180, traysPerRack:15, shelves:4, extenders:false,
+        match:(t,spec)=> t.includes("around 15") || (spec!=null && spec >= 13 && spec <= 16) },
+      { category:'6" Foliage', label:'Over 15"',   plantsPerRack:144, traysPerRack:12, shelves:3, extenders:false,
+        match:(t,spec)=> t.includes("over 15") || (spec!=null && spec > 16) },
+      // 4" Foliage — always uses the Grower Pot numbers by default.
+      { category:'4" Foliage', label:'4" Foliage', plantsPerRack:525, traysPerRack:21, shelves:6, extenders:false,
+        match:()=> true },
+      // Hanging Baskets — split by basket size
+      { category:'Hanging Baskets', label:'8" Baskets',  plantsPerRack:90,  traysPerRack:null, shelves:4, extenders:false,
+        match:(t,spec)=> t.includes('8"') || spec===8 },
+      { category:'Hanging Baskets', label:'10" Baskets', plantsPerRack:50,  traysPerRack:null, shelves:4, extenders:false,
+        match:(t,spec)=> t.includes('10"') || spec===10 },
+      { category:'Hanging Baskets', label:'6" Baskets',  plantsPerRack:144, traysPerRack:12,   shelves:4, extenders:false,
+        match:(t,spec)=> t.includes('6"') || spec===6 },
+      // 10" Foliage has no rack guide yet — items in that category are
+      // intentionally left unmatched, so Racks stays fully manual.
+    ];
+    function findRackRule(category, itemText, specVal){
+      if(!category) return null;
+      const t = (itemText || "").toLowerCase();
+      const spec = (specVal !== undefined && specVal !== null && specVal !== "" && !isNaN(Number(specVal))) ? Number(specVal) : null;
+      for(const r of RACK_REF_DEFAULTS){
+        if(r.category === category && r.match(t, spec)) return r;
+      }
+      return null;
     }
 
     let _exceljsPromise = null;
@@ -4258,7 +4357,7 @@
       row.className = "availEntryRow";
       row.innerHTML = `
         <input class="ai_item" placeholder='Item (e.g., Monstera Deliciosa)' value="${escapeHtml(item)}">
-        <input class="ai_spec" placeholder='Spec (e.g., 6")' value="${escapeHtml(spec)}">
+        <input class="ai_spec" type="number" step="0.5" min="0" inputmode="decimal" placeholder="Spec (e.g., 12)" value="${escapeHtml(spec)}">
         <input class="ai_amount" placeholder="Amount" value="${escapeHtml(amount)}">
         <button class="tinyBtn danger rmItem" type="button" title="Remove item">x</button>
       `;
@@ -4336,6 +4435,48 @@
         .map(e => ({ Week: wk, Category: e.category, Vendor: e.vendor, Item: e.item, Spec: e.spec || "", Amount: e.amount || "", Ordering: orders[e.id] ? "YES" : "NO" }));
       if(!rows.length){ alert("No availability for this week to export."); return; }
       downloadCSV(`availability_${wk}.csv`, rows, ["Week","Category","Vendor","Item","Spec","Amount","Ordering"]);
+    });
+
+    // Create Order from Checked Items: gathers every item checked "to order"
+    // this Availability week, groups it by vendor, and opens a brand-new
+    // Order Tracker order with vendor + item names pre-filled. Qty, racks,
+    // cases and PO are left blank on purpose — those depend on the plant,
+    // the truck's remaining rack space, and info Availability doesn't
+    // capture, so they stay exactly as manual as a normal new order. The
+    // Availability "Amount" is carried over as a line note for reference.
+    document.getElementById("availCreateOrderBtn").addEventListener("click", () => {
+      const wk = availWeek();
+      const weekEntries = loadAvail().filter(e => e.week === wk);
+      const weekOrders = loadAvailOrders()[wk] || {};
+      const checked = weekEntries.filter(e => weekOrders[e.id]);
+      if(checked.length === 0){
+        alert('No items are checked to order this week yet. Check the items you want on the Availability grid, then click "Create Order from Checked" again.');
+        return;
+      }
+      const byVendor = new Map();
+      for(const e of checked){
+        const v = (e.vendor || "").trim() || "—";
+        if(!byVendor.has(v)) byVendor.set(v, []);
+        byVendor.get(v).push(e);
+      }
+      const vendorBlocks = Array.from(byVendor.keys()).sort((a,b) => a.localeCompare(b)).map(v => ({
+        name: v, po: "", status: "Open",
+        items: byVendor.get(v)
+          .sort((a,b) => (a.item||"").localeCompare(b.item||""))
+          .map(e => ({
+            item: e.item || "", racks: "", cases: "", qty: "",
+            notes: e.amount ? `Available: ${e.amount}` : "",
+            // Carried through only so Racks (and Case Count, where the
+            // rack guide gives a tray count) can auto-suggest once a
+            // Plant Qty is typed in — see findRackRule/tryAutoCalcRack.
+            avCategory: e.category || "", avSpec: e.spec ?? ""
+          }))
+      }));
+      const data = blankTruckData();
+      data.vendorBlocks = vendorBlocks;
+      data.notes = `Created from ${checked.length} checked Availability item(s) — week ${wk}.`;
+      showPage("order");
+      openTruckModal(null, data);
     });
 
     function renderAvailTabs(weekEntries){
@@ -5974,6 +6115,20 @@
         const k = e.key.toLowerCase();
         if((e.metaKey||e.ctrlKey) && k==="k"){ e.preventDefault(); palette&&palette.open(); }
         else if((e.metaKey||e.ctrlKey) && k==="/"){ e.preventDefault(); search&&search.open(); }
+      });
+    })();
+    // Select-on-focus for every text/number/date field in the app — so
+    // clicking or tabbing into a box (e.g. one still showing a default "0")
+    // selects its current value, and typing replaces it instead of appending.
+    (function selectOnFocusEverywhere(){
+      const SELECTABLE_TYPES = ["text","number","date","email","tel","search","url","password"];
+      document.addEventListener("focusin", (e) => {
+        const el = e.target;
+        if(!el || !el.tagName) return;
+        const isTextarea = el.tagName === "TEXTAREA";
+        const isTextInput = el.tagName === "INPUT" && SELECTABLE_TYPES.indexOf(el.type) !== -1;
+        if(!isTextarea && !isTextInput) return;
+        setTimeout(() => { try { el.select(); } catch(_){} }, 0);
       });
     })();
     (function wireBackup(){
