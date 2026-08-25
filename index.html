@@ -123,6 +123,18 @@
     .navDot{ margin-left:auto; flex:none; width:9px; height:9px; border-radius:50%; background:#e0563f; box-shadow:0 0 0 2px rgba(224,86,63,.28); display:none; }
     .navBtn.hasChange .navDot{ display:block; }
     .navSpacer{ flex:1; min-height:10px; }
+    /* Presence — colored initials next to a nav tab for whoever's currently
+       looking at it, and the little "Active Now" popup off the topbar chip. */
+    .navPresence{ display:flex; align-items:center; flex:none; }
+    .navPresenceAvatar{ width:17px; height:17px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:var(--sans); font-size:8px; font-weight:700; color:#04231a; border:1.5px solid rgba(8,29,22,.85); margin-left:-6px; box-shadow:0 0 0 1px rgba(0,0,0,.05); }
+    .navPresence .navPresenceAvatar:first-child{ margin-left:0; }
+    .navPresenceAvatar.navPresenceMore{ background:rgba(255,255,255,.18) !important; color:#eafff5; font-size:7.5px; }
+    .presenceRow{ display:flex; align-items:center; gap:11px; padding:10px 2px; border-top:1px solid var(--line-soft); }
+    .presenceRow:first-child{ border-top:none; }
+    .presenceAvatar{ width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:var(--display); font-weight:700; font-size:12.5px; color:#04231a; flex:none; }
+    .presenceName{ font-weight:600; color:var(--ink); font-size:14px; }
+    .presencePage{ font-size:12px; color:var(--ink-2); margin-top:1px; }
+    .presenceYou{ font-size:11px; font-weight:700; color:var(--moss); margin-left:auto; flex:none; }
     .main{ background:var(--paper); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); padding:20px 22px; overflow:auto; position:relative; }
     .toolbar{ display:flex; align-items:flex-start; justify-content:space-between; gap:10px; margin-bottom:16px; flex-wrap:wrap; padding-bottom:14px; border-bottom:1px solid var(--line); }
     .toolbar h2{ margin:0; font-size:24px; color:var(--ink); }
@@ -231,6 +243,11 @@
     .availItemName{ font-weight:600; color:var(--ink); }
     .availItemNameBtn{ appearance:none; background:none; border:none; padding:0; margin:0; font:inherit; text-align:left; cursor:pointer; text-decoration:underline; text-decoration-color:transparent; transition:text-decoration-color .15s, color .15s; }
     .availItemNameBtn:hover, .availItemNameBtn:focus-visible{ color:var(--moss); text-decoration-color:currentColor; }
+    /* Stands in for the group heading on a merged single-row group (see
+       renderAvailability) — same look as .availItemGroupHead so it still
+       reads as "the nice green name," just on the row instead of above it. */
+    .availItemNameOnly{ color:var(--moss); font-family:var(--display); font-weight:600; font-size:13.5px; }
+    .availItemNameOnly:hover, .availItemNameOnly:focus-visible{ color:var(--moss-deep, var(--moss)); }
     .availAmt{ font-weight:700; color:var(--ink); font-variant-numeric:tabular-nums; text-align:right; }
     .availAmtInput{ font-family:var(--sans); font-size:12.5px; font-weight:600; color:var(--ink); background:transparent; border:none; border-bottom:1px solid transparent; border-radius:0; padding:3px 1px; width:100%; min-width:0; text-align:right; font-variant-numeric:tabular-nums; }
     .availAmtInput:hover{ border-bottom-color:var(--line); }
@@ -866,6 +883,9 @@
         position:absolute; top:4px; right:calc(50% - 15px); margin:0;
         box-shadow:0 0 0 2px rgba(8,26,19,.9), 0 0 6px rgba(224,86,63,.7);
       }
+      /* The compact bottom-nav buttons are icon+label only — no room for
+         initials avatars. Everyone's still visible from the 👥 topbar chip. */
+      .navList .navBtn .navPresence{ display:none; }
       .navList .navBtn:active{ transform:scale(.93); }
       .navList .navBtn.active{
         color:#eafff5;
@@ -949,6 +969,7 @@
     <div id="statusChip" class="chip subtle">Cinematic Jungle</div>
     <div style="display:flex; gap:10px; pointer-events:none;">
       <div id="syncChip" class="chip subtle" role="button" tabindex="0" title="Team sync" style="pointer-events:auto; cursor:pointer;">Sync: off</div>
+      <div id="presenceChip" class="chip subtle" role="button" tabindex="0" title="No one else is online right now" style="pointer-events:auto; cursor:pointer;">👥 0</div>
       <div id="userChip" class="chip subtle">Not signed in</div>
     </div>
   </div>
@@ -991,6 +1012,7 @@
         <div class="navFooter">
           <button id="contrastToggleBtn" class="navBtn" aria-pressed="false">◐ High contrast</button>
           <button id="syncSideBtn" class="navBtn">🔗 Team Sync</button>
+          <button id="presenceSideBtn" class="navBtn">👥 Active Now</button>
           <button id="backupBtn" class="navBtn">💾 Backup all data</button>
           <div class="note sideNote" id="lastBackupNote" style="margin:-4px 4px 4px;"></div>
           <button id="restoreBtn" class="navBtn">↺ Restore from backup</button>
@@ -1375,6 +1397,19 @@
       </div>
       <div class="note" id="availDetailSpecSavedNote" style="margin-top:4px; min-height:16px;"></div>
       <div class="note" id="availDetailLastOrderNote" style="margin-top:6px;"></div>
+    </div>
+  </div>
+
+  <div id="presenceModal" class="modal" aria-hidden="true">
+    <div class="modalCard" style="width:min(400px,94vw);">
+      <div class="modalHead">
+        <div>
+          <h3>Active Now</h3>
+          <div class="note" id="presenceModalSub">No one else is online right now.</div>
+        </div>
+        <button id="presenceCloseBtn" class="closeX">Close</button>
+      </div>
+      <div id="presenceList"></div>
     </div>
   </div>
 
@@ -1878,7 +1913,18 @@
       logo.classList.remove("fade");
       showScreen(login);
       statusChip.textContent = "Login";
+      if(window.HPASync){
+        window.HPASync.clearPresence();
+        window.HPASync.stopPresenceHeartbeat();
+        window.HPASync.presenceMap = {};
+      }
+      if(typeof renderPresence === "function") renderPresence();
     });
+    // Best-effort: drop our presence doc when the tab actually closes/reloads
+    // so we don't linger in the list until PRESENCE_STALE_MS catches up. Not
+    // guaranteed to complete (the browser can tear the page down mid-request),
+    // which is exactly why the staleness check on the reading side exists too.
+    window.addEventListener("pagehide", () => { if(window.HPASync) window.HPASync.clearPresence(); });
 
     /*********************************************************
      * Navigation
@@ -1935,6 +1981,15 @@
       if(key === "checkin") renderCheckIn();
       if(key === "issues") renderIssues();
       if(key === "training") renderTraining();
+      // Presence: reflect the tab switch instantly (locally) and let the
+      // background heartbeat carry it to the rest of the team.
+      if(window.HPASync && window.HPASync.ready){
+        window.HPASync.presenceMap[window.HPASync.clientId] = {
+          name: window.HPASync.user, page: key, updatedAt: Date.now(), client: window.HPASync.clientId
+        };
+        window.HPASync.pushPresence(key);
+      }
+      renderPresence();
     }
     navBtns.forEach(b => b.addEventListener("click", (e) => {
       showPage(b.dataset.page);
@@ -1942,6 +1997,100 @@
       document.getElementById("navMoreBtn")?.setAttribute("aria-expanded", "false");
       document.getElementById("navMoreBtn")?.classList.remove("active");
     }));
+
+    /*********************************************************
+     * Presence — "who's online, and on what tab". Backed by Sync's
+     * presenceMap (one small Firestore doc per active browser tab, see the
+     * Team Sync section below); this part just renders it: the 👥 chip in
+     * the topbar, the popup it opens, and the little initials badges on
+     * each nav tab for whoever's currently looking at it.
+     *********************************************************/
+    const PAGE_LABELS = {
+      dashboard:"Dashboard", order:"Order Tracker", photos:"Photo Library",
+      avail:"Availability", checkin:"Order Check-In", issues:"Issue Tracker", training:"Training Documents"
+    };
+    function presenceInitials(name){
+      const parts = (name || "").trim().split(/\s+/).filter(Boolean);
+      if(parts.length === 0) return "?";
+      if(parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+    function presenceColor(name){
+      const s = name || "?";
+      let hash = 0;
+      for(let i = 0; i < s.length; i++){ hash = (hash * 31 + s.charCodeAt(i)) >>> 0; }
+      return `hsl(${hash % 360}, 62%, 58%)`;
+    }
+    function activePresenceUsers(){
+      const map = (window.HPASync && window.HPASync.presenceMap) || {};
+      const now = Date.now();
+      return Object.keys(map)
+        .map(id => ({ id, ...map[id] }))
+        .filter(u => u && (now - (u.updatedAt || 0)) < PRESENCE_STALE_MS)
+        .sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+    }
+    function renderPresence(){
+      const active = activePresenceUsers();
+      const myClientId = window.HPASync ? window.HPASync.clientId : null;
+
+      const chip = document.getElementById("presenceChip");
+      if(chip){
+        chip.textContent = `👥 ${active.length}`;
+        chip.title = active.length ? `${active.length} active now — click to view` : "No one else is online right now";
+      }
+
+      const listEl = document.getElementById("presenceList");
+      const subEl = document.getElementById("presenceModalSub");
+      if(listEl){
+        listEl.innerHTML = active.length === 0
+          ? `<div class="note">No one else is online right now.</div>`
+          : active.map(u => `
+              <div class="presenceRow">
+                <span class="presenceAvatar" style="background:${presenceColor(u.name)}">${escapeHtml(presenceInitials(u.name))}</span>
+                <div>
+                  <div class="presenceName">${escapeHtml(u.name || "Someone")}</div>
+                  <div class="presencePage">${escapeHtml(PAGE_LABELS[u.page] || "—")}</div>
+                </div>
+                ${u.id === myClientId ? `<span class="presenceYou">You</span>` : ``}
+              </div>`).join("");
+        if(subEl) subEl.textContent = active.length ? `${active.length} teammate${active.length === 1 ? "" : "s"} online` : "No one else is online right now.";
+      }
+
+      const byPage = {};
+      active.forEach(u => { const p = u.page || ""; (byPage[p] || (byPage[p] = [])).push(u); });
+      const MAX_BADGES = 3;
+      navBtns.forEach(b => {
+        let holder = b.querySelector(".navPresence");
+        if(!holder){
+          holder = document.createElement("span");
+          holder.className = "navPresence";
+          const dot = b.querySelector(".navDot");
+          if(dot) b.insertBefore(holder, dot); else b.appendChild(holder);
+        }
+        const users = byPage[b.dataset.page] || [];
+        const shown = users.slice(0, MAX_BADGES);
+        let html = shown.map(u => `<span class="navPresenceAvatar" style="background:${presenceColor(u.name)}" title="${escapeHtml(u.name || "Someone")}">${escapeHtml(presenceInitials(u.name))}</span>`).join("");
+        if(users.length > MAX_BADGES){
+          const overflowNames = users.slice(MAX_BADGES).map(u => u.name || "Someone").join(", ");
+          html += `<span class="navPresenceAvatar navPresenceMore" title="${escapeHtml(overflowNames)}">+${users.length - MAX_BADGES}</span>`;
+        }
+        holder.innerHTML = html;
+      });
+    }
+    const presenceModal = document.getElementById("presenceModal");
+    function openPresenceModal(){
+      renderPresence();
+      presenceModal.classList.add("active");
+      presenceModal.setAttribute("aria-hidden", "false");
+    }
+    function closePresenceModal(){
+      presenceModal.classList.remove("active");
+      presenceModal.setAttribute("aria-hidden", "true");
+    }
+    document.getElementById("presenceChip").addEventListener("click", openPresenceModal);
+    document.getElementById("presenceChip").addEventListener("keydown", (e) => { if(e.key === "Enter" || e.key === " "){ e.preventDefault(); openPresenceModal(); } });
+    document.getElementById("presenceCloseBtn").addEventListener("click", closePresenceModal);
+    presenceModal.addEventListener("click", (e) => { if(e.target === presenceModal) closePresenceModal(); });
 
     /*********************************************************
      * Mobile bottom nav — "More" sheet for Team Sync / Backup / Restore / Log out
@@ -5193,10 +5342,21 @@
             if(bs == null) return -1;
             return as - bs;
           });
-          const groupHead = document.createElement("div");
-          groupHead.className = "availItemGroupHead";
-          groupHead.textContent = group.label;
-          scrollEl.appendChild(groupHead);
+          // When a group is just one entry whose row label would be nothing
+          // but the item name again (Bromeliads — the size is baked into the
+          // name — or any item with no real distinguishing spec), the green
+          // group heading and the row underneath it would show the exact
+          // same name twice. Skip the separate heading for that case and let
+          // the single row itself carry the green styling; groups that do
+          // have real distinguishing info (like size or price sub-rows)
+          // still get the heading as before.
+          const singleUnlabeled = group.entries.length === 1 && availRowLabel(group.entries[0]) === group.label;
+          if(!singleUnlabeled){
+            const groupHead = document.createElement("div");
+            groupHead.className = "availItemGroupHead";
+            groupHead.textContent = group.label;
+            scrollEl.appendChild(groupHead);
+          }
           group.entries.forEach(e => {
             const anyChecked = weekKeys.some(wk => e.weekData[wk].checked);
             const row = document.createElement("div");
@@ -5215,8 +5375,19 @@
                   <input class="availAmtInput" type="text" placeholder="Amt" value="${escapeHtml(wd.amount || "")}" title="This week's amount — saves automatically"/>
                 </div>`;
             }).join("");
+            // For a merged single-row group (see singleUnlabeled above), show
+            // the item name itself here in the same green heading style
+            // instead of the normal dark spec styling — it's standing in for
+            // the group heading, not repeating it. Otherwise, in the rare
+            // case a specific row's label still happens to match the group
+            // heading text (e.g. one item in a multi-size group has no size
+            // on file), show a plain dash instead of the name a second time.
+            const rawLabel = availRowLabel(e);
+            const isDuplicateOfHeading = !singleUnlabeled && rawLabel === group.label;
+            const displayLabel = singleUnlabeled ? rawLabel : (isDuplicateOfHeading ? "—" : rawLabel);
+            const labelClass = "availItemName availItemNameBtn" + (singleUnlabeled ? " availItemNameOnly" : "");
             row.innerHTML = `
-              <button type="button" class="availItemName availItemNameBtn" title="Click for order notes">${escapeHtml(availRowLabel(e))}</button>
+              <button type="button" class="${labelClass}" title="Click for order notes">${escapeHtml(displayLabel)}</button>
               ${weekCellsHtml}
               <div class="availRowActions">${actionsHtml}</div>
             `;
@@ -6071,10 +6242,13 @@
       LS.skipWeeksKey, LS.weekMetaKey
     ];
     const MAX_SYNC_BYTES = 900000; // stay under Firestore's ~1MB document cap
+    const PRESENCE_HEARTBEAT_MS = 25000; // how often we re-announce ourselves
+    const PRESENCE_STALE_MS = 90000;     // how old a presence doc can get before we stop counting it (covers a tab that closed without cleaning up after itself)
 
     const Sync = {
       ready:false, starting:false, fs:null, db:null, col:null,
       photosCol:null, trainingFilesCol:null, _pendingTrainingFiles:{},
+      presenceCol:null, presenceMap:{}, _presenceUnsub:null, _presenceHeartbeatT:null, _presenceTickT:null, _presenceWarned:false,
       clientId: Math.random().toString(36).slice(2),
       user:"someone", _t:{}, _seeded:false, _warned:{},
       lastSent:0, lastReceived:0, lastError:"", pushes:0, applies:0,
@@ -6109,11 +6283,14 @@
           this.photosCol = fs.collection(db, "hubs", this.teamCode(), "photos");
           this.trainingFilesCol = fs.collection(db, "hubs", this.teamCode(), "trainingFiles");
           this.poImportsCol = fs.collection(db, "hubs", this.teamCode(), "poImports");
+          this.presenceCol = fs.collection(db, "hubs", this.teamCode(), "presence");
           this.ready = true; this._seeded = false; this._seededPhotos = false; this._seededTrainingFiles = false; this._seededPoImports = false;
           this.subscribe();
           this.subscribePhotos();
           this.subscribeTrainingFiles();
           this.subscribePoImports();
+          this.subscribePresence();
+          this.startPresenceHeartbeat();
           this.setStatus("on", "Sync: on · " + this.teamCode());
           console.log("[HPA sync] connected ✓");
         } catch(err){
@@ -6254,6 +6431,57 @@
         if(!this.ready || !this.trainingFilesCol) return;
         try{ const { doc, deleteDoc } = this.fs; await deleteDoc(doc(this.trainingFilesCol, id)); }
         catch(e){ console.error("[HPA sync] training file delete failed for", id, e); }
+      },
+
+      /* --- Presence: "who's online, and on what tab" — one tiny doc per active
+       * browser tab (id = a random clientId, not the username, so the same
+       * person open in two tabs shows as two dots rather than clobbering each
+       * other). There's no server-side cleanup when a tab just closes, so a
+       * stale doc is handled on the reading side instead: renderPresence()
+       * (further up this file) ignores anything older than PRESENCE_STALE_MS. */
+      subscribePresence(){
+        const { onSnapshot } = this.fs;
+        if(this._presenceUnsub){ try{ this._presenceUnsub(); }catch(e){} }
+        this._presenceUnsub = onSnapshot(this.presenceCol, (snap) => {
+          const map = {};
+          snap.forEach(d => { map[d.id] = d.data(); });
+          this.presenceMap = map;
+          if(typeof renderPresence === "function") renderPresence();
+        }, (err) => console.error("[HPA sync] presence listener error:", err));
+      },
+      async pushPresence(page){
+        if(!this.ready || !this.presenceCol) return;
+        try{
+          const { doc, setDoc } = this.fs;
+          await setDoc(doc(this.presenceCol, this.clientId), {
+            name: this.user, page: page || "", updatedAt: Date.now(), client: this.clientId
+          });
+        } catch(e){
+          // Best-effort and on a timer — don't spam the console every 25s.
+          // If this is a permissions error, Firestore rules likely need a
+          // rule added for the new hubs/{team}/presence collection (same
+          // pattern as the existing keys/photos/trainingFiles rules).
+          if(!this._presenceWarned){ this._presenceWarned = true; console.warn("[HPA sync] presence push failed (will keep retrying quietly):", e); }
+        }
+      },
+      startPresenceHeartbeat(){
+        this.stopPresenceHeartbeat();
+        this.pushPresence(currentPage);
+        this._presenceHeartbeatT = setInterval(() => this.pushPresence(currentPage), PRESENCE_HEARTBEAT_MS);
+        // Separate from the write heartbeat: this just re-renders on a timer so
+        // someone who vanished (closed their tab) fades out of the list even
+        // without a fresh snapshot arriving to trigger it.
+        this._presenceTickT = setInterval(() => { if(typeof renderPresence === "function") renderPresence(); }, 15000);
+      },
+      stopPresenceHeartbeat(){
+        if(this._presenceHeartbeatT) clearInterval(this._presenceHeartbeatT);
+        if(this._presenceTickT) clearInterval(this._presenceTickT);
+        this._presenceHeartbeatT = null; this._presenceTickT = null;
+      },
+      async clearPresence(){
+        if(!this.ready || !this.presenceCol) return;
+        try{ const { doc, deleteDoc } = this.fs; await deleteDoc(doc(this.presenceCol, this.clientId)); }
+        catch(e){ /* best-effort; staleness filtering cleans this up either way */ }
       },
 
       /* --- PO Analysis imports: one doc per week (id = weekKey), same reasoning as
@@ -6858,6 +7086,13 @@
       if(reconnect) reconnect.addEventListener("click", () => { Sync.ready = false; Sync.starting = false; if(Sync._unsub){ try{ Sync._unsub(); }catch(_){} Sync._unsub = null; } Sync.init({ name: Sync.user }).then(() => Sync.renderModal()); });
       const teamBtn = document.getElementById("syncTeamBtn");
       if(teamBtn) teamBtn.addEventListener("click", () => { Sync.changeTeam(); setTimeout(() => Sync.renderModal(), 300); });
+    })();
+
+    // Mobile hides the whole topbar (including the 👥 presence chip), so the
+    // "More" sheet gets its own entry point to the same Active Now popup.
+    (function wirePresenceSideBtn(){
+      const sideBtn = document.getElementById("presenceSideBtn");
+      if(sideBtn) sideBtn.addEventListener("click", () => openPresenceModal());
     })();
 
     /*********************************************************
