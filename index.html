@@ -370,6 +370,8 @@
     .otcActions .btn{ width:auto; flex:0 0 auto; padding:10px 20px; }
     .otcWeekNav{ display:flex; gap:6px; align-items:center; }
     .otcWeekNav select{ width:auto; }
+    .availDetailSpecInput{ font-family:var(--sans); font-size:15px; font-weight:700; color:var(--moss); background:var(--paper-2); border:1px solid var(--line); border-radius:8px; padding:6px 9px; width:100%; }
+    .availDetailSpecInput:focus{ outline:none; border-color:var(--moss); box-shadow:0 0 0 3px rgba(43,212,154,.15); }
     .otcSkipBtn{ margin-left:auto; border-color:rgba(224,86,63,.35); color:#a8341f; }
 
     .exportMenu{ position:relative; }
@@ -1356,17 +1358,18 @@
         </div>
         <button id="availDetailCloseBtn" class="closeX">Close</button>
       </div>
-      <div class="otcStats" style="margin:4px 0 2px;">
-        <div class="otcStat">
+      <div class="otcStats" style="margin:4px 0 2px; align-items:flex-start;">
+        <div class="otcStat" style="flex:1 1 180px;">
           <span class="otcStatLabel">Spec size</span>
-          <span class="otcStatValue" id="availDetailSpec">—</span>
+          <input type="text" id="availDetailSpecInput" class="availDetailSpecInput" placeholder="e.g., 6&quot; Hanging Baskets" />
         </div>
         <div class="otcStat">
           <span class="otcStatLabel">Last order date</span>
           <span class="otcStatValue" id="availDetailLastOrder">—</span>
         </div>
       </div>
-      <div class="note" id="availDetailLastOrderNote" style="margin-top:10px;"></div>
+      <div class="note" id="availDetailSpecSavedNote" style="margin-top:4px; min-height:16px;"></div>
+      <div class="note" id="availDetailLastOrderNote" style="margin-top:6px;"></div>
     </div>
   </div>
 
@@ -4475,10 +4478,38 @@
       return best;
     }
     const availDetailModal = document.getElementById("availDetailModal");
+    // Saves the spec/size field straight from the popup — no need to open the
+    // full Edit Availability form just to fix a size. Auto-saves when you
+    // click away or hit Enter; Escape reverts without saving.
+    function wireAvailDetailSpecInput(entryId, originalSpec){
+      const input = document.getElementById("availDetailSpecInput");
+      const savedNote = document.getElementById("availDetailSpecSavedNote");
+      input.value = originalSpec || "";
+      savedNote.textContent = "";
+      function commit(){
+        const list = loadAvail();
+        const rec = list.find(x => x.id === entryId);
+        if(!rec) return;
+        const next = input.value.trim();
+        if((rec.spec || "") === next) return;
+        rec.spec = next;
+        saveAvail(list);
+        markTabChanged("avail");
+        renderAvailability(); // refreshes the row behind the popup
+        savedNote.textContent = "Saved ✓";
+        clearTimeout(savedNote._t);
+        savedNote._t = setTimeout(() => { savedNote.textContent = ""; }, 2000);
+      }
+      input.onblur = commit;
+      input.onkeydown = (e) => {
+        if(e.key === "Enter"){ e.preventDefault(); input.blur(); }
+        else if(e.key === "Escape"){ input.value = originalSpec || ""; input.blur(); }
+      };
+    }
     function openAvailItemDetail(entry){
       document.getElementById("availDetailTitle").textContent = entry.item || "Item";
       document.getElementById("availDetailSub").textContent = `${entry.vendor || "—"} · ${entry.category || ""}`;
-      document.getElementById("availDetailSpec").textContent = entry.spec || "—";
+      wireAvailDetailSpecInput(entry.id, entry.spec);
       const last = lastOrderDateForItem(entry.vendor, entry.item);
       const lastEl = document.getElementById("availDetailLastOrder");
       const noteEl = document.getElementById("availDetailLastOrderNote");
