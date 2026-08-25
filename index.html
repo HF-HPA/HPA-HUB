@@ -231,6 +231,9 @@
     .availItemNameBtn{ appearance:none; background:none; border:none; padding:0; margin:0; font:inherit; text-align:left; cursor:pointer; text-decoration:underline; text-decoration-color:transparent; transition:text-decoration-color .15s, color .15s; }
     .availItemNameBtn:hover, .availItemNameBtn:focus-visible{ color:var(--moss); text-decoration-color:currentColor; }
     .availAmt{ font-weight:700; color:var(--ink); font-variant-numeric:tabular-nums; text-align:right; }
+    .availAmtInput{ font-family:var(--sans); font-size:13.5px; font-weight:700; color:var(--ink); background:var(--paper-2); border:1px solid var(--line); border-radius:7px; padding:6px 8px; width:100%; min-width:0; text-align:right; font-variant-numeric:tabular-nums; }
+    .availAmtInput:focus{ outline:none; border-color:var(--moss); box-shadow:0 0 0 3px rgba(43,212,154,.15); }
+    .availAmtInput::placeholder{ font-weight:400; color:var(--ink-2); }
     .availRowActions{ display:flex; gap:6px; justify-content:flex-end; flex-wrap:wrap; }
     .availColHead{ display:grid; grid-template-columns:36px 1fr 90px auto; gap:10px; padding:8px 13px; color:var(--moss); font-size:11.5px; font-weight:600; text-transform:uppercase; letter-spacing:.04em; background:var(--thead); border-bottom:1px solid var(--line); }
     .availColHead .availAmt{ color:var(--moss); font-weight:600; }
@@ -1487,6 +1490,8 @@
       checkinKey:"hpa_checkin_v1",
       availKey:  "hpa_avail_v1",
       availOrdersKey:"hpa_avail_orders_v1",
+      availAmountsKey:"hpa_avail_amounts_v1",
+      availSpecOverridesKey:"hpa_avail_spec_overrides_v1",
       ccRulesKey:"hpa_cc_component_rules_v1",
       catalogKey:"hpa_plant_catalog_v1",
       thumbKey:  "hpa_plant_thumbs_v1",
@@ -3227,10 +3232,14 @@
       const trucks = loadTrucks();
       const photos = loadPhotos();
       const avail  = (LS.get(LS.availKey, []) || []);
+      const availAmounts = LS.get(LS.availAmountsKey, {});
+      const availOrders  = LS.get(LS.availOrdersKey, {});
       const set = new Set();
       trucks.forEach(t => set.add(t.weekKey));
       photos.forEach(p => set.add(p.week));
       avail.forEach(a => set.add(a.week));
+      Object.keys(availAmounts || {}).forEach(wk => set.add(wk));
+      Object.keys(availOrders || {}).forEach(wk => set.add(wk));
       set.add(weekKeyFromDate(new Date()));
       set.add(weekKeyFromDate(weekAnchor));
       set.add(weekKeyFromDate(availAnchor));
@@ -4328,11 +4337,484 @@
     let availActiveCat = AVAIL_CATEGORIES[0];
     let availAnchor = startOfWeek(new Date());
 
+    // Hardcoded plant catalog, pulled from the Hampshire Farms availability
+    // reference sheet. This is the permanent list of vendor + item + size
+    // combinations tracked every week — it does NOT change based on what's
+    // typed in the app. To add, remove, or rename an item, edit this array
+    // directly in the code. Every one of these rows shows up automatically
+    // on every week; Amount and the "want to order" checkbox are the only
+    // things that vary week to week (stored separately below, keyed by a
+    // catalog id + the week). One-off items not on this list can still be
+    // added for just one week via "+ Add Availability".
+    const AVAIL_CATALOG = [
+      // ---- 4" Foliage ----
+      { id:'av_0001', category:'4" Foliage', vendor:'Omega Farms', item:'Assorted 4"', spec:'1.5' },
+      { id:'av_0002', category:'4" Foliage', vendor:'Omega Farms', item:'Assorted 4"', spec:'2.5' },
+      { id:'av_0003', category:'4" Foliage', vendor:'Anchor', item:'Assorted 4"', spec:'1.5' },
+      { id:'av_0004', category:'4" Foliage', vendor:'Anchor', item:'Assorted 4"', spec:'2.5' },
+      { id:'av_0005', category:'4" Foliage', vendor:'Anchor', item:'Orchids', spec:'' },
+      // ---- 6" Foliage ----
+      { id:'av_0006', category:'6" Foliage', vendor:'Anchor', item:'Alocasia Polly', spec:'' },
+      { id:'av_0007', category:'6" Foliage', vendor:'Anchor', item:'Arboricola Mini', spec:'' },
+      { id:'av_0008', category:'6" Foliage', vendor:'Anchor', item:'Aralia Stump Asst', spec:'' },
+      { id:'av_0009', category:'6" Foliage', vendor:'Anchor', item:'Aglaonema Red', spec:'' },
+      { id:'av_0010', category:'6" Foliage', vendor:'Anchor', item:'Aglaonema green', spec:'' },
+      { id:'av_0011', category:'6" Foliage', vendor:'Anchor', item:'Autograph tree', spec:'' },
+      { id:'av_0012', category:'6" Foliage', vendor:'Anchor', item:'Australian Mother Fern', spec:'' },
+      { id:'av_0013', category:'6" Foliage', vendor:'Anchor', item:'Calathea Asst', spec:'' },
+      { id:'av_0014', category:'6" Foliage', vendor:'Anchor', item:'Calathea Peacock', spec:'' },
+      { id:'av_0015', category:'6" Foliage', vendor:'Anchor', item:'Calathea Lancifolia', spec:'' },
+      { id:'av_0016', category:'6" Foliage', vendor:'Anchor', item:'Calathea Beauty Star', spec:'' },
+      { id:'av_0017', category:'6" Foliage', vendor:'Anchor', item:'Calathea Makayana', spec:'' },
+      { id:'av_0018', category:'6" Foliage', vendor:'Anchor', item:'Coffee plant', spec:'' },
+      { id:'av_0019', category:'6" Foliage', vendor:'Anchor', item:'Dieff Asst', spec:'' },
+      { id:'av_0020', category:'6" Foliage', vendor:'Anchor', item:'Dieff Panther', spec:'' },
+      { id:'av_0021', category:'6" Foliage', vendor:'Anchor', item:'Dieff Camo', spec:'' },
+      { id:'av_0022', category:'6" Foliage', vendor:'Anchor', item:'Dieff Starbright', spec:'' },
+      { id:'av_0023', category:'6" Foliage', vendor:'Anchor', item:'Dieff Snow', spec:'' },
+      { id:'av_0024', category:'6" Foliage', vendor:'Anchor', item:'Dieff Compacta', spec:'' },
+      { id:'av_0025', category:'6" Foliage', vendor:'Anchor', item:'Drac Marley', spec:'' },
+      { id:'av_0026', category:'6" Foliage', vendor:'Anchor', item:'Drac Marginata Bush', spec:'' },
+      { id:'av_0027', category:'6" Foliage', vendor:'Anchor', item:'Drac Braid Asst', spec:'' },
+      { id:'av_0028', category:'6" Foliage', vendor:'Anchor', item:'Drac Lemon Lime', spec:'' },
+      { id:'av_0029', category:'6" Foliage', vendor:'Anchor', item:'Drac Kiwi', spec:'' },
+      { id:'av_0030', category:'6" Foliage', vendor:'Anchor', item:'Drac Kiwi Cut-Back', spec:'' },
+      { id:'av_0031', category:'6" Foliage', vendor:'Anchor', item:'Drac Mass cane', spec:'' },
+      { id:'av_0032', category:'6" Foliage', vendor:'Anchor', item:'Drac Janet Craig', spec:'' },
+      { id:'av_0033', category:'6" Foliage', vendor:'Anchor', item:'Ficus Asst', spec:'' },
+      { id:'av_0034', category:'6" Foliage', vendor:'Anchor', item:'Ficus Burgundy', spec:'' },
+      { id:'av_0035', category:'6" Foliage', vendor:'Anchor', item:'Ficus Lyrata', spec:'' },
+      { id:'av_0036', category:'6" Foliage', vendor:'Anchor', item:'Ficus Clump Teneke', spec:'' },
+      { id:'av_0037', category:'6" Foliage', vendor:'Anchor', item:'Ficus Lyrata Bambino', spec:'' },
+      { id:'av_0038', category:'6" Foliage', vendor:'Anchor', item:'Ficus Teneke', spec:'' },
+      { id:'av_0039', category:'6" Foliage', vendor:'Anchor', item:'Hoya Asst', spec:'' },
+      { id:'av_0040', category:'6" Foliage', vendor:'Anchor', item:'Janet Craig Compacta', spec:'' },
+      { id:'av_0041', category:'6" Foliage', vendor:'Anchor', item:'Maranta Asst', spec:'' },
+      { id:'av_0042', category:'6" Foliage', vendor:'Anchor', item:'Maranta Green', spec:'' },
+      { id:'av_0043', category:'6" Foliage', vendor:'Anchor', item:'Maranta Red', spec:'' },
+      { id:'av_0044', category:'6" Foliage', vendor:'Anchor', item:'Monstera Swiss Cheese', spec:'' },
+      { id:'av_0045', category:'6" Foliage', vendor:'Anchor', item:'Monstera Deliciosa', spec:'' },
+      { id:'av_0046', category:'6" Foliage', vendor:'Anchor', item:'Money Tree', spec:'' },
+      { id:'av_0047', category:'6" Foliage', vendor:'Anchor', item:'Mother Fern', spec:'' },
+      { id:'av_0048', category:'6" Foliage', vendor:'Anchor', item:'Pep Asst', spec:'' },
+      { id:'av_0049', category:'6" Foliage', vendor:'Anchor', item:'Peperomia Hope', spec:'' },
+      { id:'av_0050', category:'6" Foliage', vendor:'Anchor', item:'Pep Ginny', spec:'' },
+      { id:'av_0051', category:'6" Foliage', vendor:'Anchor', item:'Pep Green', spec:'' },
+      { id:'av_0052', category:'6" Foliage', vendor:'Anchor', item:'Pep Variegated', spec:'' },
+      { id:'av_0053', category:'6" Foliage', vendor:'Anchor', item:'Peperomia Nevada', spec:'' },
+      { id:'av_0054', category:'6" Foliage', vendor:'Anchor', item:'Pep Frost', spec:'' },
+      { id:'av_0055', category:'6" Foliage', vendor:'Anchor', item:'Pothos Asst', spec:'' },
+      { id:'av_0056', category:'6" Foliage', vendor:'Anchor', item:'Pothos Hawaiian', spec:'' },
+      { id:'av_0057', category:'6" Foliage', vendor:'Anchor', item:'Pothos Shangri La', spec:'' },
+      { id:'av_0058', category:'6" Foliage', vendor:'Anchor', item:'Pothos Marble Queen', spec:'' },
+      { id:'av_0059', category:'6" Foliage', vendor:'Anchor', item:'Pothos Neon', spec:'' },
+      { id:'av_0060', category:'6" Foliage', vendor:'Anchor', item:'Pothos Cebu Blue', spec:'' },
+      { id:'av_0061', category:'6" Foliage', vendor:'Anchor', item:'Pothos Silverstreak', spec:'' },
+      { id:'av_0062', category:'6" Foliage', vendor:'Anchor', item:'Pothos Silvery Ann', spec:'' },
+      { id:'av_0063', category:'6" Foliage', vendor:'Anchor', item:'Ponytail Palm Stump', spec:'' },
+      { id:'av_0064', category:'6" Foliage', vendor:'Anchor', item:'Philo Asst', spec:'' },
+      { id:'av_0065', category:'6" Foliage', vendor:'Anchor', item:'Philo Brasil', spec:'' },
+      { id:'av_0066', category:'6" Foliage', vendor:'Anchor', item:'Philo Brandtianum', spec:'' },
+      { id:'av_0067', category:'6" Foliage', vendor:'Anchor', item:'Philo Painted Lady', spec:'' },
+      { id:'av_0068', category:'6" Foliage', vendor:'Anchor', item:'Philo Micans', spec:'' },
+      { id:'av_0069', category:'6" Foliage', vendor:'Anchor', item:'Philo Ceylon Beauty', spec:'' },
+      { id:'av_0070', category:'6" Foliage', vendor:'Anchor', item:'Philo Hybrid Asst', spec:'' },
+      { id:'av_0071', category:'6" Foliage', vendor:'Anchor', item:'Philo Swiss Cheese', spec:'' },
+      { id:'av_0072', category:'6" Foliage', vendor:'Anchor', item:'Syngonium Asst', spec:'' },
+      { id:'av_0073', category:'6" Foliage', vendor:'Anchor', item:'Staghorn Fern', spec:'' },
+      { id:'av_0074', category:'6" Foliage', vendor:'Anchor', item:'Sans Asst', spec:'' },
+      { id:'av_0075', category:'6" Foliage', vendor:'Anchor', item:'Sans Moonshine', spec:'' },
+      { id:'av_0076', category:'6" Foliage', vendor:'Anchor', item:'Sans Robusta', spec:'' },
+      { id:'av_0077', category:'6" Foliage', vendor:'Anchor', item:'ZZ Plant', spec:'' },
+      { id:'av_0078', category:'6" Foliage', vendor:'Anchor', item:'Yucca Cane', spec:'' },
+      { id:'av_0079', category:'6" Foliage', vendor:'Anchor', item:'White Bird Paradise', spec:'' },
+      { id:'av_0080', category:'6" Foliage', vendor:'Omega Farms', item:'Alocasia Regal Shields', spec:'' },
+      { id:'av_0081', category:'6" Foliage', vendor:'Omega Farms', item:'Alocasia California', spec:'' },
+      { id:'av_0082', category:'6" Foliage', vendor:'Omega Farms', item:'Aglaonema Red/Pink', spec:'' },
+      { id:'av_0083', category:'6" Foliage', vendor:'Omega Farms', item:'Aglaonema Green', spec:'' },
+      { id:'av_0084', category:'6" Foliage', vendor:'Omega Farms', item:'Aralia Stump Asst', spec:'' },
+      { id:'av_0085', category:'6" Foliage', vendor:'Omega Farms', item:'Aralia Stump Parsley', spec:'' },
+      { id:'av_0086', category:'6" Foliage', vendor:'Omega Farms', item:'Aralia Stump Balfour', spec:'' },
+      { id:'av_0087', category:'6" Foliage', vendor:'Omega Farms', item:'Aralia Stump Fabian', spec:'' },
+      { id:'av_0088', category:'6" Foliage', vendor:'Omega Farms', item:'Arboricola Mini', spec:'' },
+      { id:'av_0089', category:'6" Foliage', vendor:'Omega Farms', item:'Arboricola Luseane', spec:'' },
+      { id:'av_0090', category:'6" Foliage', vendor:'Omega Farms', item:'Anthurium', spec:'' },
+      { id:'av_0091', category:'6" Foliage', vendor:'Omega Farms', item:'Areca Palm', spec:'' },
+      { id:'av_0092', category:'6" Foliage', vendor:'Omega Farms', item:'Banana Cutback', spec:'' },
+      { id:'av_0093', category:'6" Foliage', vendor:'Omega Farms', item:'Calathea Asst', spec:'' },
+      { id:'av_0094', category:'6" Foliage', vendor:'Omega Farms', item:'Calathea Burle Marx', spec:'' },
+      { id:'av_0095', category:'6" Foliage', vendor:'Omega Farms', item:'Calathea Beauty Star', spec:'' },
+      { id:'av_0096', category:'6" Foliage', vendor:'Omega Farms', item:'Calthea Makoyanne', spec:'' },
+      { id:'av_0097', category:'6" Foliage', vendor:'Omega Farms', item:'Calathea Medallian', spec:'' },
+      { id:'av_0098', category:'6" Foliage', vendor:'Omega Farms', item:'Calathea Ornata', spec:'' },
+      { id:'av_0099', category:'6" Foliage', vendor:'Omega Farms', item:'Calthea Vitata', spec:'' },
+      { id:'av_0100', category:'6" Foliage', vendor:'Omega Farms', item:'Coffee Plant', spec:'' },
+      { id:'av_0101', category:'6" Foliage', vendor:'Omega Farms', item:'Cordyline', spec:'' },
+      { id:'av_0102', category:'6" Foliage', vendor:'Omega Farms', item:'China Doll', spec:'' },
+      { id:'av_0103', category:'6" Foliage', vendor:'Omega Farms', item:'Croton Petra', spec:'' },
+      { id:'av_0104', category:'6" Foliage', vendor:'Omega Farms', item:'Drac Lemon Lime', spec:'' },
+      { id:'av_0105', category:'6" Foliage', vendor:'Omega Farms', item:'Drac Janet Craig', spec:'' },
+      { id:'av_0106', category:'6" Foliage', vendor:'Omega Farms', item:'Janet Craig Compacta', spec:'' },
+      { id:'av_0107', category:'6" Foliage', vendor:'Omega Farms', item:'Drac Marg bush Asst', spec:'' },
+      { id:'av_0108', category:'6" Foliage', vendor:'Omega Farms', item:'Drac Bi-Color', spec:'' },
+      { id:'av_0109', category:'6" Foliage', vendor:'Omega Farms', item:'Drac Colorama', spec:'' },
+      { id:'av_0110', category:'6" Foliage', vendor:'Omega Farms', item:'Drac Magenta', spec:'' },
+      { id:'av_0111', category:'6" Foliage', vendor:'Omega Farms', item:'Drac Marginata', spec:'' },
+      { id:'av_0112', category:'6" Foliage', vendor:'Omega Farms', item:'Drac Braid Asst', spec:'' },
+      { id:'av_0113', category:'6" Foliage', vendor:'Omega Farms', item:'Drac Kiwi', spec:'' },
+      { id:'av_0114', category:'6" Foliage', vendor:'Omega Farms', item:'Dracaena Lemon Lime', spec:'' },
+      { id:'av_0115', category:'6" Foliage', vendor:'Omega Farms', item:'Dracaena Lemon Surprise', spec:'' },
+      { id:'av_0116', category:'6" Foliage', vendor:'Omega Farms', item:'Dieff Camo', spec:'' },
+      { id:'av_0117', category:'6" Foliage', vendor:'Omega Farms', item:'Dieff Panther', spec:'' },
+      { id:'av_0118', category:'6" Foliage', vendor:'Omega Farms', item:'Dieff Vesuvius', spec:'' },
+      { id:'av_0119', category:'6" Foliage', vendor:'Omega Farms', item:'Dieff Snow', spec:'' },
+      { id:'av_0120', category:'6" Foliage', vendor:'Omega Farms', item:'Dieff Starbright', spec:'' },
+      { id:'av_0121', category:'6" Foliage', vendor:'Omega Farms', item:'Australian Fern', spec:'' },
+      { id:'av_0122', category:'6" Foliage', vendor:'Omega Farms', item:'Staghorn Fern', spec:'' },
+      { id:'av_0123', category:'6" Foliage', vendor:'Omega Farms', item:'Boston Fern', spec:'' },
+      { id:'av_0124', category:'6" Foliage', vendor:'Omega Farms', item:'Macho Fern', spec:'' },
+      { id:'av_0125', category:'6" Foliage', vendor:'Omega Farms', item:'Nevada Fern', spec:'' },
+      { id:'av_0126', category:'6" Foliage', vendor:'Omega Farms', item:'Mother Fern', spec:'' },
+      { id:'av_0127', category:'6" Foliage', vendor:'Omega Farms', item:'Lucky Bamboo Ast', spec:'' },
+      { id:'av_0128', category:'6" Foliage', vendor:'Omega Farms', item:'Ficus Tineke', spec:'' },
+      { id:'av_0129', category:'6" Foliage', vendor:'Omega Farms', item:'Ficus Lyrata', spec:'' },
+      { id:'av_0130', category:'6" Foliage', vendor:'Omega Farms', item:'Ficus Burgundy', spec:'' },
+      { id:'av_0131', category:'6" Foliage', vendor:'Omega Farms', item:'Ficus Ginseng Bonsai', spec:'' },
+      { id:'av_0132', category:'6" Foliage', vendor:'Omega Farms', item:'Ficus Shiveriana/Moonshine', spec:'' },
+      { id:'av_0133', category:'6" Foliage', vendor:'Omega Farms', item:'Ficus Ruby', spec:'' },
+      { id:'av_0134', category:'6" Foliage', vendor:'Omega Farms', item:'Ficus Audrey', spec:'' },
+      { id:'av_0135', category:'6" Foliage', vendor:'Omega Farms', item:'False Aralia', spec:'' },
+      { id:'av_0136', category:'6" Foliage', vendor:'Omega Farms', item:'Hoya Krimson Queen', spec:'' },
+      { id:'av_0137', category:'6" Foliage', vendor:'Omega Farms', item:'Hoya Tricolor', spec:'' },
+      { id:'av_0138', category:'6" Foliage', vendor:'Omega Farms', item:'Monstera Deliciosa', spec:'' },
+      { id:'av_0139', category:'6" Foliage', vendor:'Omega Farms', item:'Swiss Cheese', spec:'' },
+      { id:'av_0140', category:'6" Foliage', vendor:'Omega Farms', item:'Money Tree', spec:'' },
+      { id:'av_0141', category:'6" Foliage', vendor:'Omega Farms', item:'Neathebella Palm', spec:'' },
+      { id:'av_0142', category:'6" Foliage', vendor:'Omega Farms', item:'Nephthytis Asst.', spec:'' },
+      { id:'av_0143', category:'6" Foliage', vendor:'Omega Farms', item:'Peperomia Ginny', spec:'' },
+      { id:'av_0144', category:'6" Foliage', vendor:'Omega Farms', item:'Philodendron Swiss Cheese', spec:'' },
+      { id:'av_0145', category:'6" Foliage', vendor:'Omega Farms', item:'Philodendron Thai Constelation', spec:'' },
+      { id:'av_0146', category:'6" Foliage', vendor:'Omega Farms', item:'Philodendron Brasil', spec:'' },
+      { id:'av_0147', category:'6" Foliage', vendor:'Omega Farms', item:'Philo Cordatum', spec:'' },
+      { id:'av_0148', category:'6" Foliage', vendor:'Omega Farms', item:'Philo Hybrid', spec:'' },
+      { id:'av_0149', category:'6" Foliage', vendor:'Omega Farms', item:'Pothos Asst', spec:'' },
+      { id:'av_0150', category:'6" Foliage', vendor:'Omega Farms', item:'Pothos  Hawaiian (golden)', spec:'' },
+      { id:'av_0151', category:'6" Foliage', vendor:'Omega Farms', item:'Pothos Neon', spec:'' },
+      { id:'av_0152', category:'6" Foliage', vendor:'Omega Farms', item:'Pothos Marble Queen', spec:'' },
+      { id:'av_0153', category:'6" Foliage', vendor:'Omega Farms', item:'Pothos Jade', spec:'' },
+      { id:'av_0154', category:'6" Foliage', vendor:'Omega Farms', item:'Pothos Totum', spec:'' },
+      { id:'av_0155', category:'6" Foliage', vendor:'Omega Farms', item:'Ponytail Palm Stump', spec:'' },
+      { id:'av_0156', category:'6" Foliage', vendor:'Omega Farms', item:'Port Tree Jade', spec:'' },
+      { id:'av_0157', category:'6" Foliage', vendor:'Omega Farms', item:'Sago Palm', spec:'' },
+      { id:'av_0158', category:'6" Foliage', vendor:'Omega Farms', item:'Syngonium Alusion', spec:'' },
+      { id:'av_0159', category:'6" Foliage', vendor:'Omega Farms', item:'Spath with Spikes', spec:'' },
+      { id:'av_0160', category:'6" Foliage', vendor:'Omega Farms', item:'Sanseveria Futurea', spec:'' },
+      { id:'av_0161', category:'6" Foliage', vendor:'Omega Farms', item:'Sanseveria Lauren/Yellowstone', spec:'' },
+      { id:'av_0162', category:'6" Foliage', vendor:'Omega Farms', item:'Sanseveria Moonshine', spec:'' },
+      { id:'av_0163', category:'6" Foliage', vendor:'Omega Farms', item:'Sanseveria Robusta', spec:'' },
+      { id:'av_0164', category:'6" Foliage', vendor:'Omega Farms', item:'Sanseveria Zeylanica', spec:'' },
+      { id:'av_0165', category:'6" Foliage', vendor:'Omega Farms', item:'Yucca Cane', spec:'' },
+      { id:'av_0166', category:'6" Foliage', vendor:'Omega Farms', item:'Yucca Tip', spec:'' },
+      { id:'av_0167', category:'6" Foliage', vendor:'Omega Farms', item:'White Bird Paradise', spec:'' },
+      { id:'av_0168', category:'6" Foliage', vendor:'Omega Farms', item:'ZZ Plant', spec:'' },
+      { id:'av_0169', category:'6" Foliage', vendor:'Omega Farms', item:'ZZ Oscuta (black)', spec:'' },
+      { id:'av_0170', category:'6" Foliage', vendor:'J&D Nursery', item:'Golden Pothos', spec:'' },
+      { id:'av_0171', category:'6" Foliage', vendor:'J&D Nursery', item:'Pothos jade', spec:'' },
+      { id:'av_0172', category:'6" Foliage', vendor:'J&D Nursery', item:'Marble Queen Pothos', spec:'' },
+      { id:'av_0173', category:'6" Foliage', vendor:'J&D Nursery', item:'Neon Pothos', spec:'' },
+      { id:'av_0174', category:'6" Foliage', vendor:'J&D Nursery', item:'Neon Queen Pothos', spec:'' },
+      { id:'av_0175', category:'6" Foliage', vendor:'J&D Nursery', item:'N\'Joy Pothos', spec:'' },
+      { id:'av_0176', category:'6" Foliage', vendor:'J&D Nursery', item:'Philo Brasil', spec:'' },
+      { id:'av_0177', category:'6" Foliage', vendor:'J&D Nursery', item:'Philo Lemon Cordatum', spec:'' },
+      { id:'av_0178', category:'6" Foliage', vendor:'J&D Nursery', item:'Philo Cordatum', spec:'' },
+      { id:'av_0179', category:'6" Foliage', vendor:'J&D Nursery', item:'Philo Micans', spec:'' },
+      { id:'av_0180', category:'6" Foliage', vendor:'J&D Nursery', item:'Spider plant', spec:'' },
+      { id:'av_0181', category:'6" Foliage', vendor:'J&D Nursery', item:'Syngonium', spec:'' },
+      { id:'av_0182', category:'6" Foliage', vendor:'J&D Nursery', item:'Swiss Cheese', spec:'' },
+      // ---- 10" Foliage ----
+      { id:'av_0183', category:'10" Foliage', vendor:'St. Germain Farms', item:'Aglaonema Silverbay', spec:'' },
+      { id:'av_0184', category:'10" Foliage', vendor:'St. Germain Farms', item:'Aglaonema BJ Freeman', spec:'' },
+      { id:'av_0185', category:'10" Foliage', vendor:'St. Germain Farms', item:'Alocasia Portora', spec:'' },
+      { id:'av_0186', category:'10" Foliage', vendor:'St. Germain Farms', item:'Alocasia Regal Shield', spec:'' },
+      { id:'av_0187', category:'10" Foliage', vendor:'St. Germain Farms', item:'Cat Palm', spec:'' },
+      { id:'av_0188', category:'10" Foliage', vendor:'St. Germain Farms', item:'Cordyline Red pepper', spec:'' },
+      { id:'av_0189', category:'10" Foliage', vendor:'St. Germain Farms', item:'Cordyline Auntie Lou', spec:'' },
+      { id:'av_0190', category:'10" Foliage', vendor:'St. Germain Farms', item:'Cordyline Maria', spec:'' },
+      { id:'av_0191', category:'10" Foliage', vendor:'St. Germain Farms', item:'Cordyline Harlequinn', spec:'' },
+      { id:'av_0192', category:'10" Foliage', vendor:'St. Germain Farms', item:'Cordyline Florica', spec:'' },
+      { id:'av_0193', category:'10" Foliage', vendor:'St. Germain Farms', item:'Cordyline Red Sister', spec:'' },
+      { id:'av_0194', category:'10" Foliage', vendor:'St. Germain Farms', item:'Dracena Marginata Asst', spec:'' },
+      { id:'av_0195', category:'10" Foliage', vendor:'St. Germain Farms', item:'Drac Colorama', spec:'' },
+      { id:'av_0196', category:'10" Foliage', vendor:'St. Germain Farms', item:'Dracaena Kiwi', spec:'' },
+      { id:'av_0197', category:'10" Foliage', vendor:'St. Germain Farms', item:'Dracaena Magenta', spec:'' },
+      { id:'av_0198', category:'10" Foliage', vendor:'St. Germain Farms', item:'Dracena Lemon Lime', spec:'' },
+      { id:'av_0199', category:'10" Foliage', vendor:'St. Germain Farms', item:'Dracena Rikki', spec:'' },
+      { id:'av_0200', category:'10" Foliage', vendor:'St. Germain Farms', item:'Drac Marley', spec:'' },
+      { id:'av_0201', category:'10" Foliage', vendor:'St. Germain Farms', item:'Dieff Panther', spec:'' },
+      { id:'av_0202', category:'10" Foliage', vendor:'St. Germain Farms', item:'Dieff Camo', spec:'' },
+      { id:'av_0203', category:'10" Foliage', vendor:'St. Germain Farms', item:'Dief Marianne', spec:'' },
+      { id:'av_0204', category:'10" Foliage', vendor:'St. Germain Farms', item:'Dieff Snow', spec:'' },
+      { id:'av_0205', category:'10" Foliage', vendor:'St. Germain Farms', item:'Ficus Audrey', spec:'' },
+      { id:'av_0206', category:'10" Foliage', vendor:'St. Germain Farms', item:'Ficus Lyrata 1ppp', spec:'' },
+      { id:'av_0207', category:'10" Foliage', vendor:'St. Germain Farms', item:'Ficus Tineke 2ppp', spec:'' },
+      { id:'av_0208', category:'10" Foliage', vendor:'St. Germain Farms', item:'Ficus Ruby', spec:'' },
+      { id:'av_0209', category:'10" Foliage', vendor:'St. Germain Farms', item:'Ficus Burgundy 2ppp', spec:'' },
+      { id:'av_0210', category:'10" Foliage', vendor:'St. Germain Farms', item:'Heliconia Choconiana', spec:'' },
+      { id:'av_0211', category:'10" Foliage', vendor:'St. Germain Farms', item:'Majesty Palm', spec:'' },
+      { id:'av_0212', category:'10" Foliage', vendor:'St. Germain Farms', item:'Mass Cane Asst', spec:'' },
+      { id:'av_0213', category:'10" Foliage', vendor:'St. Germain Farms', item:'Monstera Deliciosa', spec:'' },
+      { id:'av_0214', category:'10" Foliage', vendor:'St. Germain Farms', item:'Money Tree', spec:'' },
+      { id:'av_0215', category:'10" Foliage', vendor:'St. Germain Farms', item:'Philo Green Congo', spec:'' },
+      { id:'av_0216', category:'10" Foliage', vendor:'St. Germain Farms', item:'Philodendron Hope', spec:'' },
+      { id:'av_0217', category:'10" Foliage', vendor:'St. Germain Farms', item:'Ponytail Stump', spec:'' },
+      { id:'av_0218', category:'10" Foliage', vendor:'St. Germain Farms', item:'Sansevieria Robusta', spec:'' },
+      { id:'av_0219', category:'10" Foliage', vendor:'St. Germain Farms', item:'Sansevieria Laurentii', spec:'' },
+      { id:'av_0220', category:'10" Foliage', vendor:'St. Germain Farms', item:'Sanseveria Zeylanica', spec:'' },
+      { id:'av_0221', category:'10" Foliage', vendor:'St. Germain Farms', item:'Sanseveria Asst', spec:'' },
+      { id:'av_0222', category:'10" Foliage', vendor:'St. Germain Farms', item:'Yucca Cane Single', spec:'' },
+      { id:'av_0223', category:'10" Foliage', vendor:'Legacy Foliage', item:'Alocasia California', spec:'' },
+      { id:'av_0224', category:'10" Foliage', vendor:'Legacy Foliage', item:'Alocasia Portora', spec:'' },
+      { id:'av_0225', category:'10" Foliage', vendor:'Legacy Foliage', item:'Alocasia Regal Shields', spec:'' },
+      { id:'av_0226', category:'10" Foliage', vendor:'Legacy Foliage', item:'Schef Amate', spec:'' },
+      { id:'av_0227', category:'10" Foliage', vendor:'Legacy Foliage', item:'Arboricola Green', spec:'' },
+      { id:'av_0228', category:'10" Foliage', vendor:'Legacy Foliage', item:'Ag Silverbay', spec:'' },
+      { id:'av_0229', category:'10" Foliage', vendor:'Legacy Foliage', item:'Calathea Lubersii', spec:'' },
+      { id:'av_0230', category:'10" Foliage', vendor:'Legacy Foliage', item:'Cordyline Florica', spec:'' },
+      { id:'av_0231', category:'10" Foliage', vendor:'Legacy Foliage', item:'Cordyline Maria', spec:'' },
+      { id:'av_0232', category:'10" Foliage', vendor:'Legacy Foliage', item:'Croton Petra', spec:'' },
+      { id:'av_0233', category:'10" Foliage', vendor:'Legacy Foliage', item:'Croton Gold Dust', spec:'' },
+      { id:'av_0234', category:'10" Foliage', vendor:'Legacy Foliage', item:'Chinese fan palm', spec:'' },
+      { id:'av_0235', category:'10" Foliage', vendor:'Legacy Foliage', item:'China Doll', spec:'' },
+      { id:'av_0236', category:'10" Foliage', vendor:'Legacy Foliage', item:'Cat Palm', spec:'' },
+      { id:'av_0237', category:'10" Foliage', vendor:'Legacy Foliage', item:'Dieff Panther', spec:'' },
+      { id:'av_0238', category:'10" Foliage', vendor:'Legacy Foliage', item:'Drac Marg Green', spec:'' },
+      { id:'av_0239', category:'10" Foliage', vendor:'Legacy Foliage', item:'Drac Magenta', spec:'' },
+      { id:'av_0240', category:'10" Foliage', vendor:'Legacy Foliage', item:'Drac Kiwi', spec:'' },
+      { id:'av_0241', category:'10" Foliage', vendor:'Legacy Foliage', item:'Drac Colorama', spec:'' },
+      { id:'av_0242', category:'10" Foliage', vendor:'Legacy Foliage', item:'Drac Lemon Lime', spec:'' },
+      { id:'av_0243', category:'10" Foliage', vendor:'Legacy Foliage', item:'Drac Marley (Gigantum)', spec:'' },
+      { id:'av_0244', category:'10" Foliage', vendor:'Legacy Foliage', item:'Drac Janet craig', spec:'' },
+      { id:'av_0245', category:'10" Foliage', vendor:'Legacy Foliage', item:'Drac Hawaiian Sunshine', spec:'' },
+      { id:'av_0246', category:'10" Foliage', vendor:'Legacy Foliage', item:'Drac Santa Rosa', spec:'' },
+      { id:'av_0247', category:'10" Foliage', vendor:'Legacy Foliage', item:'Dracena Rikki', spec:'' },
+      { id:'av_0248', category:'10" Foliage', vendor:'Legacy Foliage', item:'Dracaena Warnekii', spec:'' },
+      { id:'av_0249', category:'10" Foliage', vendor:'Legacy Foliage', item:'False Aralia', spec:'' },
+      { id:'av_0250', category:'10" Foliage', vendor:'Legacy Foliage', item:'Ficus Lyrata 1pp', spec:'' },
+      { id:'av_0251', category:'10" Foliage', vendor:'Legacy Foliage', item:'Ficus Lyrata 2pp', spec:'' },
+      { id:'av_0252', category:'10" Foliage', vendor:'Legacy Foliage', item:'Ficus Burgundy 2-3ppp', spec:'' },
+      { id:'av_0253', category:'10" Foliage', vendor:'Legacy Foliage', item:'Ficus Susanna', spec:'' },
+      { id:'av_0254', category:'10" Foliage', vendor:'Legacy Foliage', item:'Ficus Tineke', spec:'' },
+      { id:'av_0255', category:'10" Foliage', vendor:'Legacy Foliage', item:'Heliconia', spec:'' },
+      { id:'av_0256', category:'10" Foliage', vendor:'Legacy Foliage', item:'Majesty Palm', spec:'' },
+      { id:'av_0257', category:'10" Foliage', vendor:'Legacy Foliage', item:'Mass Cane Fat 24"', spec:'' },
+      { id:'av_0258', category:'10" Foliage', vendor:'Legacy Foliage', item:'Mass Cane Single', spec:'' },
+      { id:'av_0259', category:'10" Foliage', vendor:'Legacy Foliage', item:'Mass Cane Stump', spec:'' },
+      { id:'av_0260', category:'10" Foliage', vendor:'Legacy Foliage', item:'Monstera', spec:'' },
+      { id:'av_0261', category:'10" Foliage', vendor:'Legacy Foliage', item:'Money Tree', spec:'' },
+      { id:'av_0262', category:'10" Foliage', vendor:'Legacy Foliage', item:'Yucca Cane Single', spec:'' },
+      { id:'av_0263', category:'10" Foliage', vendor:'Legacy Foliage', item:'Var Yucca Bush', spec:'' },
+      { id:'av_0264', category:'10" Foliage', vendor:'Legacy Foliage', item:'Yucca bush', spec:'' },
+      { id:'av_0265', category:'10" Foliage', vendor:'Legacy Foliage', item:'Philo Hope', spec:'' },
+      { id:'av_0266', category:'10" Foliage', vendor:'Legacy Foliage', item:'Philo Lickety Split', spec:'' },
+      { id:'av_0267', category:'10" Foliage', vendor:'Legacy Foliage', item:'Philo Selloum', spec:'' },
+      { id:'av_0268', category:'10" Foliage', vendor:'Legacy Foliage', item:'Ponytail palm cluster', spec:'' },
+      { id:'av_0269', category:'10" Foliage', vendor:'Legacy Foliage', item:'Amate', spec:'12' },
+      { id:'av_0270', category:'10" Foliage', vendor:'Legacy Foliage', item:'Adonidia Palm', spec:'12' },
+      { id:'av_0271', category:'10" Foliage', vendor:'Legacy Foliage', item:'Chinese Fan Palm', spec:'12' },
+      { id:'av_0272', category:'10" Foliage', vendor:'Legacy Foliage', item:'Cordyline Atts', spec:'12' },
+      { id:'av_0273', category:'10" Foliage', vendor:'Legacy Foliage', item:'Ficus Lyrata', spec:'12' },
+      { id:'av_0274', category:'10" Foliage', vendor:'Legacy Foliage', item:'Ficus Audrey', spec:'12' },
+      { id:'av_0275', category:'10" Foliage', vendor:'Legacy Foliage', item:'Majesty', spec:'12' },
+      { id:'av_0276', category:'10" Foliage', vendor:'Legacy Foliage', item:'White Bird', spec:'12' },
+      { id:'av_0277', category:'10" Foliage', vendor:'Omega Farms', item:'Aglaonema Red Varieties', spec:'' },
+      { id:'av_0278', category:'10" Foliage', vendor:'Omega Farms', item:'Ag Silverbay', spec:'' },
+      { id:'av_0279', category:'10" Foliage', vendor:'Omega Farms', item:'Aglaonema stripes', spec:'' },
+      { id:'av_0280', category:'10" Foliage', vendor:'Omega Farms', item:'Alocasia Calidora', spec:'' },
+      { id:'av_0281', category:'10" Foliage', vendor:'Omega Farms', item:'Alocasia Macorhiza', spec:'' },
+      { id:'av_0282', category:'10" Foliage', vendor:'Omega Farms', item:'Alocasia California', spec:'' },
+      { id:'av_0283', category:'10" Foliage', vendor:'Omega Farms', item:'Alocasia Regal Shield', spec:'' },
+      { id:'av_0284', category:'10" Foliage', vendor:'Omega Farms', item:'Aralia Elegantissima', spec:'' },
+      { id:'av_0285', category:'10" Foliage', vendor:'Omega Farms', item:'Aralia Stump Fabian', spec:'' },
+      { id:'av_0286', category:'10" Foliage', vendor:'Omega Farms', item:'Aralia Stump Parsley', spec:'' },
+      { id:'av_0287', category:'10" Foliage', vendor:'Omega Farms', item:'Arboricloa Green', spec:'' },
+      { id:'av_0288', category:'10" Foliage', vendor:'Omega Farms', item:'Areca Palm', spec:'' },
+      { id:'av_0289', category:'10" Foliage', vendor:'Omega Farms', item:'Banana Encentii', spec:'' },
+      { id:'av_0290', category:'10" Foliage', vendor:'Omega Farms', item:'Banana Musa Green', spec:'' },
+      { id:'av_0291', category:'10" Foliage', vendor:'Omega Farms', item:'Calathea', spec:'' },
+      { id:'av_0292', category:'10" Foliage', vendor:'Omega Farms', item:'Cat Palm', spec:'' },
+      { id:'av_0293', category:'10" Foliage', vendor:'Omega Farms', item:'Chinese Fan Palm', spec:'' },
+      { id:'av_0294', category:'10" Foliage', vendor:'Omega Farms', item:'Coconut Palm', spec:'' },
+      { id:'av_0295', category:'10" Foliage', vendor:'Omega Farms', item:'Cordyline Maria', spec:'' },
+      { id:'av_0296', category:'10" Foliage', vendor:'Omega Farms', item:'Cordyline red pepper', spec:'' },
+      { id:'av_0297', category:'10" Foliage', vendor:'Omega Farms', item:'Cordyline Auntie Lou', spec:'' },
+      { id:'av_0298', category:'10" Foliage', vendor:'Omega Farms', item:'Cordyline Florica', spec:'' },
+      { id:'av_0299', category:'10" Foliage', vendor:'Omega Farms', item:'Croton Petra', spec:'' },
+      { id:'av_0300', category:'10" Foliage', vendor:'Omega Farms', item:'Dieffenbachia Panther', spec:'' },
+      { id:'av_0301', category:'10" Foliage', vendor:'Omega Farms', item:'Dieff Marianne', spec:'' },
+      { id:'av_0302', category:'10" Foliage', vendor:'Omega Farms', item:'Dieff Camoflouge', spec:'' },
+      { id:'av_0303', category:'10" Foliage', vendor:'Omega Farms', item:'Dieff Cheetah', spec:'' },
+      { id:'av_0304', category:'10" Foliage', vendor:'Omega Farms', item:'Dieff Starbright', spec:'' },
+      { id:'av_0305', category:'10" Foliage', vendor:'Omega Farms', item:'Drac Staggered Asst', spec:'' },
+      { id:'av_0306', category:'10" Foliage', vendor:'Omega Farms', item:'Drac Marginata Twist', spec:'' },
+      { id:'av_0307', category:'10" Foliage', vendor:'Omega Farms', item:'Drac Marginata', spec:'' },
+      { id:'av_0308', category:'10" Foliage', vendor:'Omega Farms', item:'Drac Magenta', spec:'' },
+      { id:'av_0309', category:'10" Foliage', vendor:'Omega Farms', item:'Drac  Colorama', spec:'' },
+      { id:'av_0310', category:'10" Foliage', vendor:'Omega Farms', item:'Drac Bicolor', spec:'' },
+      { id:'av_0311', category:'10" Foliage', vendor:'Omega Farms', item:'Dracaena Kiwi', spec:'' },
+      { id:'av_0312', category:'10" Foliage', vendor:'Omega Farms', item:'Drac JCC Compacta', spec:'' },
+      { id:'av_0313', category:'10" Foliage', vendor:'Omega Farms', item:'Drac Lemon Lime 2pp', spec:'' },
+      { id:'av_0314', category:'10" Foliage', vendor:'Omega Farms', item:'Dracaena Green Jewel', spec:'' },
+      { id:'av_0315', category:'10" Foliage', vendor:'Omega Farms', item:'Dracaena Fork Stump', spec:'' },
+      { id:'av_0316', category:'10" Foliage', vendor:'Omega Farms', item:'Drac Mass Cane 1ppp', spec:'' },
+      { id:'av_0317', category:'10" Foliage', vendor:'Omega Farms', item:'Fatsia Japonica', spec:'' },
+      { id:'av_0318', category:'10" Foliage', vendor:'Omega Farms', item:'Ficus Audrey 2pp', spec:'' },
+      { id:'av_0319', category:'10" Foliage', vendor:'Omega Farms', item:'Ficus Audrey Std', spec:'' },
+      { id:'av_0320', category:'10" Foliage', vendor:'Omega Farms', item:'Ficus Burgundy', spec:'' },
+      { id:'av_0321', category:'10" Foliage', vendor:'Omega Farms', item:'Ficus Tineke', spec:'' },
+      { id:'av_0322', category:'10" Foliage', vendor:'Omega Farms', item:'Ficus Tineke STD', spec:'' },
+      { id:'av_0323', category:'10" Foliage', vendor:'Omega Farms', item:'Ficus Lyrata 1ppp Column', spec:'' },
+      { id:'av_0324', category:'10" Foliage', vendor:'Omega Farms', item:'Ficus Lyrata Twist', spec:'' },
+      { id:'av_0325', category:'10" Foliage', vendor:'Omega Farms', item:'Ficus Elastica Twist', spec:'' },
+      { id:'av_0326', category:'10" Foliage', vendor:'Omega Farms', item:'Ficus Ruby 2ppp', spec:'' },
+      { id:'av_0327', category:'10" Foliage', vendor:'Omega Farms', item:'Ficus Tineke 2ppp', spec:'' },
+      { id:'av_0328', category:'10" Foliage', vendor:'Omega Farms', item:'Hoya Trellis', spec:'' },
+      { id:'av_0329', category:'10" Foliage', vendor:'Omega Farms', item:'Kim Queen Fern', spec:'' },
+      { id:'av_0330', category:'10" Foliage', vendor:'Omega Farms', item:'Lubersai', spec:'' },
+      { id:'av_0331', category:'10" Foliage', vendor:'Omega Farms', item:'Macho Fern', spec:'' },
+      { id:'av_0332', category:'10" Foliage', vendor:'Omega Farms', item:'Majesty Palm', spec:'' },
+      { id:'av_0333', category:'10" Foliage', vendor:'Omega Farms', item:'Money Tree', spec:'' },
+      { id:'av_0334', category:'10" Foliage', vendor:'Omega Farms', item:'Monstera Deliciosa', spec:'' },
+      { id:'av_0335', category:'10" Foliage', vendor:'Omega Farms', item:'Norfolk Island Pine', spec:'' },
+      { id:'av_0336', category:'10" Foliage', vendor:'Omega Farms', item:'Philo Totum Asst', spec:'' },
+      { id:'av_0337', category:'10" Foliage', vendor:'Omega Farms', item:'Philo Swiss Cheese Totum', spec:'' },
+      { id:'av_0338', category:'10" Foliage', vendor:'Omega Farms', item:'Philo Asst Trellis', spec:'' },
+      { id:'av_0339', category:'10" Foliage', vendor:'Omega Farms', item:'Philo Thai Constellation', spec:'' },
+      { id:'av_0340', category:'10" Foliage', vendor:'Omega Farms', item:'Ponytail Palm Stump', spec:'' },
+      { id:'av_0341', category:'10" Foliage', vendor:'Omega Farms', item:'Portulacaria', spec:'' },
+      { id:'av_0342', category:'10" Foliage', vendor:'Omega Farms', item:'Pothos Totem', spec:'' },
+      { id:'av_0343', category:'10" Foliage', vendor:'Omega Farms', item:'Sans Zeylanica', spec:'' },
+      { id:'av_0344', category:'10" Foliage', vendor:'Omega Farms', item:'Sans Lauren', spec:'' },
+      { id:'av_0345', category:'10" Foliage', vendor:'Omega Farms', item:'Sans Laurentii', spec:'' },
+      { id:'av_0346', category:'10" Foliage', vendor:'Omega Farms', item:'Sanseveria Wintergreen', spec:'' },
+      { id:'av_0347', category:'10" Foliage', vendor:'Omega Farms', item:'Schefflera Amate', spec:'' },
+      { id:'av_0348', category:'10" Foliage', vendor:'Omega Farms', item:'Schef Mini Column', spec:'' },
+      { id:'av_0349', category:'10" Foliage', vendor:'Omega Farms', item:'Spath with Spikcs', spec:'' },
+      { id:'av_0350', category:'10" Foliage', vendor:'Omega Farms', item:'Spathiphyllum Sensation', spec:'' },
+      { id:'av_0351', category:'10" Foliage', vendor:'Omega Farms', item:'Syngonium Totum', spec:'' },
+      { id:'av_0352', category:'10" Foliage', vendor:'Omega Farms', item:'White Bird 1ppp', spec:'' },
+      { id:'av_0353', category:'10" Foliage', vendor:'Omega Farms', item:'White Bird 2ppp', spec:'' },
+      { id:'av_0354', category:'10" Foliage', vendor:'Omega Farms', item:'White Bird 3ppp', spec:'' },
+      { id:'av_0355', category:'10" Foliage', vendor:'Omega Farms', item:'Yucca Cane single', spec:'' },
+      { id:'av_0356', category:'10" Foliage', vendor:'Omega Farms', item:'ZZ plant', spec:'' },
+      { id:'av_0357', category:'10" Foliage', vendor:'Anchor', item:'8" Aglaonema Green', spec:'' },
+      { id:'av_0358', category:'10" Foliage', vendor:'Anchor', item:'Aralia Stump Asst', spec:'' },
+      { id:'av_0359', category:'10" Foliage', vendor:'Anchor', item:'Calathea Asst', spec:'' },
+      { id:'av_0360', category:'10" Foliage', vendor:'Anchor', item:'Dieffenbachia Assorted', spec:'' },
+      { id:'av_0361', category:'10" Foliage', vendor:'Anchor', item:'Dracena Kiwil', spec:'' },
+      { id:'av_0362', category:'10" Foliage', vendor:'Anchor', item:'Ficus Burgundy', spec:'' },
+      { id:'av_0363', category:'10" Foliage', vendor:'Anchor', item:'Ficus Tineke/Ruby/Burg', spec:'' },
+      { id:'av_0364', category:'10" Foliage', vendor:'Anchor', item:'Sanseviera Asst', spec:'' },
+      { id:'av_0365', category:'10" Foliage', vendor:'Anchor', item:'Monstera', spec:'' },
+      { id:'av_0367', category:'10" Foliage', vendor:'Diaz', item:'Arboricola Capella Std', spec:'' },
+      { id:'av_0368', category:'10" Foliage', vendor:'Diaz', item:'Arboricola braid', spec:'' },
+      { id:'av_0369', category:'10" Foliage', vendor:'Diaz', item:'Marginata Bush', spec:'' },
+      { id:'av_0370', category:'10" Foliage', vendor:'Diaz', item:'Marginata staggared', spec:'' },
+      { id:'av_0371', category:'10" Foliage', vendor:'Diaz', item:'Ficus Moclame braid', spec:'' },
+      { id:'av_0372', category:'10" Foliage', vendor:'Diaz', item:'Ficus Ali Braid', spec:'' },
+      { id:'av_0373', category:'10" Foliage', vendor:'Diaz', item:'Ficus Benjamina Std', spec:'' },
+      { id:'av_0374', category:'10" Foliage', vendor:'Diaz', item:'Ficus Benjamina Braid', spec:'' },
+      { id:'av_0375', category:'10" Foliage', vendor:'Diaz', item:'Cranium Lily', spec:'' },
+      // ---- Hanging Baskets ----
+      { id:'av_0376', category:'Hanging Baskets', vendor:'J&D Nursery', item:'Golden Pothos', spec:'6' },
+      { id:'av_0377', category:'Hanging Baskets', vendor:'J&D Nursery', item:'Pothos jade', spec:'6' },
+      { id:'av_0378', category:'Hanging Baskets', vendor:'J&D Nursery', item:'Marble Queen Pothos', spec:'6' },
+      { id:'av_0379', category:'Hanging Baskets', vendor:'J&D Nursery', item:'Neon Pothos', spec:'6' },
+      { id:'av_0380', category:'Hanging Baskets', vendor:'J&D Nursery', item:'Neon Queen Pothos', spec:'6' },
+      { id:'av_0381', category:'Hanging Baskets', vendor:'J&D Nursery', item:'N\'Joy Pothos', spec:'6' },
+      { id:'av_0382', category:'Hanging Baskets', vendor:'J&D Nursery', item:'Philo Brasil', spec:'6' },
+      { id:'av_0383', category:'Hanging Baskets', vendor:'J&D Nursery', item:'Philo Lemon Cordatum', spec:'6' },
+      { id:'av_0384', category:'Hanging Baskets', vendor:'J&D Nursery', item:'Philo Cordatum', spec:'6' },
+      { id:'av_0385', category:'Hanging Baskets', vendor:'J&D Nursery', item:'Philo Micans', spec:'6' },
+      { id:'av_0386', category:'Hanging Baskets', vendor:'J&D Nursery', item:'Spider plant', spec:'6' },
+      { id:'av_0387', category:'Hanging Baskets', vendor:'J&D Nursery', item:'Syngonium', spec:'6' },
+      { id:'av_0388', category:'Hanging Baskets', vendor:'J&D Nursery', item:'Swiss Cheese', spec:'6' },
+      { id:'av_0389', category:'Hanging Baskets', vendor:'J&D Nursery', item:'Golden Pothos', spec:'8' },
+      { id:'av_0390', category:'Hanging Baskets', vendor:'J&D Nursery', item:'Pothos jade', spec:'8' },
+      { id:'av_0391', category:'Hanging Baskets', vendor:'J&D Nursery', item:'Marble Queen Pothos', spec:'8' },
+      { id:'av_0392', category:'Hanging Baskets', vendor:'J&D Nursery', item:'Neon Pothos', spec:'8' },
+      { id:'av_0393', category:'Hanging Baskets', vendor:'J&D Nursery', item:'Neon Queen Pothos', spec:'8' },
+      { id:'av_0394', category:'Hanging Baskets', vendor:'J&D Nursery', item:'N\'Joy Pothos', spec:'8' },
+      { id:'av_0395', category:'Hanging Baskets', vendor:'J&D Nursery', item:'Pothos Silver Satin', spec:'8' },
+      { id:'av_0396', category:'Hanging Baskets', vendor:'J&D Nursery', item:'Philo Brasil', spec:'8' },
+      { id:'av_0397', category:'Hanging Baskets', vendor:'J&D Nursery', item:'Philo Lemon Cordatum', spec:'8' },
+      { id:'av_0398', category:'Hanging Baskets', vendor:'J&D Nursery', item:'Philo Cordatum', spec:'8' },
+      { id:'av_0399', category:'Hanging Baskets', vendor:'J&D Nursery', item:'Philo Micans', spec:'8' },
+      { id:'av_0400', category:'Hanging Baskets', vendor:'J&D Nursery', item:'Spider plant', spec:'8' },
+      { id:'av_0401', category:'Hanging Baskets', vendor:'J&D Nursery', item:'Syngonium', spec:'8' },
+      { id:'av_0402', category:'Hanging Baskets', vendor:'J&D Nursery', item:'Swiss Cheese', spec:'8' },
+      { id:'av_0403', category:'Hanging Baskets', vendor:'J&D Nursery', item:'Golden Pothos', spec:'10' },
+      { id:'av_0404', category:'Hanging Baskets', vendor:'J&D Nursery', item:'Pothos jade', spec:'10' },
+      { id:'av_0405', category:'Hanging Baskets', vendor:'J&D Nursery', item:'Marble Queen Pothos', spec:'10' },
+      { id:'av_0406', category:'Hanging Baskets', vendor:'J&D Nursery', item:'Neon Pothos', spec:'10' },
+      { id:'av_0407', category:'Hanging Baskets', vendor:'J&D Nursery', item:'Neon Queen Pothos', spec:'10' },
+      { id:'av_0408', category:'Hanging Baskets', vendor:'J&D Nursery', item:'N\'Joy Pothos', spec:'10' },
+      { id:'av_0409', category:'Hanging Baskets', vendor:'J&D Nursery', item:'Pothos Silver Satin', spec:'10' },
+      { id:'av_0410', category:'Hanging Baskets', vendor:'J&D Nursery', item:'Philo Brasil', spec:'10' },
+      { id:'av_0411', category:'Hanging Baskets', vendor:'J&D Nursery', item:'Philo Lemon Cordatum', spec:'10' },
+      { id:'av_0412', category:'Hanging Baskets', vendor:'J&D Nursery', item:'Philo Cordatum', spec:'10' },
+      { id:'av_0413', category:'Hanging Baskets', vendor:'J&D Nursery', item:'Philo Micans', spec:'10' },
+      { id:'av_0414', category:'Hanging Baskets', vendor:'J&D Nursery', item:'Spider plant', spec:'10' },
+      { id:'av_0415', category:'Hanging Baskets', vendor:'J&D Nursery', item:'Syngonium', spec:'10' },
+      { id:'av_0416', category:'Hanging Baskets', vendor:'J&D Nursery', item:'Swiss Cheese', spec:'10' },
+      { id:'av_0417', category:'Hanging Baskets', vendor:'J&D Nursery', item:'Philo Fl Green', spec:'10' },
+      { id:'av_0418', category:'Hanging Baskets', vendor:'J&D Nursery', item:'Philo Panda', spec:'10' },
+      { id:'av_0419', category:'Hanging Baskets', vendor:'J&D Nursery', item:'Tropical Combo', spec:'10' },
+      { id:'av_0420', category:'Hanging Baskets', vendor:'Omega Farms', item:'Calathea Burl Marx', spec:'' },
+      { id:'av_0421', category:'Hanging Baskets', vendor:'Omega Farms', item:'Pothos Neon', spec:'' },
+      { id:'av_0422', category:'Hanging Baskets', vendor:'Omega Farms', item:'Swiss Cheese', spec:'' },
+      { id:'av_0423', category:'Hanging Baskets', vendor:'Omega Farms', item:'Pothos Golden', spec:'' },
+      { id:'av_0424', category:'Hanging Baskets', vendor:'Omega Farms', item:'Pothos jade', spec:'' },
+      { id:'av_0425', category:'Hanging Baskets', vendor:'Omega Farms', item:'Pothos Marble Queen', spec:'' },
+      { id:'av_0426', category:'Hanging Baskets', vendor:'Omega Farms', item:'Birds Nest Fern', spec:'' },
+      { id:'av_0427', category:'Hanging Baskets', vendor:'Omega Farms', item:'Nephthytis', spec:'' },
+      // ---- Bromeliads ----
+      { id:'av_0428', category:'Bromeliads', vendor:'Plants in Design', item:'2.5" Mini', spec:'2.5' },
+      { id:'av_0429', category:'Bromeliads', vendor:'Plants in Design', item:'4" in Plastic Pot', spec:'4' },
+      { id:'av_0430', category:'Bromeliads', vendor:'Plants in Design', item:'4" in Clay Pot', spec:'4' },
+      { id:'av_0431', category:'Bromeliads', vendor:'Plants in Design', item:'4" in Colored Clay Pot', spec:'4' },
+      { id:'av_0432', category:'Bromeliads', vendor:'Plants in Design', item:'6" in Plastic Pot', spec:'6' },
+      { id:'av_0433', category:'Bromeliads', vendor:'Plants in Design', item:'6" in Clay pot', spec:'6' },
+      { id:'av_0434', category:'Bromeliads', vendor:'Plants in Design', item:'6" in Painted Clay or Ceramic', spec:'6' },
+      { id:'av_0435', category:'Bromeliads', vendor:'Plants in Design', item:'10" Garden in Drip Pot or Sq Plastic', spec:'10' },
+    ];
+
     function loadAvail(){ return LS.get(LS.availKey, []); }
     function saveAvail(list){ LS.set(LS.availKey, list); }
     function loadAvailOrders(){ return LS.get(LS.availOrdersKey, {}); }
     function saveAvailOrders(obj){ LS.set(LS.availOrdersKey, obj); }
+    // Per-week Amount text for catalog items: { [week]: { [catalogId]: "amount text" } }
+    function loadAvailAmounts(){ return LS.get(LS.availAmountsKey, {}); }
+    function saveAvailAmounts(obj){ LS.set(LS.availAmountsKey, obj); }
+    // Spec/size edits for catalog items, applied across all weeks (a plant's
+    // physical size rarely changes): { [catalogId]: "spec value" }
+    function loadAvailSpecOverrides(){ return LS.get(LS.availSpecOverridesKey, {}); }
+    function saveAvailSpecOverrides(obj){ LS.set(LS.availSpecOverridesKey, obj); }
     function availWeek(){ return weekKeyFromDate(availAnchor); }
+
+    // This week's full entry list: every hardcoded catalog item (always
+    // present) plus any one-off items added just for this week.
+    function getWeekEntries(wk){
+      const overrides = loadAvailSpecOverrides();
+      const amounts = loadAvailAmounts()[wk] || {};
+      const catalog = AVAIL_CATALOG.map(c => ({
+        id: c.id, category: c.category, vendor: c.vendor, item: c.item,
+        spec: (overrides[c.id] !== undefined ? overrides[c.id] : c.spec),
+        amount: amounts[c.id] || "",
+        isCatalog: true
+      }));
+      const custom = loadAvail().filter(e => e.week === wk).map(e => ({ ...e, isCatalog:false }));
+      return catalog.concat(custom);
+    }
 
     document.getElementById("availPrevWeek").addEventListener("click", () => { availAnchor = addDays(availAnchor, -7); renderAvailability(); });
     document.getElementById("availNextWeek").addEventListener("click", () => { availAnchor = addDays(availAnchor,  7); renderAvailability(); });
@@ -4427,8 +4909,7 @@
     document.getElementById("availExportBtn").addEventListener("click", () => {
       const wk = availWeek();
       const orders = loadAvailOrders()[wk] || {};
-      const rows = loadAvail()
-        .filter(e => e.week === wk)
+      const rows = getWeekEntries(wk)
         .sort((a,b) => (a.category+a.vendor+a.item).localeCompare(b.category+b.vendor+b.item))
         .map(e => ({ Week: wk, Category: e.category, Vendor: e.vendor, Item: e.item, Spec: e.spec || "", Amount: e.amount || "", Ordering: orders[e.id] ? "YES" : "NO" }));
       if(!rows.length){ alert("No availability for this week to export."); return; }
@@ -4444,7 +4925,7 @@
     // Availability "Amount" is carried over as a line note for reference.
     document.getElementById("availCreateOrderBtn").addEventListener("click", () => {
       const wk = availWeek();
-      const weekEntries = loadAvail().filter(e => e.week === wk);
+      const weekEntries = getWeekEntries(wk);
       const weekOrders = loadAvailOrders()[wk] || {};
       const checked = weekEntries.filter(e => weekOrders[e.id]);
       if(checked.length === 0){
@@ -4489,6 +4970,21 @@
         tabsEl.appendChild(btn);
       });
     }
+    // Saves one entry's Amount for this week — a catalog item writes into the
+    // per-week amounts store; a one-off (custom) item updates its own record.
+    function saveAvailAmountFor(entry, wk, value){
+      if(entry.isCatalog){
+        const all = loadAvailAmounts();
+        all[wk] = all[wk] || {};
+        if(value) all[wk][entry.id] = value; else delete all[wk][entry.id];
+        saveAvailAmounts(all);
+      } else {
+        const list = loadAvail();
+        const rec = list.find(x => x.id === entry.id);
+        if(rec){ rec.amount = value; saveAvail(list); }
+      }
+      markTabChanged("avail");
+    }
     function renderAvailability(){
       refreshWeekSelectors();
       const wk = availWeek();
@@ -4497,16 +4993,20 @@
       const noteEl = document.getElementById("availNote");
       if(noteEl){
         const s = startOfWeek(availAnchor), e = addDays(s, 6);
-        noteEl.textContent = `Showing ${wk} (${s.toLocaleDateString()} – ${e.toLocaleDateString()}). Grouped by vendor, then by item — check a size to flag it to order this week.`;
+        noteEl.textContent = `Showing ${wk} (${s.toLocaleDateString()} – ${e.toLocaleDateString()}). Grouped by vendor, then by item — fill in an Amount and check a size to flag it to order this week.`;
       }
       const search = (document.getElementById("availSearch").value || "").trim().toLowerCase();
-      const weekEntries = loadAvail().filter(e => e.week === wk);
+      const weekEntries = getWeekEntries(wk); // every catalog item (always present) + this week's one-off items
       const weekOrdersForStats = loadAvailOrders()[wk] || {};
+      // "Items"/"Vendors" count what's actually been reported this week
+      // (an amount typed in, or checked to order) — not the full catalog
+      // size, which is always ~constant and wouldn't say anything useful.
+      const reported = weekEntries.filter(e => (e.amount && e.amount.trim()) || weekOrdersForStats[e.id]);
       const itemCountEl = document.getElementById("availItemCountLabel");
       const vendorCountEl = document.getElementById("availVendorCountLabel");
       const toOrderCountEl = document.getElementById("availToOrderCountLabel");
-      if(itemCountEl) itemCountEl.textContent = String(weekEntries.length);
-      if(vendorCountEl) vendorCountEl.textContent = String(new Set(weekEntries.map(e => (e.vendor||"—").trim() || "—")).size);
+      if(itemCountEl) itemCountEl.textContent = String(reported.length);
+      if(vendorCountEl) vendorCountEl.textContent = String(new Set(reported.map(e => (e.vendor||"—").trim() || "—")).size);
       if(toOrderCountEl) toOrderCountEl.textContent = String(weekEntries.filter(e => weekOrdersForStats[e.id]).length);
       renderAvailTabs(weekEntries);
       const wrap = document.getElementById("availWrap");
@@ -4516,7 +5016,7 @@
         entries = entries.filter(e => (e.vendor||"").toLowerCase().includes(search) || (e.item||"").toLowerCase().includes(search));
       }
       if(entries.length === 0){
-        wrap.innerHTML = `<div class="note">No ${escapeHtml(availActiveCat)} availability for ${escapeHtml(wk)} yet. Click "+ Add Availability".</div>`;
+        wrap.innerHTML = `<div class="note">No ${escapeHtml(availActiveCat)} availability tracked yet. Click "+ Add Availability" to add a one-off item.</div>`;
         return;
       }
       const byVendor = new Map();
@@ -4571,14 +5071,17 @@
             const checked = !!weekOrders[e.id];
             const row = document.createElement("div");
             row.className = "availRow" + (checked ? " checked" : "");
+            // Catalog items are code-managed (no Edit/Delete — see the
+            // catalog comment above); one-off items added via "+ Add
+            // Availability" keep full Edit/Delete like before.
+            const actionsHtml = e.isCatalog ? `` : `
+                <button class="tinyBtn av_edit">Edit</button>
+                <button class="tinyBtn danger av_del">Delete</button>`;
             row.innerHTML = `
               <div><input type="checkbox" ${checked ? "checked" : ""} title="Mark to order this week"/></div>
               <button type="button" class="availItemName availItemNameBtn" title="Click for order notes">${escapeHtml(e.spec || "Details")}</button>
-              <div class="availAmt">${escapeHtml(e.amount || "")}</div>
-              <div class="availRowActions">
-                <button class="tinyBtn av_edit">Edit</button>
-                <button class="tinyBtn danger av_del">Delete</button>
-              </div>
+              <input class="availAmtInput" type="text" placeholder="Amount" value="${escapeHtml(e.amount || "")}" title="Type this week's amount — saves automatically"/>
+              <div class="availRowActions">${actionsHtml}</div>
             `;
             row.querySelector(".availItemNameBtn").addEventListener("click", () => openAvailItemDetail(e));
             row.querySelector('input[type="checkbox"]').addEventListener("change", (ev) => {
@@ -4592,16 +5095,27 @@
               const n = box.querySelectorAll('input[type="checkbox"]:checked').length;
               if(head) head.textContent = `${n} to order`;
             });
-            row.querySelector(".av_edit").addEventListener("click", () => { openAvailModal(e); });
-            row.querySelector(".av_del").addEventListener("click", () => {
-              if(!confirm(`Delete "${e.item}"${e.spec ? ` (${e.spec})` : ""} from ${vendor}?`)) return;
-              saveAvail(loadAvail().filter(x => x.id !== e.id));
-              const all = loadAvailOrders();
-              for(const k of Object.keys(all)){ if(all[k]) delete all[k][e.id]; }
-              saveAvailOrders(all);
-              markTabChanged("avail");
-              renderAvailability();
-            });
+            const amtInput = row.querySelector(".availAmtInput");
+            const commitAmount = () => {
+              const v = amtInput.value.trim();
+              if(v === (e.amount || "")) return;
+              e.amount = v;
+              saveAvailAmountFor(e, wk, v);
+            };
+            amtInput.addEventListener("blur", commitAmount);
+            amtInput.addEventListener("keydown", (ev) => { if(ev.key === "Enter"){ ev.preventDefault(); amtInput.blur(); } });
+            if(!e.isCatalog){
+              row.querySelector(".av_edit").addEventListener("click", () => { openAvailModal(e); });
+              row.querySelector(".av_del").addEventListener("click", () => {
+                if(!confirm(`Delete "${e.item}"${e.spec ? ` (${e.spec})` : ""} from ${vendor}?`)) return;
+                saveAvail(loadAvail().filter(x => x.id !== e.id));
+                const all = loadAvailOrders();
+                for(const k of Object.keys(all)){ if(all[k]) delete all[k][e.id]; }
+                saveAvailOrders(all);
+                markTabChanged("avail");
+                renderAvailability();
+              });
+            }
             box.appendChild(row);
           });
         });
@@ -4642,19 +5156,29 @@
     // Saves the spec/size field straight from the popup — no need to open the
     // full Edit Availability form just to fix a size. Auto-saves when you
     // click away or hit Enter; Escape reverts without saving.
-    function wireAvailDetailSpecInput(entryId, originalSpec){
+    function wireAvailDetailSpecInput(entry){
       const input = document.getElementById("availDetailSpecInput");
       const savedNote = document.getElementById("availDetailSpecSavedNote");
+      const originalSpec = entry.spec;
       input.value = originalSpec || "";
       savedNote.textContent = "";
+      // Catalog items save a spec edit as an override (applies to this item
+      // on every week, since a plant's size rarely changes); one-off items
+      // save straight onto their own record, same as before.
       function commit(){
-        const list = loadAvail();
-        const rec = list.find(x => x.id === entryId);
-        if(!rec) return;
         const next = input.value.trim();
-        if((rec.spec || "") === next) return;
-        rec.spec = next;
-        saveAvail(list);
+        if((originalSpec || "") === next) return;
+        if(entry.isCatalog){
+          const all = loadAvailSpecOverrides();
+          if(next) all[entry.id] = next; else delete all[entry.id];
+          saveAvailSpecOverrides(all);
+        } else {
+          const list = loadAvail();
+          const rec = list.find(x => x.id === entry.id);
+          if(!rec) return;
+          rec.spec = next;
+          saveAvail(list);
+        }
         markTabChanged("avail");
         renderAvailability(); // refreshes the row behind the popup
         savedNote.textContent = "Saved ✓";
@@ -4670,7 +5194,7 @@
     function openAvailItemDetail(entry){
       document.getElementById("availDetailTitle").textContent = entry.item || "Item";
       document.getElementById("availDetailSub").textContent = `${entry.vendor || "—"} · ${entry.category || ""}`;
-      wireAvailDetailSpecInput(entry.id, entry.spec);
+      wireAvailDetailSpecInput(entry);
       const last = lastOrderDateForItem(entry.vendor, entry.item);
       const lastEl = document.getElementById("availDetailLastOrder");
       const noteEl = document.getElementById("availDetailLastOrderNote");
@@ -5396,7 +5920,8 @@
     const SYNC_KEYS = [
       LS.trucksKey, LS.issuesKey,
       LS.trainingKey, LS.availLinkKey, LS.catalogKey, LS.checkinKey,
-      LS.availKey, LS.availOrdersKey, LS.skipWeeksKey, LS.weekMetaKey
+      LS.availKey, LS.availOrdersKey, LS.availAmountsKey, LS.availSpecOverridesKey,
+      LS.skipWeeksKey, LS.weekMetaKey
     ];
     const MAX_SYNC_BYTES = 900000; // stay under Firestore's ~1MB document cap
 
@@ -5650,7 +6175,7 @@
           (key === LS.issuesKey     && currentPage === "issues")  ||
           (key === LS.checkinKey    && currentPage === "checkin") ||
           (key === LS.trainingKey   && currentPage === "training") ||
-          ((key === LS.availKey || key === LS.availOrdersKey) && currentPage === "avail");
+          ((key === LS.availKey || key === LS.availOrdersKey || key === LS.availAmountsKey || key === LS.availSpecOverridesKey) && currentPage === "avail");
         if(!rawStorageSet(key, data.value)) return; // direct write: no re-push
         this.lastReceived = Date.now(); this.applies++;
         this.rerender(key);
@@ -5699,7 +6224,7 @@
           else if(k === "checkin" && (key === LS.checkinKey || key === LS.trucksKey)) renderCheckIn();
           else if(k === "training" && key === LS.trainingKey) renderTraining();
           else if(k === "photos" && key === LS.catalogKey) renderPhotosTab();
-          else if(k === "avail" && (key === LS.availKey || key === LS.availOrdersKey)) renderAvailability();
+          else if(k === "avail" && (key === LS.availKey || key === LS.availOrdersKey || key === LS.availAmountsKey || key === LS.availSpecOverridesKey)) renderAvailability();
         } catch(e){}
         try {
           if(key === LS.skipWeeksKey && weekPickModal && weekPickModal.classList.contains("active")) renderWeekPick();
@@ -5883,7 +6408,8 @@
           [LS.trucksKey]:"Orders", [LS.issuesKey]:"Issues", [LS.photosKey]:"Photos",
           [LS.checkinKey]:"Check-In progress",
           [LS.trainingKey]:"Training docs", [LS.availLinkKey]:"Availability link", [LS.catalogKey]:"Plant catalog",
-          [LS.availKey]:"Availability", [LS.availOrdersKey]:"Availability orders"
+          [LS.availKey]:"Availability", [LS.availOrdersKey]:"Availability orders",
+          [LS.availAmountsKey]:"Availability amounts", [LS.availSpecOverridesKey]:"Availability spec edits"
         };
         return map[key] || null;  // null = not worth logging (ui state, notifs, etc.)
       },
