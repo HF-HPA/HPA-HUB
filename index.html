@@ -2167,6 +2167,15 @@
     const REGIONS = ["Homestead","Apopka","Canada","New Jersey"];
     function orderTypeLabel(t){ return t === "CC/FLOOR STACK" ? "CC/Floor Stack" : t; }
 
+    // For Canada and New Jersey, the date stored on the order is actually the
+    // delivery date, not a pickup date — so it's labeled/badged differently
+    // everywhere it's shown ("DD" instead of "PU", "Delivery Date" instead of
+    // "Pickup Date").
+    const DD_REGIONS = ["Canada", "New Jersey"];
+    function isDDRegion(region){ return DD_REGIONS.includes((region||"").trim()); }
+    function dateBadgePrefix(region){ return isDDRegion(region) ? "DD" : "PU"; }
+    function dateFieldLabel(region){ return isDDRegion(region) ? "Delivery Date" : "Pickup Date"; }
+
     document.getElementById("newTruckBtn").addEventListener("click", () => openTruckModal(null));
     truckCloseBtn.addEventListener("click", closeTruckModal);
     truckModal.addEventListener("click", (e) => { if(e.target === truckModal) closeTruckModal(); });
@@ -2265,7 +2274,7 @@
           </div>
         </div>
         <div class="row">
-          <label><span class="lbl">Pickup Date</span><input class="tb_pickup" type="date" title="Auto-generated from the request date + region — edit to override"></label>
+          <label><span class="lbl tb_pickupLbl">Pickup Date</span><input class="tb_pickup" type="date" title="Auto-generated from the request date + region — edit to override"></label>
           <label><span class="lbl">Request Date</span><input class="tb_request" type="date"></label>
           <label><span class="lbl">Location</span>
             <select class="tb_region">${REGIONS.map(r=>`<option ${data.region===r?"selected":""}>${escapeHtml(r)}</option>`).join("")}</select>
@@ -2289,8 +2298,14 @@
       const pickupInput = block.querySelector(".tb_pickup");
       const requestInput = block.querySelector(".tb_request");
       const regionSelect = block.querySelector(".tb_region");
+      const pickupLblEl = block.querySelector(".tb_pickupLbl");
       pickupInput.value = data.pickupDate || "";
       requestInput.value = data.requestDate || "";
+      function syncPickupLabel(){
+        if(pickupLblEl) pickupLblEl.textContent = dateFieldLabel(regionSelect.value);
+      }
+      syncPickupLabel();
+      regionSelect.addEventListener("change", syncPickupLabel);
       // Pickup date is auto-suggested from the request date + region
       // (Homestead: the Monday before; Apopka/Canada/New Jersey: the Tuesday
       // before) as long as it still matches the formula. A previously
@@ -2968,7 +2983,7 @@
           pickup.innerHTML = `
             <div class="pickupHead">
               <div class="pickupLeft">
-                <div class="pickupTitle"><span class="truckDot"></span>PU ${escapeHtml(t.pickupDate || "—")}</div>
+                <div class="pickupTitle"><span class="truckDot"></span>${dateBadgePrefix(t.region)} ${escapeHtml(t.pickupDate || "—")}</div>
                 <div class="pickupChips">
                   <span class="pillMini editablePill" data-action="editTrucking" title="Click to edit trucking company">${escapeHtml(t.trucking || "Trucking —")}</span>
                   <span class="pillMini editablePill" data-action="editPrice" title="Click to edit truck price">${money(t.price || 0)}</span>
@@ -3559,7 +3574,7 @@
         ws.mergeCells(r,1,r,NUM_COLS);
         const bar = ws.getCell(r,1);
         const left = `${(t.region||"").toUpperCase()} - ${orderTypeLabel(normalizeOrderType(t)).toUpperCase()}`;
-        const mid = `PU ${weekdayShort(t.pickupDate)}`;
+        const mid = `${dateBadgePrefix(t.region)} ${weekdayShort(t.pickupDate)}`;
         const right = `${(t.trucking||"—").toUpperCase()} - ${money(t.price||0)}`;
         bar.value = { richText: [
           { text: left + "   ", font:{ bold:true } },
@@ -4138,7 +4153,7 @@
             <span class="pillMini">${escapeHtml(p.vendor || "Vendor —")}</span>
             <span class="pillMini">${escapeHtml(p.item || "Item —")}</span>
             ${p.spec ? `<span class="pillMini">${escapeHtml(p.spec)}</span>` : ``}
-            <span class="pillMini">${escapeHtml(t?.pickupDate ? ("PU "+t.pickupDate) : "Truck —")}</span>
+            <span class="pillMini">${escapeHtml(t?.pickupDate ? (dateBadgePrefix(t.region)+" "+t.pickupDate) : "Truck —")}</span>
             ${p.bytes ? `<span class="pillMini">${fmtBytes(p.bytes)}</span>` : ``}
           </div>
           <div class="row" style="margin-top:10px;">
@@ -4469,7 +4484,7 @@
       const photoId = document.getElementById("i_photo").value;
       const uploadedUrl = document.getElementById("i_photoPreview").dataset.url || "";
       const t = loadTrucks().find(x => x.id === truckId);
-      const truckLabel = t ? `PU ${t.pickupDate} • ${t.region||"—"} • ${orderTypeLabel(t.orderType||"CC")}` : "";
+      const truckLabel = t ? `${dateBadgePrefix(t.region)} ${t.pickupDate} • ${t.region||"—"} • ${orderTypeLabel(t.orderType||"CC")}` : "";
       if(!date || !vendor || !item){ alert("Date, Vendor, and Item are required."); return; }
       const issues = loadIssues();
       if(editingIssueId){
