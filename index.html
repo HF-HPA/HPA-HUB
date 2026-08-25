@@ -2032,28 +2032,46 @@
     function renderPresence(){
       const active = activePresenceUsers();
       const myClientId = window.HPASync ? window.HPASync.clientId : null;
+      // Distinguish "genuinely no one else here" from "this is broken" —
+      // otherwise a Firestore rules problem just looks like an empty room.
+      const err = window.HPASync ? window.HPASync.presenceError : "";
+      const syncReady = window.HPASync ? window.HPASync.ready : false;
 
       const chip = document.getElementById("presenceChip");
       if(chip){
-        chip.textContent = `👥 ${active.length}`;
-        chip.title = active.length ? `${active.length} active now — click to view` : "No one else is online right now";
+        if(err){
+          chip.textContent = `👥 ⚠`;
+          chip.title = `Active users: ${err}`;
+        } else if(!syncReady){
+          chip.textContent = `👥 …`;
+          chip.title = "Active users: waiting on Team Sync to connect";
+        } else {
+          chip.textContent = `👥 ${active.length}`;
+          chip.title = active.length ? `${active.length} active now — click to view` : "No one else is online right now";
+        }
       }
 
       const listEl = document.getElementById("presenceList");
       const subEl = document.getElementById("presenceModalSub");
       if(listEl){
-        listEl.innerHTML = active.length === 0
-          ? `<div class="note">No one else is online right now.</div>`
-          : active.map(u => `
-              <div class="presenceRow">
-                <span class="presenceAvatar" style="background:${presenceColor(u.name)}">${escapeHtml(presenceInitials(u.name))}</span>
-                <div>
-                  <div class="presenceName">${escapeHtml(u.name || "Someone")}</div>
-                  <div class="presencePage">${escapeHtml(PAGE_LABELS[u.page] || "—")}</div>
-                </div>
-                ${u.id === myClientId ? `<span class="presenceYou">You</span>` : ``}
-              </div>`).join("");
-        if(subEl) subEl.textContent = active.length ? `${active.length} teammate${active.length === 1 ? "" : "s"} online` : "No one else is online right now.";
+        if(err){
+          listEl.innerHTML = `<div class="note" style="color:#b3392a;">⚠ ${escapeHtml(err)}</div>`;
+        } else if(!syncReady){
+          listEl.innerHTML = `<div class="note">Waiting on Team Sync to connect…</div>`;
+        } else {
+          listEl.innerHTML = active.length === 0
+            ? `<div class="note">No one else is online right now.</div>`
+            : active.map(u => `
+                <div class="presenceRow">
+                  <span class="presenceAvatar" style="background:${presenceColor(u.name)}">${escapeHtml(presenceInitials(u.name))}</span>
+                  <div>
+                    <div class="presenceName">${escapeHtml(u.name || "Someone")}</div>
+                    <div class="presencePage">${escapeHtml(PAGE_LABELS[u.page] || "—")}</div>
+                  </div>
+                  ${u.id === myClientId ? `<span class="presenceYou">You</span>` : ``}
+                </div>`).join("");
+        }
+        if(subEl) subEl.textContent = err ? "Active users isn't syncing right now." : (active.length ? `${active.length} teammate${active.length === 1 ? "" : "s"} online` : "No one else is online right now.");
       }
 
       const byPage = {};
@@ -6248,7 +6266,7 @@
     const Sync = {
       ready:false, starting:false, fs:null, db:null, col:null,
       photosCol:null, trainingFilesCol:null, _pendingTrainingFiles:{},
-      presenceCol:null, presenceMap:{}, _presenceUnsub:null, _presenceHeartbeatT:null, _presenceTickT:null, _presenceWarned:false,
+      presenceCol:null, presenceMap:{}, presenceError:"", _presenceUnsub:null, _presenceHeartbeatT:null, _presenceTickT:null, _presenceWarned:false,
       clientId: Math.random().toString(36).slice(2),
       user:"someone", _t:{}, _seeded:false, _warned:{},
       lastSent:0, lastReceived:0, lastError:"", pushes:0, applies:0,
@@ -6443,25 +6461,48 @@
         const { onSnapshot } = this.fs;
         if(this._presenceUnsub){ try{ this._presenceUnsub(); }catch(e){} }
         this._presenceUnsub = onSnapshot(this.presenceCol, (snap) => {
+          this.presenceError = ""; // a successful snapshot means read access is fine
           const map = {};
-          snap.forEach(d => { map[d.id] = d.data(); });
+          snap.forEach(d => {
+            // Every synced collection in this app's Firestore rules is one doc
+            // with a JSON-stringified "value" field (see pushPresence) — same
+            // shape as photos/trainingFiles, so no rules changes are needed
+            // for a new collection like this one.
+            const data = d.data();
+            if(!data || typeof data.value !== "string") return;
+            try { map[d.id] = JSON.parse(data.value); } catch(e){ /* skip a malformed doc rather than crash the whole list */ }
+          });
           this.presenceMap = map;
           if(typeof renderPresence === "function") renderPresence();
-        }, (err) => console.error("[HPA sync] presence listener error:", err));
+        }, (err) => {
+          console.error("[HPA sync] presence listener error:", err);
+          this.presenceError = this.describePresenceErr(err);
+          if(typeof renderPresence === "function") renderPresence();
+        });
+      },
+      describePresenceErr(err){
+        const code = (err && (err.code || err.message || "")) + "";
+        if(/permission-denied|insufficient/i.test(code)) return "Blocked by Firestore rules — the \"presence\" collection needs a rule added (same pattern as keys/photos/trainingFiles).";
+        if(/not-?found|failed-precondition|database.*not/i.test(code)) return "No database found for this project.";
+        if(/unavailable|network|offline|fetch/i.test(code)) return "Offline — no connection.";
+        return "Error — open the browser console for details.";
       },
       async pushPresence(page){
         if(!this.ready || !this.presenceCol) return;
         try{
           const { doc, setDoc } = this.fs;
-          await setDoc(doc(this.presenceCol, this.clientId), {
-            name: this.user, page: page || "", updatedAt: Date.now(), client: this.clientId
-          });
+          // Firestore rules validate every doc in every hubs/{team}/{collection}
+          // as { value: <string, under ~950KB> } — same shape pushPhoto/
+          // pushTrainingFile already use — so the real payload goes inside a
+          // JSON-stringified "value" instead of as top-level fields.
+          const val = JSON.stringify({ name: this.user, page: page || "", updatedAt: Date.now(), client: this.clientId });
+          await setDoc(doc(this.presenceCol, this.clientId), { value: val, updatedAt: Date.now(), by: this.user, client: this.clientId });
+          this.presenceError = ""; // a successful write means write access is fine
         } catch(e){
           // Best-effort and on a timer — don't spam the console every 25s.
-          // If this is a permissions error, Firestore rules likely need a
-          // rule added for the new hubs/{team}/presence collection (same
-          // pattern as the existing keys/photos/trainingFiles rules).
+          this.presenceError = this.describePresenceErr(e);
           if(!this._presenceWarned){ this._presenceWarned = true; console.warn("[HPA sync] presence push failed (will keep retrying quietly):", e); }
+          if(typeof renderPresence === "function") renderPresence();
         }
       },
       startPresenceHeartbeat(){
