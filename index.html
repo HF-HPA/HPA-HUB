@@ -3709,15 +3709,16 @@
     document.getElementById("exportTruckBreakdownBtn").addEventListener("click", async () => {
       const wk = weekKeyFromDate(weekAnchor);
       const weekNum = isoWeekNumOf(weekAnchor);
-      const trucks = loadTrucks().filter(t => t.weekKey === wk && includedInExports(t));
-      if(!trucks.length){ alert("No Homestead/Apopka orders in this week to export.\n(Canada and New Jersey are excluded from the guides.)"); return; }
+      const trucks = loadTrucks().filter(t => t.weekKey === wk);
+      if(!trucks.length){ alert("No orders in this week to export."); return; }
 
       let jsPDFCtor;
       try { jsPDFCtor = await loadJsPDF(); }
       catch(e){ alert(e.message); return; }
 
-      // One group per order/truck; its vendor blocks share the merged
-      // Arrival Date + Truck Type cells, same as the reference sheet.
+      // One group per order/truck (every region, including Canada and New
+      // Jersey); its vendor blocks share the merged Arrival Date + Truck
+      // Type cells, same as the reference sheet.
       const groups = trucks.map(t => {
         const arrival = arrivalDateFor(t.pickupDate);
         const vendorRows = (t.vendorBlocks || []).length
