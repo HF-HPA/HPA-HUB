@@ -225,23 +225,26 @@
     .availItemGroupHead{ padding:9px 13px 3px; font-family:var(--display); font-weight:600; font-size:13.5px; color:var(--moss); border-top:1px solid var(--line-soft); }
     .availVendorHead + .availItemGroupHead, .availColHead + .availItemGroupHead{ border-top:none; }
     .availVendorScroll{ overflow-x:auto; }
-    .availRow{ display:grid; grid-template-columns:1.5fr repeat(var(--availWeeks,4), minmax(104px,132px)) 70px; gap:10px; align-items:center; padding:7px 13px 7px 20px; }
-    .availRow.checked{ background:rgba(43,212,154,.10); }
+    .availRow{ display:grid; grid-template-columns:1.5fr repeat(var(--availWeeks,4), minmax(84px,104px)) 70px; gap:6px; align-items:center; padding:5px 13px 5px 20px; border-bottom:1px solid var(--line-soft); }
+    .availRow:last-child{ border-bottom:none; }
     .availRow input[type="checkbox"]{ width:20px; height:20px; accent-color:var(--mint-deep); cursor:pointer; }
     .availItemName{ font-weight:600; color:var(--ink); }
     .availItemNameBtn{ appearance:none; background:none; border:none; padding:0; margin:0; font:inherit; text-align:left; cursor:pointer; text-decoration:underline; text-decoration-color:transparent; transition:text-decoration-color .15s, color .15s; }
     .availItemNameBtn:hover, .availItemNameBtn:focus-visible{ color:var(--moss); text-decoration-color:currentColor; }
     .availAmt{ font-weight:700; color:var(--ink); font-variant-numeric:tabular-nums; text-align:right; }
-    .availAmtInput{ font-family:var(--sans); font-size:13.5px; font-weight:700; color:var(--ink); background:var(--paper-2); border:1px solid var(--line); border-radius:7px; padding:6px 8px; width:100%; min-width:0; text-align:right; font-variant-numeric:tabular-nums; }
-    .availAmtInput:focus{ outline:none; border-color:var(--moss); box-shadow:0 0 0 3px rgba(43,212,154,.15); }
-    .availAmtInput::placeholder{ font-weight:400; color:var(--ink-2); }
+    .availAmtInput{ font-family:var(--sans); font-size:12.5px; font-weight:600; color:var(--ink); background:transparent; border:none; border-bottom:1px solid transparent; border-radius:0; padding:3px 1px; width:100%; min-width:0; text-align:right; font-variant-numeric:tabular-nums; }
+    .availAmtInput:hover{ border-bottom-color:var(--line); }
+    .availAmtInput:focus{ outline:none; border-bottom-color:var(--moss); }
+    .availAmtInput::placeholder{ font-weight:400; color:var(--ink-2); opacity:.55; }
     .availRowActions{ display:flex; gap:6px; justify-content:flex-end; flex-wrap:wrap; }
-    .availColHead{ display:grid; grid-template-columns:1.5fr repeat(var(--availWeeks,4), minmax(104px,132px)) 70px; gap:10px; padding:8px 13px; color:var(--moss); font-size:11.5px; font-weight:600; text-transform:uppercase; letter-spacing:.04em; background:var(--thead); border-bottom:1px solid var(--line); }
+    .availColHead{ display:grid; grid-template-columns:1.5fr repeat(var(--availWeeks,4), minmax(84px,104px)) 70px; gap:6px; padding:7px 13px; color:var(--ink-2); font-size:10.5px; font-weight:600; text-transform:uppercase; letter-spacing:.03em; background:var(--thead); border-bottom:1px solid var(--line); }
     .availColHead .availAmt{ color:var(--moss); font-weight:600; }
-    .availWeekCell{ display:flex; align-items:center; gap:6px; }
-    .availWeekCell input[type="checkbox"]{ width:18px; height:18px; flex:none; accent-color:var(--mint-deep); cursor:pointer; }
+    .availWeekCell{ display:flex; align-items:center; gap:4px; padding:3px 4px; border-radius:6px; transition:background .15s; }
+    .availWeekCell.checked{ background:rgba(43,212,154,.14); }
+    .availWeekCell input[type="checkbox"]{ width:15px; height:15px; flex:none; accent-color:var(--mint-deep); cursor:pointer; }
     .availWeekCell .availAmtInput{ width:auto; flex:1 1 auto; min-width:0; }
     .availWeekHead{ text-align:center; }
+    .availWeekHead.isCurrentWeek{ color:var(--moss); font-weight:700; }
     .availItemsHead{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin:14px 0 6px; }
     .availItemsHead .lbl{ margin:0; }
     .availEntryRow{ display:grid; grid-template-columns:1.8fr 1fr 40px; gap:8px; align-items:center; margin-bottom:8px; }
@@ -1654,10 +1657,13 @@
       }
       return weeks;
     }
+    // Compact column header for the Availability month grid — just the
+    // week's start date. The week number and full date range are still
+    // available as a hover tooltip (see renderAvailability), so nothing is
+    // lost, it just doesn't have to shout from every column all the time.
     function shortWeekLabel(weekStartDate){
-      const wkNum = Number(weekKeyFromDate(weekStartDate).split("-W")[1]);
       const mo = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-      return `Wk ${wkNum} · ${mo[weekStartDate.getMonth()]} ${weekStartDate.getDate()}`;
+      return `${mo[weekStartDate.getMonth()]} ${weekStartDate.getDate()}`;
     }
     // How many ISO weeks are in a given year (52 or 53). Dec 28 is always in the last week.
     function isoWeeksInYear(year){
@@ -5146,7 +5152,15 @@
         const checkedCount = items.filter(e => weekKeys.some(wk => e.weekData[wk].checked)).length;
         const box = document.createElement("div");
         box.className = "availVendor";
-        const weekHeadHtml = weeks.map(w => `<span class="availWeekHead">${escapeHtml(shortWeekLabel(w))}</span>`).join("");
+        const curWeekKey = weekKeyFromDate(new Date());
+        const weekHeadHtml = weeks.map(w => {
+          const wk = weekKeyFromDate(w);
+          const wkNum = Number(wk.split("-W")[1]);
+          const wEnd = addDays(w, 6);
+          const title = `Week ${wkNum} · ${w.toLocaleDateString()} – ${wEnd.toLocaleDateString()}`;
+          const isCur = wk === curWeekKey;
+          return `<span class="availWeekHead${isCur ? " isCurrentWeek" : ""}" title="${escapeHtml(title)}">${escapeHtml(shortWeekLabel(w))}</span>`;
+        }).join("");
         box.innerHTML = `
           <div class="availVendorHead">
             <span class="availVendorName">${escapeHtml(vendor)}</span>
@@ -5196,7 +5210,7 @@
             const weekCellsHtml = weekKeys.map(wk => {
               const wd = e.weekData[wk];
               return `
-                <div class="availWeekCell" data-wk="${escapeHtml(wk)}">
+                <div class="availWeekCell${wd.checked ? " checked" : ""}" data-wk="${escapeHtml(wk)}">
                   <input type="checkbox" ${wd.checked ? "checked" : ""} title="Mark to order ${escapeHtml(wk)}"/>
                   <input class="availAmtInput" type="text" placeholder="Amt" value="${escapeHtml(wd.amount || "")}" title="This week's amount — saves automatically"/>
                 </div>`;
@@ -5222,6 +5236,7 @@
                 else delete all[wk][e.id];
                 saveAvailOrders(all);
                 e.weekData[wk].checked = ev.target.checked;
+                cell.classList.toggle("checked", ev.target.checked);
                 const rowAnyChecked = weekKeys.some(k => e.weekData[k].checked);
                 row.classList.toggle("checked", rowAnyChecked);
                 refreshVendorCheckedPill();
