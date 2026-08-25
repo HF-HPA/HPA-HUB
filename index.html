@@ -1136,25 +1136,18 @@
           <div class="toolbar">
             <h2>Availability</h2>
             <div class="tools">
-              <button id="availOpenBtn" class="btnGhost">↗ Open Availability Sheet</button>
-              <button id="availSetLinkBtn" class="btnGhost">Set / Change Link</button>
+              <button id="availPrevWeek" class="btnGhost" title="Previous week">‹</button>
+              <select id="availWeekSelect"></select>
+              <button id="availNextWeek" class="btnGhost" title="Next week">›</button>
+              <button id="availThisWeek" class="btnGhost">This Week</button>
+              <input id="availSearch" placeholder="Search vendor or item..." />
+              <button id="availAddBtn" class="btnGhost">+ Add Availability</button>
+              <button id="availExportBtn" class="btnGhost">⬇ Export CSV</button>
             </div>
           </div>
-          <div class="linkCard" id="availLinkCard">
-            <div class="linkCardIcon">📊</div>
-            <div>
-              <div class="linkCardTitle">Availability Spreadsheet</div>
-              <div class="note" id="availLinkNote">Clicking the <strong>Availability</strong> tab opens your Excel sheet in a new tab.</div>
-              <div class="note" id="availLinkUrl" style="word-break:break-all;"></div>
-            </div>
-          </div>
-          <!-- legacy hidden controls kept for compatibility (not shown) -->
-          <div style="display:none;">
-            <button id="availPrevWeek"></button><button id="availThisWeek"></button><button id="availNextWeek"></button>
-            <select id="availWeekSelect"></select><input id="availSearch" /><button id="availAddBtn"></button>
-            <button id="availExportBtn"></button>
-            <div id="availNote"></div><div id="availTabs"></div><div id="availWrap"></div>
-          </div>
+          <div class="note" id="availNote">Showing this week. Grouped by vendor — check an item to flag it to order this week.</div>
+          <div id="availTabs"></div>
+          <div id="availWrap"></div>
         </div>
 
         <div id="page-checkin" class="page" style="display:none;">
@@ -1831,11 +1824,6 @@
       if(key === "training") renderTraining();
     }
     navBtns.forEach(b => b.addEventListener("click", (e) => {
-      if(b.dataset.page === "avail"){
-        if(e.shiftKey){ showPage("avail"); refreshAvailLinkUI(); }
-        else { openAvailabilitySheet(); }
-        return;
-      }
       showPage(b.dataset.page);
       document.querySelector(".side").classList.remove("moreOpen");
       document.getElementById("navMoreBtn")?.setAttribute("aria-expanded", "false");
@@ -4910,36 +4898,6 @@
 
 
     /*********************************************************
-     * Availability — opens an external Excel sheet
-     *********************************************************/
-    function getAvailLink(){ return LS.get(LS.availLinkKey, ""); }
-    function refreshAvailLinkUI(){
-      const url = getAvailLink();
-      const el = document.getElementById("availLinkUrl");
-      if(el) el.textContent = url ? ("Current link: " + url) : "No link set yet — you'll be asked for one the first time you open it.";
-      const note = document.getElementById("availLinkNote");
-      if(note) note.innerHTML = 'Clicking the <strong>Availability</strong> tab opens your Excel sheet in a new tab. <em>Shift-click</em> the tab (or use the buttons above) to set or change the link.';
-    }
-    function promptAvailLink(){
-      const cur = getAvailLink();
-      const url = prompt("Paste the link to your Availability Excel sheet (OneDrive, SharePoint, Google Sheets, etc.):", cur || "https://");
-      if(url === null) return null;
-      const u = url.trim();
-      LS.set(LS.availLinkKey, u);
-      refreshAvailLinkUI();
-      return u;
-    }
-    function openAvailabilitySheet(){
-      let url = getAvailLink();
-      if(!url){ url = promptAvailLink(); if(!url) return; }
-      if(!/^https?:/i.test(url)) url = "https://" + url;
-      try { window.open(url, "_blank", "noopener"); }
-      catch(e){ alert("Couldn't open the link. Shift-click the Availability tab to set a valid URL."); }
-    }
-    document.getElementById("availOpenBtn") && document.getElementById("availOpenBtn").addEventListener("click", openAvailabilitySheet);
-    document.getElementById("availSetLinkBtn") && document.getElementById("availSetLinkBtn").addEventListener("click", () => promptAvailLink());
-
-    /*********************************************************
      * Photo Library — embedded Air Plant Library board
      *********************************************************/
     const AIR_PLANT_LIBRARY_URL = "https://app.air.inc/b/plant-library-117279bf-9190-4e62-b54b-a1626d57dac9";
@@ -5382,7 +5340,8 @@
           (key === LS.weekMetaKey   && currentPage === "order")   ||
           (key === LS.issuesKey     && currentPage === "issues")  ||
           (key === LS.checkinKey    && currentPage === "checkin") ||
-          (key === LS.trainingKey   && currentPage === "training");
+          (key === LS.trainingKey   && currentPage === "training") ||
+          ((key === LS.availKey || key === LS.availOrdersKey) && currentPage === "avail");
         if(!rawStorageSet(key, data.value)) return; // direct write: no re-push
         this.lastReceived = Date.now(); this.applies++;
         this.rerender(key);
@@ -5431,7 +5390,7 @@
           else if(k === "checkin" && (key === LS.checkinKey || key === LS.trucksKey)) renderCheckIn();
           else if(k === "training" && key === LS.trainingKey) renderTraining();
           else if(k === "photos" && key === LS.catalogKey) renderPhotosTab();
-          else if(k === "avail" && key === LS.availLinkKey) refreshAvailLinkUI();
+          else if(k === "avail" && (key === LS.availKey || key === LS.availOrdersKey)) renderAvailability();
         } catch(e){}
         try {
           if(key === LS.skipWeeksKey && weekPickModal && weekPickModal.classList.contains("active")) renderWeekPick();
@@ -5745,7 +5704,7 @@
           { icon:"✅", title:"Go to Order Check-In", tag:"Nav", run:()=>showPage("checkin") },
           { icon:"🐛", title:"Go to Issue Tracker", tag:"Nav", run:()=>showPage("issues") },
           { icon:"📚", title:"Go to Training Documents", tag:"Nav", run:()=>showPage("training") },
-          { icon:"📊", title:"Open Availability sheet", tag:"Nav", run:()=>openAvailabilitySheet() },
+          { icon:"📊", title:"Go to Availability", tag:"Nav", run:()=>showPage("avail") },
           { icon:"➕", title:"New order", sub:"Create a truck order", tag:"Action", run:()=>{ showPage("order"); document.getElementById("newTruckBtn")?.click(); } },
           { icon:"🐛", title:"Log an issue", tag:"Action", run:()=>{ showPage("issues"); document.getElementById("newIssueBtn")?.click(); } },
           { icon:"✅", title:"Open Order Check-In", tag:"Nav", run:()=>showPage("checkin") },
@@ -5755,6 +5714,7 @@
           { icon:"📄", title:"Export Order Breakdown", tag:"Export", run:()=>{ showPage("order"); document.getElementById("exportBreakdownBtn")?.click(); } },
           { icon:"📄", title:"Export Truck Breakdown", tag:"Export", run:()=>{ showPage("order"); document.getElementById("exportTruckBreakdownBtn")?.click(); } },
           { icon:"📥", title:"Import PO Analysis", tag:"Import", run:()=>{ showPage("checkin"); document.getElementById("checkinImportBtn")?.click(); } },
+          { icon:"➕", title:"Add Availability", sub:"Add an item to the current week", tag:"Action", run:()=>{ showPage("avail"); document.getElementById("availAddBtn")?.click(); } },
           { icon:"💾", title:"Backup all data", tag:"Data", run:()=>window.HPABackup.export() },
           { icon:"↺", title:"Restore from backup", tag:"Data", run:()=>document.getElementById("restoreBtn")?.click() },
           { icon:"🟢", title:"Open Team Sync", tag:"Data", run:()=>window.HPASync.openModal() },
@@ -5924,7 +5884,6 @@
         showScreen(app);
         renderAll();
         showPage("order");
-        refreshAvailLinkUI();
         ensureNotifyPermission();
         Sync.init(u);
         checkStorageHealth();
