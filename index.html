@@ -97,6 +97,8 @@
     .tinyBtn:hover{ background:var(--rowHover); }
     .tinyBtn.danger{ border-color:rgba(224,86,63,.4); background:rgba(224,86,63,.1); color:#a8341f; }
     .tinyBtn.danger:hover{ background:rgba(224,86,63,.16); }
+    .btnDanger{ padding:12px 14px; border-radius:var(--radius-sm); border:1px solid rgba(224,86,63,.4); background:rgba(224,86,63,.1); color:#a8341f; font-family:var(--sans); font-weight:700; font-size:14.5px; cursor:pointer; transition:background .15s, border-color .15s; }
+    .btnDanger:hover{ background:rgba(224,86,63,.18); border-color:rgba(224,86,63,.55); }
     .row{ display:flex; gap:10px; align-items:flex-start; flex-wrap:wrap; }
     .row > *{ flex:1; min-width:160px; }
     .error{ color:var(--danger); font-size:13px; margin-top:10px; min-height:18px; font-weight:600; }
@@ -272,33 +274,63 @@
       .availEntryRow > input:nth-child(3){ grid-column:1; }
       .availEntryRow > .rmItem{ grid-column:2; justify-self:end; }
     }
-    /* Pre-Booking — one card per season, each with its own color theme;
-       individual rows get a solid holiday badge on top of that when their
-       ready date is tied to a holiday instead of a plain date. */
-    .prebookSeason{ border:1px solid var(--line); border-radius:var(--radius-sm); margin-top:14px; overflow:hidden; box-shadow:var(--shadow-sm); }
-    .prebookSeason[data-season="spring"]{ --seasonA:#d9679a; --seasonB:#7fb069; --seasonSoft:#fdf1f6; }
-    .prebookSeason[data-season="summer"]{ --seasonA:#e8a33d; --seasonB:#3aa6a6; --seasonSoft:#fffaf0; }
-    .prebookSeason[data-season="fall"]{   --seasonA:#c8622c; --seasonB:#8a4b2e; --seasonSoft:#fdf1e8; }
-    .prebookSeason[data-season="winter"]{ --seasonA:#3f7dbf; --seasonB:#2f5233; --seasonSoft:#eef5fb; }
-    .prebookSeasonHead{ display:flex; justify-content:space-between; align-items:center; gap:10px; padding:12px 15px; background:linear-gradient(120deg, var(--seasonA), var(--seasonB)); }
-    .prebookSeasonName{ font-family:var(--display); font-weight:700; font-size:16.5px; letter-spacing:-.01em; color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.18); }
-    .prebookSeasonHead .pillMini{ background:rgba(255,255,255,.28); color:#fff; }
-    .prebookRows{ background:var(--seasonSoft); }
-    .prebookRow{ display:grid; grid-template-columns:1.7fr 64px 1.4fr auto; gap:12px; align-items:center; padding:10px 15px; border-top:1px solid rgba(0,0,0,.06); }
-    .prebookRows .prebookRow:first-child{ border-top:none; }
-    .prebookItemName{ font-weight:600; color:var(--ink); }
-    .prebookVendorName{ font-size:12px; color:var(--ink-2); margin-top:1px; }
-    .prebookQty{ font-weight:700; color:var(--ink); text-align:center; font-variant-numeric:tabular-nums; }
-    .prebookReady{ display:flex; flex-direction:column; gap:3px; }
-    .prebookDatePlain{ font-size:13px; font-weight:600; color:var(--ink); }
-    .prebookReadySub{ font-size:11px; color:var(--ink-2); }
-    .holidayBadge{ display:inline-flex; align-items:center; gap:5px; align-self:flex-start; padding:3px 10px; border-radius:999px; font-size:12px; font-weight:700; background:var(--hColor); color:#fff; box-shadow:0 1px 3px rgba(0,0,0,.15); }
-    .prebookRowActions{ display:flex; gap:6px; justify-content:flex-end; flex-wrap:wrap; }
-    @media (max-width:640px){
-      .prebookRow{ grid-template-columns:1fr auto; row-gap:6px; }
-      .prebookQty{ text-align:left; }
-      .prebookRow > .prebookQty::before{ content:"Qty "; font-weight:500; color:var(--ink-2); }
-      .prebookRow > .prebookRowActions{ grid-column:1 / 3; justify-content:flex-start; }
+    /* Pre-Booking — a season tab bar (always all 4, each with its own color
+       theme) drives a month calendar; a month bar underneath lets you arrow
+       or sub-tab through that season's 3 months. Items appear on their
+       ready-date cell, themed to a holiday's color when tied to one. */
+    .prebookSeasonTabs{ display:flex; gap:8px; flex-wrap:wrap; margin:6px 0 4px; }
+    .prebookSeasonTab{ padding:9px 16px; border-radius:999px; border:1px solid var(--line); background:var(--paper-2); color:var(--ink-2); cursor:pointer; font-family:var(--sans); font-weight:700; font-size:13px; display:flex; align-items:center; gap:7px; transition:background .15s, border-color .15s, color .15s, box-shadow .15s; }
+    .prebookSeasonTab:hover{ background:var(--rowHover); }
+    .prebookSeasonTab[data-season="spring"]{ --seasonA:#d9679a; --seasonB:#7fb069; --seasonSoft:#fdf1f6; }
+    .prebookSeasonTab[data-season="summer"]{ --seasonA:#e8a33d; --seasonB:#3aa6a6; --seasonSoft:#fffaf0; }
+    .prebookSeasonTab[data-season="fall"]{   --seasonA:#c8622c; --seasonB:#8a4b2e; --seasonSoft:#fdf1e8; }
+    .prebookSeasonTab[data-season="winter"]{ --seasonA:#3f7dbf; --seasonB:#2f5233; --seasonSoft:#eef5fb; }
+    .prebookSeasonTab.active{ background:linear-gradient(120deg, var(--seasonA), var(--seasonB)); border-color:transparent; color:#fff; box-shadow:0 2px 8px rgba(0,0,0,.15); text-shadow:0 1px 2px rgba(0,0,0,.15); }
+    .prebookSeasonTab .count{ font-size:11px; font-weight:700; background:rgba(0,0,0,.08); color:inherit; padding:1px 8px; border-radius:999px; }
+    .prebookSeasonTab.active .count{ background:rgba(255,255,255,.28); }
+    /* The month bar and calendar below the tabs always reflect whichever
+       season is currently active, via a data-season attribute set on the
+       whole page section — these variables cascade down to both. */
+    #page-prebook[data-season="spring"]{ --seasonA:#d9679a; --seasonB:#7fb069; --seasonSoft:#fdf1f6; }
+    #page-prebook[data-season="summer"]{ --seasonA:#e8a33d; --seasonB:#3aa6a6; --seasonSoft:#fffaf0; }
+    #page-prebook[data-season="fall"]{   --seasonA:#c8622c; --seasonB:#8a4b2e; --seasonSoft:#fdf1e8; }
+    #page-prebook[data-season="winter"]{ --seasonA:#3f7dbf; --seasonB:#2f5233; --seasonSoft:#eef5fb; }
+    .prebookMonthBar{ display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin:0 0 14px; padding:10px 12px; border:1px solid var(--line); border-radius:var(--radius-sm); background:var(--seasonSoft, var(--paper-2)); }
+    .prebookMonthNavBtns{ display:flex; align-items:center; gap:8px; }
+    .prebookMonthArrow{ width:30px; height:30px; border-radius:50%; border:1px solid var(--line); background:var(--paper-2); color:var(--ink); cursor:pointer; font-size:14px; display:flex; align-items:center; justify-content:center; transition:background .15s; }
+    .prebookMonthArrow:hover{ background:var(--rowHover); }
+    .prebookMonthLabel{ font-family:var(--display); font-weight:700; font-size:15.5px; color:var(--ink); min-width:140px; text-align:center; }
+    .prebookMonthSubTabs{ display:flex; gap:6px; flex-wrap:wrap; }
+    .prebookMonthSubTab{ padding:6px 12px; border-radius:999px; border:1px solid var(--line); background:var(--paper-2); color:var(--ink-2); cursor:pointer; font-family:var(--sans); font-weight:600; font-size:12px; transition:background .15s, color .15s, border-color .15s; }
+    .prebookMonthSubTab:hover{ background:var(--rowHover); }
+    .prebookMonthSubTab.active{ background:var(--seasonA, var(--moss)); border-color:var(--seasonA, var(--moss)); color:#fff; }
+    .prebookYearNav{ display:flex; align-items:center; gap:4px; font-size:12px; color:var(--ink-2); font-weight:600; }
+    .prebookYearNav button{ width:24px; height:24px; border-radius:50%; border:1px solid var(--line); background:var(--paper-2); cursor:pointer; font-size:12px; display:flex; align-items:center; justify-content:center; }
+    .prebookYearNav button:hover{ background:var(--rowHover); }
+    .prebookCal{ border:1px solid var(--line); border-radius:var(--radius-sm); overflow:hidden; box-shadow:var(--shadow-sm); background:var(--paper-2); }
+    .prebookCalDowRow{ display:grid; grid-template-columns:repeat(7,1fr); background:var(--thead); }
+    .prebookCalDow{ padding:8px 6px; text-align:center; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--moss); }
+    .prebookCalGrid{ display:grid; grid-template-columns:repeat(7,1fr); }
+    .prebookCalCell{ min-height:92px; border-top:1px solid var(--line-soft); border-left:1px solid var(--line-soft); padding:6px; display:flex; flex-direction:column; gap:4px; cursor:pointer; transition:background .15s; }
+    .prebookCalGrid .prebookCalCell:nth-child(7n+1){ border-left:none; }
+    .prebookCalGrid .prebookCalCell:nth-child(-n+7){ border-top:none; }
+    .prebookCalCell:hover{ background:var(--rowHover); }
+    .prebookCalCell.outMonth{ background:var(--paper-3); cursor:default; opacity:.55; }
+    .prebookCalCell.outMonth:hover{ background:var(--paper-3); }
+    .prebookCalCell.isToday .prebookCalDayNum{ background:var(--moss); color:#fff; border-radius:50%; }
+    .prebookCalDayNum{ width:22px; height:22px; display:flex; align-items:center; justify-content:center; font-size:11.5px; font-weight:700; color:var(--ink-2); }
+    .prebookCalItems{ display:flex; flex-direction:column; gap:3px; }
+    .prebookCalItem{ font-size:10.5px; font-weight:600; padding:3px 6px; border-radius:6px; background:var(--seasonSoft,#eee); color:var(--ink); border:1px solid rgba(0,0,0,.06); line-height:1.25; cursor:pointer; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .prebookCalItem:hover{ filter:brightness(0.97); }
+    .prebookCalItem.isHoliday{ background:var(--hColor); color:#fff; border-color:transparent; }
+    .prebookCalAddHint{ font-size:10px; color:var(--ink-2); opacity:0; transition:opacity .15s; margin-top:auto; }
+    .prebookCalCell:hover .prebookCalAddHint{ opacity:.85; }
+    @media (max-width:720px){
+      .prebookMonthBar{ justify-content:center; }
+      .prebookCalCell{ min-height:64px; padding:4px; }
+      .prebookCalDayNum{ width:18px; height:18px; font-size:10px; }
+      .prebookCalItem{ font-size:9px; padding:2px 4px; }
+      .prebookMonthLabel{ min-width:0; }
     }
     .checkVendor{ border:1px solid var(--line); background:var(--paper-2); border-radius:var(--radius-sm); padding:14px; margin-top:12px; box-shadow:var(--shadow-sm); }
     .checkVendorHead{ display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:10px; }
@@ -1231,7 +1263,9 @@
               <button id="prebookExportBtn" class="btnGhost">⬇ Export CSV</button>
             </div>
           </div>
-          <div class="note">Grouped by season, based on each item's ready date. Pick a holiday instead of a specific date and that item gets themed to it.</div>
+          <div class="note">Pick a season, then arrow through its months. Click a day to pre-book it, or an item to edit it. Pick a holiday instead of a specific date and that item gets themed to it.</div>
+          <div class="prebookSeasonTabs" id="prebookSeasonTabs"></div>
+          <div class="prebookMonthBar" id="prebookMonthBar"></div>
           <div id="prebookWrap"></div>
         </div>
 
@@ -1466,7 +1500,10 @@
         <label><span class="lbl">Holiday</span><select id="pb_holiday"></select></label>
         <div class="note" id="pb_holidayPreview"></div>
       </div>
-      <button id="prebookSaveBtn" class="btn">Save Pre-Book</button>
+      <div style="display:flex; gap:8px; margin-top:4px;">
+        <button id="prebookSaveBtn" class="btn" style="width:auto; flex:1;">Save Pre-Book</button>
+        <button id="prebookDeleteBtn" class="btnDanger" style="display:none; flex:0 0 auto;">Delete</button>
+      </div>
     </div>
   </div>
 
@@ -5659,6 +5696,64 @@
     function loadPrebook(){ return LS.get(LS.prebookKey, []); }
     function savePrebook(list){ LS.set(LS.prebookKey, list); }
 
+    // Calendar navigation state: which season tab, which of its 3 months
+    // (by index into season.months), and which year that month falls in.
+    // Winter spans a year boundary (Dec, then Jan/Feb of the next year), so
+    // years are tracked per-month rather than as one number for the season.
+    function seasonMonthDates(season, anchorYear){
+      let year = anchorYear, prevM = null;
+      return season.months.map(m => {
+        if(prevM !== null && m < prevM) year++;
+        prevM = m;
+        return { year, month: m };
+      });
+    }
+    function currentSeasonYearDefaults(){
+      const today = new Date();
+      const season = seasonForDate(fmtDate(today));
+      let year = today.getFullYear();
+      // If we're in Jan/Feb during winter, that winter started in the
+      // PREVIOUS calendar year (its Dec) — anchor there so today's month
+      // is actually inside the computed Dec/Jan/Feb set.
+      if(season.key === "winter" && (today.getMonth() === 0 || today.getMonth() === 1)) year -= 1;
+      return { seasonKey: season.key, year };
+    }
+    const __pbDefaults = currentSeasonYearDefaults();
+    let prebookSeasonKey = __pbDefaults.seasonKey;
+    let prebookYear = __pbDefaults.year;
+    let prebookMonthIdx = 0;
+    (function initPrebookMonthIdx(){
+      const season = SEASONS.find(s => s.key === prebookSeasonKey);
+      const dates = seasonMonthDates(season, prebookYear);
+      const today = new Date();
+      const idx = dates.findIndex(d => d.year === today.getFullYear() && d.month === today.getMonth());
+      prebookMonthIdx = idx >= 0 ? idx : 0;
+    })();
+    function switchPrebookSeason(key){
+      prebookSeasonKey = key;
+      const season = SEASONS.find(s => s.key === key);
+      const today = new Date();
+      if(key === seasonForDate(fmtDate(today)).key){
+        const d = currentSeasonYearDefaults();
+        prebookYear = d.year;
+        const dates = seasonMonthDates(season, prebookYear);
+        const idx = dates.findIndex(dd => dd.year === today.getFullYear() && dd.month === today.getMonth());
+        prebookMonthIdx = idx >= 0 ? idx : 0;
+      } else {
+        prebookMonthIdx = 0;
+      }
+      renderPrebook();
+    }
+    function shiftPrebookMonth(delta){
+      const season = SEASONS.find(s => s.key === prebookSeasonKey);
+      prebookMonthIdx = (prebookMonthIdx + delta + season.months.length) % season.months.length;
+      renderPrebook();
+    }
+    function shiftPrebookYear(delta){
+      prebookYear += delta;
+      renderPrebook();
+    }
+
     const prebookModal = document.getElementById("prebookModal");
     let editingPrebookId = null;
     document.getElementById("prebookAddBtn").addEventListener("click", () => openPrebookModal(null));
@@ -5691,7 +5786,7 @@
       document.getElementById("pb_holidayRow").style.display = mode === "holiday" ? "" : "none";
       if(mode === "holiday") updatePrebookHolidayPreview();
     });
-    function openPrebookModal(entry){
+    function openPrebookModal(entry, prefillDate){
       editingPrebookId = entry?.id ?? null;
       document.getElementById("prebookModalTitle").textContent = editingPrebookId ? "Edit Pre-Book" : "Pre-book Item";
       document.getElementById("pb_vendor").value = entry?.vendor || "";
@@ -5699,13 +5794,15 @@
       document.getElementById("pb_qty").value = entry?.qty ?? "";
       const mode = entry?.readyMode || "date";
       document.getElementById("pb_readyMode").value = mode;
-      document.getElementById("pb_date").value = (mode === "date" ? entry?.readyDate : "") || fmtDate(new Date());
+      document.getElementById("pb_date").value = (mode === "date" ? entry?.readyDate : "") || prefillDate || fmtDate(new Date());
       fillPrebookHolidayOptions(entry?.holidayKey || HOLIDAYS[0].key);
       document.getElementById("pb_dateRow").style.display = mode === "date" ? "" : "none";
       document.getElementById("pb_holidayRow").style.display = mode === "holiday" ? "" : "none";
       if(mode === "holiday") updatePrebookHolidayPreview();
       const saveBtn = document.getElementById("prebookSaveBtn");
       if(saveBtn) saveBtn.textContent = editingPrebookId ? "Save Changes" : "Save Pre-Book";
+      const delBtn = document.getElementById("prebookDeleteBtn");
+      if(delBtn) delBtn.style.display = editingPrebookId ? "" : "none";
       prebookModal.classList.add("active");
       prebookModal.setAttribute("aria-hidden","false");
     }
@@ -5714,6 +5811,15 @@
       prebookModal.setAttribute("aria-hidden","true");
       editingPrebookId = null;
     }
+    document.getElementById("prebookDeleteBtn").addEventListener("click", () => {
+      if(!editingPrebookId) return;
+      const entry = loadPrebook().find(x => x.id === editingPrebookId);
+      if(!confirm(`Delete pre-booked "${entry?.item||"item"}" from ${entry?.vendor||"—"}?`)) return;
+      savePrebook(loadPrebook().filter(x => x.id !== editingPrebookId));
+      markTabChanged("prebook");
+      closePrebookModal();
+      renderPrebook();
+    });
     document.getElementById("prebookSaveBtn").addEventListener("click", () => {
       const vendor = document.getElementById("pb_vendor").value.trim();
       const item = document.getElementById("pb_item").value.trim();
@@ -5742,71 +5848,117 @@
       closePrebookModal();
       renderPrebook();
     });
-    function prebookRowHtml(p){
+    const PREBOOK_DOW_LABELS = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+    function prebookCalItemChip(p){
       const h = p.holidayKey ? holidayByKey(p.holidayKey) : null;
-      const d = parseDate(p.readyDate);
-      const dateLabel = d ? d.toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"}) : (p.readyDate || "—");
-      const readyHtml = h
-        ? `<span class="holidayBadge" style="--hColor:${h.color}">${h.emoji} ${escapeHtml(h.name)}</span><span class="prebookReadySub">${escapeHtml(dateLabel)}</span>`
-        : `<span class="prebookDatePlain">📅 ${escapeHtml(dateLabel)}</span>`;
-      return `
-        <div class="prebookRow" data-id="${p.id}">
-          <div class="prebookRowMain">
-            <div class="prebookItemName">${escapeHtml(p.item || "—")}</div>
-            <div class="prebookVendorName">${escapeHtml(p.vendor || "—")}</div>
-          </div>
-          <div class="prebookQty">${escapeHtml(p.qty !== "" && p.qty != null ? String(p.qty) : "—")}</div>
-          <div class="prebookReady">${readyHtml}</div>
-          <div class="prebookRowActions">
-            <button class="tinyBtn pb_edit">Edit</button>
-            <button class="tinyBtn danger pb_del">Delete</button>
-          </div>
+      const title = `${p.item||"Item"} — ${p.vendor||"—"}${p.qty!=="" && p.qty!=null ? ` (qty ${p.qty})` : ""}${h?` · ${h.name}`:""}`;
+      return `<div class="prebookCalItem ${h?"isHoliday":""}" style="${h?`--hColor:${h.color};`:""}" data-id="${p.id}" title="${escapeHtml(title)}">${h?h.emoji:"📌"} ${escapeHtml(p.item||"Item")}</div>`;
+    }
+    function renderPrebookCalendar(wrap, items, year, month, season){
+      const itemsByDay = new Map();
+      items.forEach(p => {
+        const d = parseDate(p.readyDate);
+        if(!d || d.getFullYear() !== year || d.getMonth() !== month) return;
+        const day = d.getDate();
+        if(!itemsByDay.has(day)) itemsByDay.set(day, []);
+        itemsByDay.get(day).push(p);
+      });
+
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      const prevMonthDays = new Date(year, month, 0).getDate();
+      const startOffset = (new Date(year, month, 1).getDay() + 6) % 7; // Monday-first, matches the rest of the app
+      const totalCells = Math.ceil((startOffset + daysInMonth) / 7) * 7;
+      const today = new Date(); today.setHours(0,0,0,0);
+
+      let cellsHtml = "";
+      for(let i = 0; i < totalCells; i++){
+        const dayNum = i - startOffset + 1;
+        let displayDay, cellDate, outMonth = false;
+        if(dayNum < 1){ displayDay = prevMonthDays + dayNum; outMonth = true; cellDate = new Date(year, month - 1, displayDay); }
+        else if(dayNum > daysInMonth){ displayDay = dayNum - daysInMonth; outMonth = true; cellDate = new Date(year, month + 1, displayDay); }
+        else { displayDay = dayNum; cellDate = new Date(year, month, displayDay); }
+        const isToday = !outMonth && cellDate.getTime() === today.getTime();
+        const dayItems = outMonth ? [] : (itemsByDay.get(displayDay) || []).sort((a,b) => (a.item||"").localeCompare(b.item||""));
+        cellsHtml += `
+          <div class="prebookCalCell ${outMonth?"outMonth":""} ${isToday?"isToday":""}" ${outMonth?"":`data-date="${fmtDate(cellDate)}"`}>
+            <div class="prebookCalDayNum">${displayDay}</div>
+            <div class="prebookCalItems">${dayItems.map(p => prebookCalItemChip(p)).join("")}</div>
+            ${outMonth ? "" : `<div class="prebookCalAddHint">+ Pre-book</div>`}
+          </div>`;
+      }
+
+      wrap.innerHTML = `
+        <div class="prebookCal" data-season="${season.key}">
+          <div class="prebookCalDowRow">${PREBOOK_DOW_LABELS.map(d => `<div class="prebookCalDow">${d}</div>`).join("")}</div>
+          <div class="prebookCalGrid">${cellsHtml}</div>
         </div>`;
+
+      wrap.querySelectorAll(".prebookCalItem").forEach(chip => {
+        chip.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const p = loadPrebook().find(x => x.id === chip.dataset.id);
+          if(p) openPrebookModal(p);
+        });
+      });
+      wrap.querySelectorAll(".prebookCalCell[data-date]").forEach(cell => {
+        cell.addEventListener("click", () => openPrebookModal(null, cell.dataset.date));
+      });
     }
     function renderPrebook(){
       const wrap = document.getElementById("prebookWrap");
-      if(!wrap) return;
+      const tabsEl = document.getElementById("prebookSeasonTabs");
+      const barEl = document.getElementById("prebookMonthBar");
+      if(!wrap || !tabsEl || !barEl) return;
+
       const search = (document.getElementById("prebookSearch").value || "").trim().toLowerCase();
       let items = loadPrebook();
       if(search) items = items.filter(p => (p.vendor||"").toLowerCase().includes(search) || (p.item||"").toLowerCase().includes(search));
       const countEl = document.getElementById("prebookCountLabel");
       if(countEl) countEl.textContent = String(items.length);
-      wrap.innerHTML = "";
-      if(loadPrebook().length === 0){
-        wrap.innerHTML = `<div class="note">No pre-booked items yet. Click "+ Pre-book Item" to reserve stock ahead of a date or a holiday rush.</div>`;
-        return;
-      }
-      const bySeason = new Map(SEASONS.map(s => [s.key, []]));
-      items.forEach(p => { const s = seasonForDate(p.readyDate); bySeason.get(s.key).push(p); });
-      SEASONS.forEach(season => {
-        const list = bySeason.get(season.key).sort((a,b) => (a.readyDate||"").localeCompare(b.readyDate||""));
-        const box = document.createElement("div");
-        box.className = "prebookSeason";
-        box.dataset.season = season.key;
-        box.innerHTML = `
-          <div class="prebookSeasonHead">
-            <span class="prebookSeasonName">${season.emoji} ${season.name}</span>
-            <span class="pillMini">${list.length} item${list.length===1?"":"s"}</span>
-          </div>
-          <div class="prebookRows">${
-            list.length === 0
-              ? `<div class="note" style="padding:10px 4px;">Nothing booked for ${season.name} yet.</div>`
-              : list.map(p => prebookRowHtml(p)).join("")
-          }</div>
-        `;
-        list.forEach(p => {
-          const row = box.querySelector(`.prebookRow[data-id="${p.id}"]`);
-          if(!row) return;
-          row.querySelector(".pb_edit")?.addEventListener("click", () => openPrebookModal(p));
-          row.querySelector(".pb_del")?.addEventListener("click", () => {
-            if(!confirm(`Delete pre-booked "${p.item}" from ${p.vendor}?`)) return;
-            savePrebook(loadPrebook().filter(x => x.id !== p.id));
-            markTabChanged("prebook");
-            renderPrebook();
-          });
-        });
-        wrap.appendChild(box);
+
+      // Seasons always show, whether or not anything's booked in them yet —
+      // the counts on each tab reflect the current search.
+      const countBySeason = new Map(SEASONS.map(s => [s.key, 0]));
+      items.forEach(p => { const s = seasonForDate(p.readyDate); countBySeason.set(s.key, countBySeason.get(s.key) + 1); });
+      tabsEl.innerHTML = SEASONS.map(season => `
+        <button type="button" class="prebookSeasonTab ${season.key===prebookSeasonKey?"active":""}" data-season="${season.key}">
+          ${season.emoji} ${season.name} <span class="count">${countBySeason.get(season.key)}</span>
+        </button>`).join("");
+      tabsEl.querySelectorAll(".prebookSeasonTab").forEach(btn => {
+        btn.addEventListener("click", () => switchPrebookSeason(btn.dataset.season));
       });
+
+      const season = SEASONS.find(s => s.key === prebookSeasonKey) || SEASONS[0];
+      document.getElementById("page-prebook").dataset.season = season.key;
+      const monthDates = seasonMonthDates(season, prebookYear);
+      if(prebookMonthIdx >= monthDates.length) prebookMonthIdx = 0;
+      const cur = monthDates[prebookMonthIdx];
+      const monthLabel = new Date(cur.year, cur.month, 1).toLocaleDateString(undefined, {month:"long", year:"numeric"});
+      const yearLabel = season.key === "winter" ? `${monthDates[0].year}–${monthDates[monthDates.length-1].year}` : String(cur.year);
+
+      barEl.innerHTML = `
+        <div class="prebookMonthNavBtns">
+          <button type="button" class="prebookMonthArrow" id="prebookMonthPrev" aria-label="Previous month in ${season.name}">‹</button>
+          <span class="prebookMonthLabel">${monthLabel}</span>
+          <button type="button" class="prebookMonthArrow" id="prebookMonthNext" aria-label="Next month in ${season.name}">›</button>
+        </div>
+        <div class="prebookMonthSubTabs">${
+          monthDates.map((d,i) => `<button type="button" class="prebookMonthSubTab ${i===prebookMonthIdx?"active":""}" data-idx="${i}">${new Date(d.year,d.month,1).toLocaleDateString(undefined,{month:"short"})}</button>`).join("")
+        }</div>
+        <div class="prebookYearNav">
+          <button type="button" id="prebookYearPrev" aria-label="Previous year">«</button>
+          <span>${yearLabel}</span>
+          <button type="button" id="prebookYearNext" aria-label="Next year">»</button>
+        </div>`;
+      document.getElementById("prebookMonthPrev").addEventListener("click", () => shiftPrebookMonth(-1));
+      document.getElementById("prebookMonthNext").addEventListener("click", () => shiftPrebookMonth(1));
+      document.getElementById("prebookYearPrev").addEventListener("click", () => shiftPrebookYear(-1));
+      document.getElementById("prebookYearNext").addEventListener("click", () => shiftPrebookYear(1));
+      barEl.querySelectorAll(".prebookMonthSubTab").forEach(btn => {
+        btn.addEventListener("click", () => { prebookMonthIdx = Number(btn.dataset.idx); renderPrebook(); });
+      });
+
+      renderPrebookCalendar(wrap, items, cur.year, cur.month, season);
     }
 
     /*********************************************************
@@ -6521,12 +6673,29 @@
     const MAX_SYNC_BYTES = 900000; // stay under Firestore's ~1MB document cap
     const PRESENCE_HEARTBEAT_MS = 25000; // how often we re-announce ourselves
     const PRESENCE_STALE_MS = 90000;     // how old a presence doc can get before we stop counting it (covers a tab that closed without cleaning up after itself)
+    // A random id, but STABLE for this browser tab (kept in sessionStorage,
+    // not regenerated on every load) — otherwise every refresh writes its
+    // presence doc under a brand-new id instead of updating the same one,
+    // leaving old copies of "you" sitting around until they age out, so a
+    // few quick refreshes reads as several people all on the same tab. Two
+    // tabs still show up as two people, since each tab gets its own
+    // sessionStorage; a genuinely closed tab still ages out via
+    // PRESENCE_STALE_MS same as before — this only fixes the same tab
+    // reloading itself.
+    function stableClientId(){
+      const key = "hpa_client_id_v1";
+      try {
+        let id = sessionStorage.getItem(key);
+        if(!id){ id = Math.random().toString(36).slice(2); sessionStorage.setItem(key, id); }
+        return id;
+      } catch(e){ return Math.random().toString(36).slice(2); } // sessionStorage unavailable — fall back to a fresh id
+    }
 
     const Sync = {
       ready:false, starting:false, fs:null, db:null, col:null,
       photosCol:null, trainingFilesCol:null, _pendingTrainingFiles:{},
       presenceCol:null, presenceMap:{}, presenceError:"", _presenceUnsub:null, _presenceHeartbeatT:null, _presenceTickT:null, _presenceWarned:false,
-      clientId: Math.random().toString(36).slice(2),
+      clientId: stableClientId(),
       user:"someone", _t:{}, _seeded:false, _warned:{},
       lastSent:0, lastReceived:0, lastError:"", pushes:0, applies:0,
       teamCode(){ return (LS.get(LS.teamKey, "") || "main"); },
