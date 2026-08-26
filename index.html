@@ -358,7 +358,10 @@
     .prebookCalCell.outMonth{ background:var(--paper-3); cursor:default; opacity:.55; }
     .prebookCalCell.outMonth:hover{ background:var(--paper-3); }
     .prebookCalCell.isToday .prebookCalDayNum{ background:var(--moss); color:#fff; border-radius:50%; }
+    .prebookCalCell.hasHoliday{ box-shadow:inset 3px 0 0 var(--hColor); }
+    .prebookCalCell.hasHoliday .prebookCalDayNum{ box-shadow:0 0 0 2px var(--hColor); border-radius:50%; }
     .prebookCalDayNum{ width:22px; height:22px; display:flex; align-items:center; justify-content:center; font-size:11.5px; font-weight:700; color:var(--ink-2); }
+    .prebookCalHolidayTag{ font-size:9.5px; font-weight:700; padding:2px 6px; border-radius:6px; background:var(--hColor); color:#fff; align-self:flex-start; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .prebookCalItems{ display:flex; flex-direction:column; gap:3px; }
     .prebookCalItem{ font-size:10.5px; font-weight:600; padding:3px 6px; border-radius:6px; background:var(--seasonSoft,#eee); color:var(--ink); border:1px solid rgba(0,0,0,.06); line-height:1.25; cursor:pointer; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .prebookCalItem:hover{ filter:brightness(0.97); }
@@ -370,6 +373,8 @@
       .prebookCalCell{ min-height:64px; padding:4px; }
       .prebookCalDayNum{ width:18px; height:18px; font-size:10px; }
       .prebookCalItem{ font-size:9px; padding:2px 4px; }
+      .prebookCalHolidayTag{ font-size:8.5px; padding:1px 4px; }
+      .prebookCalHolidayTag .tagText{ display:none; }
       .prebookMonthLabel{ min-width:0; }
     }
     .checkVendor{ border:1px solid var(--line); background:var(--paper-2); border-radius:var(--radius-sm); padding:14px; margin-top:12px; box-shadow:var(--shadow-sm); }
@@ -6080,6 +6085,20 @@
       { key:"christmas",   name:"Christmas",        emoji:"🎄", season:"winter", color:"#b3272c", getDate:(y)=>new Date(y,11,25) },
     ];
     function holidayByKey(key){ return HOLIDAYS.find(h => h.key === key) || null; }
+    // Every holiday's actual date across a small year range, keyed by
+    // "YYYY-MM-DD" — used to tag calendar days as holidays whether or not
+    // anything's pre-booked on them. year-1/year+1 are included too so a
+    // month view that bleeds into another year (e.g. December showing
+    // January's leading days) still tags correctly.
+    function holidaysForYearRange(y){
+      const map = new Map();
+      [y-1, y, y+1].forEach(yr => {
+        HOLIDAYS.forEach(h => {
+          try { map.set(fmtDate(h.getDate(yr)), h); } catch(e){}
+        });
+      });
+      return map;
+    }
     // The next upcoming occurrence of a holiday from today (rolls into next
     // year automatically once this year's date has passed) — a pre-booked
     // item is always pointing at a real, concrete date, not just a name.
@@ -6240,6 +6259,7 @@
         if(!itemsByDay.has(day)) itemsByDay.set(day, []);
         itemsByDay.get(day).push(p);
       });
+      const holidayMap = holidaysForYearRange(year);
 
       const daysInMonth = new Date(year, month + 1, 0).getDate();
       const prevMonthDays = new Date(year, month, 0).getDate();
@@ -6256,9 +6276,11 @@
         else { displayDay = dayNum; cellDate = new Date(year, month, displayDay); }
         const isToday = !outMonth && cellDate.getTime() === today.getTime();
         const dayItems = outMonth ? [] : (itemsByDay.get(displayDay) || []).sort((a,b) => (a.item||"").localeCompare(b.item||""));
+        const hol = holidayMap.get(fmtDate(cellDate));
         cellsHtml += `
-          <div class="prebookCalCell ${outMonth?"outMonth":""} ${isToday?"isToday":""}" ${outMonth?"":`data-date="${fmtDate(cellDate)}"`}>
+          <div class="prebookCalCell ${outMonth?"outMonth":""} ${isToday?"isToday":""} ${hol?"hasHoliday":""}" ${outMonth?"":`data-date="${fmtDate(cellDate)}"`} ${hol?`style="--hColor:${hol.color};"`:""}>
             <div class="prebookCalDayNum">${displayDay}</div>
+            ${hol ? `<div class="prebookCalHolidayTag" title="${escapeHtml(hol.name)}">${hol.emoji}<span class="tagText"> ${escapeHtml(hol.name)}</span></div>` : ``}
             <div class="prebookCalItems">${dayItems.map(p => prebookCalItemChip(p)).join("")}</div>
             ${outMonth ? "" : `<div class="prebookCalAddHint">+ Pre-book</div>`}
           </div>`;
@@ -7514,7 +7536,19 @@
         if(!data || typeof data.value !== "string") return;
         if(SYNC_KEYS.indexOf(key) === -1) return;
         const local = localStorage.getItem(key);
-        if(local === data.value) return;          // already in sync — no loop
+        // trucksKey/trainingKey are pushed with big file bytes stripped out
+        // (they travel separately via poFilesCol/trainingFilesCol). Without
+        // this, an echo of our OWN write — which Firestore's onSnapshot
+        // delivers back to us too — would come back missing the dataUrl and
+        // clobber the file we just uploaded a moment ago, making it look
+        // like it vanished until something re-delivers it (e.g. a refresh
+        // re-subscribing to poFilesCol/trainingFilesCol). Rehydrate any
+        // dataUrl we already have locally before ever writing the incoming
+        // value, so our own echo can never blow away a file we just added.
+        let incoming = data.value;
+        if(key === LS.trucksKey) incoming = this.rehydratePoFiles(incoming, local);
+        else if(key === LS.trainingKey) incoming = this.rehydrateTrainingFiles(incoming, local);
+        if(local === incoming) return;          // already in sync — no loop
         // Is the person looking at the very thing that just changed under them?
         const editingThis =
           (key === LS.trucksKey     && currentPage === "order")   ||
@@ -7525,7 +7559,7 @@
           (key === LS.trainingKey   && currentPage === "training") ||
           (key === LS.prebookKey    && currentPage === "prebook") ||
           ((key === LS.availKey || key === LS.availOrdersKey || key === LS.availAmountsKey || key === LS.availSpecOverridesKey) && currentPage === "avail");
-        if(!rawStorageSet(key, data.value)) return; // direct write: no re-push
+        if(!rawStorageSet(key, incoming)) return; // direct write: no re-push
         this.lastReceived = Date.now(); this.applies++;
         this.rerender(key);
         if(key === LS.trainingKey){ this.reconcilePendingTrainingFiles(); }
@@ -7536,6 +7570,39 @@
           clearTimeout(this._noticeT);
           this._noticeT = setTimeout(() => { statusChip.textContent = "Ready"; }, 5000);
         }
+      },
+      // Merge locally-known PO PDF bytes into an incoming (stripped) trucks
+      // blob before it's ever written to localStorage — see applyRemote.
+      rehydratePoFiles(incomingStr, localStr){
+        try{
+          const incoming = JSON.parse(incomingStr);
+          const local = localStr ? JSON.parse(localStr) : [];
+          const localDataUrls = {};
+          local.forEach(t => (t.vendorBlocks || []).forEach(vb => {
+            if(vb.poFile && vb.poFile.dataUrl) localDataUrls[vb.poFile.id] = vb.poFile.dataUrl;
+          }));
+          let changed = false;
+          incoming.forEach(t => (t.vendorBlocks || []).forEach(vb => {
+            if(vb.poFile && !vb.poFile.dataUrl && localDataUrls[vb.poFile.id]){
+              vb.poFile.dataUrl = localDataUrls[vb.poFile.id]; changed = true;
+            }
+          }));
+          return changed ? JSON.stringify(incoming) : incomingStr;
+        } catch(e){ return incomingStr; }
+      },
+      // Same idea, for training file uploads — see applyRemote.
+      rehydrateTrainingFiles(incomingStr, localStr){
+        try{
+          const incoming = JSON.parse(incomingStr);
+          const local = localStr ? JSON.parse(localStr) : [];
+          const localDataUrls = {};
+          local.forEach(d => { if(d.type === "file" && d.dataUrl) localDataUrls[d.id] = d.dataUrl; });
+          let changed = false;
+          incoming.forEach(d => {
+            if(d.type === "file" && !d.dataUrl && localDataUrls[d.id]){ d.dataUrl = localDataUrls[d.id]; changed = true; }
+          });
+          return changed ? JSON.stringify(incoming) : incomingStr;
+        } catch(e){ return incomingStr; }
       },
       onLocalSet(key){ this.push(key); },
       push(key){
