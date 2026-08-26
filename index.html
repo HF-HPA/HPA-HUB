@@ -272,6 +272,34 @@
       .availEntryRow > input:nth-child(3){ grid-column:1; }
       .availEntryRow > .rmItem{ grid-column:2; justify-self:end; }
     }
+    /* Pre-Booking — one card per season, each with its own color theme;
+       individual rows get a solid holiday badge on top of that when their
+       ready date is tied to a holiday instead of a plain date. */
+    .prebookSeason{ border:1px solid var(--line); border-radius:var(--radius-sm); margin-top:14px; overflow:hidden; box-shadow:var(--shadow-sm); }
+    .prebookSeason[data-season="spring"]{ --seasonA:#d9679a; --seasonB:#7fb069; --seasonSoft:#fdf1f6; }
+    .prebookSeason[data-season="summer"]{ --seasonA:#e8a33d; --seasonB:#3aa6a6; --seasonSoft:#fffaf0; }
+    .prebookSeason[data-season="fall"]{   --seasonA:#c8622c; --seasonB:#8a4b2e; --seasonSoft:#fdf1e8; }
+    .prebookSeason[data-season="winter"]{ --seasonA:#3f7dbf; --seasonB:#2f5233; --seasonSoft:#eef5fb; }
+    .prebookSeasonHead{ display:flex; justify-content:space-between; align-items:center; gap:10px; padding:12px 15px; background:linear-gradient(120deg, var(--seasonA), var(--seasonB)); }
+    .prebookSeasonName{ font-family:var(--display); font-weight:700; font-size:16.5px; letter-spacing:-.01em; color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.18); }
+    .prebookSeasonHead .pillMini{ background:rgba(255,255,255,.28); color:#fff; }
+    .prebookRows{ background:var(--seasonSoft); }
+    .prebookRow{ display:grid; grid-template-columns:1.7fr 64px 1.4fr auto; gap:12px; align-items:center; padding:10px 15px; border-top:1px solid rgba(0,0,0,.06); }
+    .prebookRows .prebookRow:first-child{ border-top:none; }
+    .prebookItemName{ font-weight:600; color:var(--ink); }
+    .prebookVendorName{ font-size:12px; color:var(--ink-2); margin-top:1px; }
+    .prebookQty{ font-weight:700; color:var(--ink); text-align:center; font-variant-numeric:tabular-nums; }
+    .prebookReady{ display:flex; flex-direction:column; gap:3px; }
+    .prebookDatePlain{ font-size:13px; font-weight:600; color:var(--ink); }
+    .prebookReadySub{ font-size:11px; color:var(--ink-2); }
+    .holidayBadge{ display:inline-flex; align-items:center; gap:5px; align-self:flex-start; padding:3px 10px; border-radius:999px; font-size:12px; font-weight:700; background:var(--hColor); color:#fff; box-shadow:0 1px 3px rgba(0,0,0,.15); }
+    .prebookRowActions{ display:flex; gap:6px; justify-content:flex-end; flex-wrap:wrap; }
+    @media (max-width:640px){
+      .prebookRow{ grid-template-columns:1fr auto; row-gap:6px; }
+      .prebookQty{ text-align:left; }
+      .prebookRow > .prebookQty::before{ content:"Qty "; font-weight:500; color:var(--ink-2); }
+      .prebookRow > .prebookRowActions{ grid-column:1 / 3; justify-content:flex-start; }
+    }
     .checkVendor{ border:1px solid var(--line); background:var(--paper-2); border-radius:var(--radius-sm); padding:14px; margin-top:12px; box-shadow:var(--shadow-sm); }
     .checkVendorHead{ display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:10px; }
     .checkVendorHead h3{ margin:0; font-family:var(--display); font-size:17px; color:var(--ink); font-weight:600; }
@@ -932,31 +960,17 @@
     }
 
     /* =====================================================================
-       HIGH CONTRAST MODE — toggled via body.highContrast; appended last so
-       it overrides every themed color used throughout the app (they all
-       route through these same CSS variables).
+       Sidebar footer — utility actions (Backup/Restore/Log out) read as
+       secondary to the main nav above them: a divider, a small section
+       label, and lighter/smaller buttons than the primary nav items.
        ===================================================================== */
-    body.highContrast{
-      --canopy:#000000; --forest:#001a0f; --moss:#004d2b; --fern:#00b368;
-      --mint:#00e68a; --mint-deep:#00b368; --gold:#e6b400;
-      --paper:#ffffff; --paper-2:#ffffff; --paper-3:#eeeeee;
-      --ink:#000000; --ink-2:#1a1a1a;
-      --line:#000000; --line-soft:#333333;
-      --shadow:0 4px 0 rgba(0,0,0,.6); --shadow-sm:0 2px 0 rgba(0,0,0,.5);
-      --ok:#006622; --warn:#8a5a00; --danger:#b30000;
-      --thead:#000000; --rowA:#ffffff; --rowB:#eeeeee; --rowHover:#fff2a8;
-    }
-    body.highContrast .bgPhoto, body.highContrast .mist, body.highContrast .rays{ display:none !important; }
-    body.highContrast::after{ display:none !important; }
-    body.highContrast *{ text-shadow:none !important; }
-    body.highContrast .btnGhost, body.highContrast .tinyBtn, body.highContrast .navBtn,
-    body.highContrast input, body.highContrast select, body.highContrast textarea,
-    body.highContrast .card, body.highContrast .statusPill, body.highContrast .statusChip,
-    body.highContrast .poTable, body.highContrast .table{ border-width:2px !important; border-color:#000 !important; }
-    body.highContrast .chip{ background:#000 !important; color:#fff !important; border:2px solid #fff !important; }
-    body.highContrast .thead, body.highContrast .poTable thead th{ color:#fff !important; background:#000 !important; }
-    body.highContrast .navBtn.active{ outline:3px solid #ffcc00; }
-    body.highContrast a, body.highContrast .pi_title{ color:#000 !important; }
+    .navFooter{ border-top:1px solid rgba(255,255,255,.08); padding-top:12px; margin-top:2px; }
+    .navFooterLabel{ font-size:10px; font-weight:700; letter-spacing:.13em; text-transform:uppercase; color:rgba(168,214,190,.48); margin:2px 6px 6px; }
+    .navFooter .navBtn{ font-size:12.5px; font-weight:500; padding:8px 10px; color:rgba(214,239,226,.7); }
+    .navFooter .navBtn:hover{ color:#eafff5; }
+    .navFooter .navLogoutBtn{ margin-top:10px; border-color:rgba(224,86,63,.3); color:#ffb4a4; }
+    .navFooter .navLogoutBtn:hover{ background:rgba(224,86,63,.12); border-color:rgba(224,86,63,.45); color:#ffcdc2; }
+    .side .sideNote{ color:rgba(168,214,190,.55); font-size:11px; line-height:1.45; margin-top:12px; }
   </style>
 </head>
 <body class="density-comfortable atmos">
@@ -1003,6 +1017,7 @@
           <button class="navBtn active" data-page="order" aria-label="Order Tracker"><span class="navIcon" aria-hidden="true">🚛</span><span class="navLabel"><span class="navLabelFull">Order Tracker</span><span class="navLabelShort">Orders</span></span></button>
           <button class="navBtn" data-page="photos" aria-label="Photo Library"><span class="navIcon" aria-hidden="true">🪴</span><span class="navLabel"><span class="navLabelFull">Photo Library</span><span class="navLabelShort">Photos</span></span></button>
           <button class="navBtn" data-page="avail" aria-label="Availability"><span class="navIcon" aria-hidden="true">📈</span><span class="navLabel"><span class="navLabelFull">Availability</span><span class="navLabelShort">Avail</span></span></button>
+          <button class="navBtn" data-page="prebook" aria-label="Pre-Booking"><span class="navIcon" aria-hidden="true">📌</span><span class="navLabel"><span class="navLabelFull">Pre-Booking</span><span class="navLabelShort">Pre-Book</span></span></button>
           <button class="navBtn" data-page="checkin" aria-label="Order Check-In"><span class="navIcon" aria-hidden="true">✅</span><span class="navLabel"><span class="navLabelFull">Order Check-In</span><span class="navLabelShort">Check-In</span></span></button>
           <button class="navBtn" data-page="issues" aria-label="Issue Tracker"><span class="navIcon" aria-hidden="true">🐛</span><span class="navLabel"><span class="navLabelFull">Issue Tracker</span><span class="navLabelShort">Issues</span></span></button>
           <button class="navBtn" data-page="training" aria-label="Training Documents"><span class="navIcon" aria-hidden="true">📚</span><span class="navLabel"><span class="navLabelFull">Training Documents</span><span class="navLabelShort">Training</span></span></button>
@@ -1010,16 +1025,14 @@
         <button id="navMoreBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="More options"><span class="navIcon" aria-hidden="true">⋯</span><span class="navLabel">More</span></button>
         <div class="navSpacer"></div>
         <div class="navFooter">
-          <button id="contrastToggleBtn" class="navBtn" aria-pressed="false">◐ High contrast</button>
-          <button id="syncSideBtn" class="navBtn">🔗 Team Sync</button>
-          <button id="presenceSideBtn" class="navBtn">👥 Active Now</button>
+          <div class="navFooterLabel">Data</div>
           <button id="backupBtn" class="navBtn">💾 Backup all data</button>
-          <div class="note sideNote" id="lastBackupNote" style="margin:-4px 4px 4px;"></div>
+          <div class="note sideNote" id="lastBackupNote" style="margin:-2px 4px 4px;"></div>
           <button id="restoreBtn" class="navBtn">↺ Restore from backup</button>
           <input id="restoreFile" type="file" accept=".json,application/json" style="display:none;">
-          <button id="logoutBtn" class="navBtn" style="border-color:rgba(224,86,63,.3); color:#ffb4a4;">Log out</button>
+          <button id="logoutBtn" class="navBtn navLogoutBtn">Log out</button>
         </div>
-        <div class="note sideNote" style="color:rgba(168,214,190,.66); margin-top:10px;">Live team sync via Firebase. Works offline too — changes sync when you reconnect.</div>
+        <div class="note sideNote">Everything here saves automatically and syncs with the team — even offline, it catches up once you're back online.</div>
       </aside>
 
       <main class="main">
@@ -1207,6 +1220,19 @@
           <div class="note" id="availNote">Showing this month. Grouped by vendor — check a week's box to flag it to order that week.</div>
           <div id="availTabs"></div>
           <div id="availWrap"></div>
+        </div>
+
+        <div id="page-prebook" class="page" style="display:none;">
+          <div class="toolbar">
+            <h2>Pre-Booking <span class="pillMini" id="prebookCountLabel">0</span></h2>
+            <div class="tools">
+              <button id="prebookAddBtn" class="btn">+ Pre-book Item</button>
+              <input id="prebookSearch" placeholder="Search vendor or item..." />
+              <button id="prebookExportBtn" class="btnGhost">⬇ Export CSV</button>
+            </div>
+          </div>
+          <div class="note">Grouped by season, based on each item's ready date. Pick a holiday instead of a specific date and that item gets themed to it.</div>
+          <div id="prebookWrap"></div>
         </div>
 
         <div id="page-checkin" class="page" style="display:none;">
@@ -1413,6 +1439,37 @@
     </div>
   </div>
 
+  <div id="prebookModal" class="modal" aria-hidden="true">
+    <div class="modalCard" style="width:min(520px,96vw);">
+      <div class="modalHead">
+        <div>
+          <h3 id="prebookModalTitle">Pre-book Item</h3>
+          <div class="note">Reserve stock ahead of a date or a holiday rush.</div>
+        </div>
+        <button id="prebookCloseBtn" class="closeX">Close</button>
+      </div>
+      <div class="row">
+        <label><span class="lbl">Vendor</span><input id="pb_vendor" placeholder="Vendor"/></label>
+        <label><span class="lbl">Item</span><input id="pb_item" placeholder="Item"/></label>
+      </div>
+      <div class="row">
+        <label><span class="lbl">Quantity</span><input id="pb_qty" type="number" min="0" step="1" placeholder="Qty"/></label>
+        <label><span class="lbl">Ready Date</span>
+          <select id="pb_readyMode">
+            <option value="date">Specific date</option>
+            <option value="holiday">Holiday</option>
+          </select>
+        </label>
+      </div>
+      <div id="pb_dateRow"><label><span class="lbl">Date</span><input id="pb_date" type="date"/></label></div>
+      <div id="pb_holidayRow" style="display:none;">
+        <label><span class="lbl">Holiday</span><select id="pb_holiday"></select></label>
+        <div class="note" id="pb_holidayPreview"></div>
+      </div>
+      <button id="prebookSaveBtn" class="btn">Save Pre-Book</button>
+    </div>
+  </div>
+
   <div id="weekMetaModal" class="modal" aria-hidden="true">
     <div class="modalCard" style="width:min(480px,96vw);">
       <div class="modalHead">
@@ -1530,6 +1587,7 @@
       availOrdersKey:"hpa_avail_orders_v1",
       availAmountsKey:"hpa_avail_amounts_v1",
       availSpecOverridesKey:"hpa_avail_spec_overrides_v1",
+      prebookKey:"hpa_prebook_v1",
       ccRulesKey:"hpa_cc_component_rules_v1",
       catalogKey:"hpa_plant_catalog_v1",
       thumbKey:  "hpa_plant_thumbs_v1",
@@ -1540,7 +1598,6 @@
       trainingKey:"hpa_training_v1",
       availLinkKey:"hpa_avail_link_v1",
       teamKey:"hpa_team_v1",
-      contrastKey:"hpa_contrast_v1",
       lastBackupKey:"hpa_last_backup_v1",
       skipWeeksKey:"hpa_skip_weeks_v1",
       weekMetaKey:"hpa_week_meta_v1",
@@ -1935,6 +1992,7 @@
       order:  document.getElementById("page-order"),
       photos: document.getElementById("page-photos"),
       avail:  document.getElementById("page-avail"),
+      prebook:document.getElementById("page-prebook"),
       checkin:document.getElementById("page-checkin"),
       issues: document.getElementById("page-issues"),
       training:document.getElementById("page-training")
@@ -1978,6 +2036,7 @@
       if(key === "order") renderOrder();
       if(key === "photos") renderPhotosTab();
       if(key === "avail") renderAvailability();
+      if(key === "prebook") renderPrebook();
       if(key === "checkin") renderCheckIn();
       if(key === "issues") renderIssues();
       if(key === "training") renderTraining();
@@ -2007,7 +2066,7 @@
      *********************************************************/
     const PAGE_LABELS = {
       dashboard:"Dashboard", order:"Order Tracker", photos:"Photo Library",
-      avail:"Availability", checkin:"Order Check-In", issues:"Issue Tracker", training:"Training Documents"
+      avail:"Availability", prebook:"Pre-Booking", checkin:"Order Check-In", issues:"Issue Tracker", training:"Training Documents"
     };
     function presenceInitials(name){
       const parts = (name || "").trim().split(/\s+/).filter(Boolean);
@@ -3113,27 +3172,6 @@
       body.classList.toggle("density-compact", comfortable);
       densityBtn.textContent = comfortable ? "Compact" : "Comfortable";
       renderOrder();
-    });
-
-    /*********************************************************
-     * High-contrast accessibility mode
-     *********************************************************/
-    function setContrastMode(on){
-      document.body.classList.toggle("highContrast", on);
-      const btn = document.getElementById("contrastToggleBtn");
-      if(btn){
-        btn.setAttribute("aria-pressed", String(on));
-        btn.textContent = on ? "◑ High contrast (on)" : "◐ High contrast";
-      }
-      try { localStorage.setItem(LS.contrastKey, on ? "1" : "0"); } catch(_){}
-    }
-    (function initContrast(){
-      let on = false;
-      try { on = localStorage.getItem(LS.contrastKey) === "1"; } catch(_){}
-      setContrastMode(on);
-    })();
-    document.getElementById("contrastToggleBtn")?.addEventListener("click", () => {
-      setContrastMode(!document.body.classList.contains("highContrast"));
     });
 
     const orderFilter = document.getElementById("orderFilter");
@@ -5552,6 +5590,226 @@
     availDetailModal.addEventListener("click", (e) => { if(e.target === availDetailModal) closeAvailItemDetail(); });
 
     /*********************************************************
+     * Pre-Booking — reserve stock ahead of a date or a holiday rush,
+     * grouped into the 4 seasons by each item's ready date.
+     *********************************************************/
+    const SEASONS = [
+      { key:"spring", name:"Spring", emoji:"🌸", months:[2,3,4] },   // Mar, Apr, May
+      { key:"summer", name:"Summer", emoji:"☀️", months:[5,6,7] },   // Jun, Jul, Aug
+      { key:"fall",   name:"Fall",   emoji:"🍂", months:[8,9,10] },  // Sep, Oct, Nov
+      { key:"winter", name:"Winter", emoji:"❄️", months:[11,0,1] },  // Dec, Jan, Feb
+    ];
+    function seasonForDate(dateStr){
+      const d = parseDate(dateStr);
+      const m = d ? d.getMonth() : new Date().getMonth();
+      return SEASONS.find(s => s.months.includes(m)) || SEASONS[0];
+    }
+    // nth (1-based) occurrence of a weekday (0=Sun..6=Sat) in a given month.
+    function nthWeekdayOfMonth(year, month0, weekday, n){
+      const first = new Date(year, month0, 1);
+      const offset = (weekday - first.getDay() + 7) % 7;
+      return new Date(year, month0, 1 + offset + (n - 1) * 7);
+    }
+    function lastWeekdayOfMonth(year, month0, weekday){
+      const last = new Date(year, month0 + 1, 0);
+      const offset = (last.getDay() - weekday + 7) % 7;
+      return new Date(year, month0, last.getDate() - offset);
+    }
+    // Anonymous Gregorian algorithm (Meeus/Jones/Butcher) for Easter Sunday.
+    function easterDate(year){
+      const a = year % 19, b = Math.floor(year / 100), c = year % 100;
+      const d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25);
+      const g = Math.floor((b - f + 1) / 3), h = (19*a + b - d - g + 15) % 30;
+      const i = Math.floor(c / 4), k = c % 4, l = (32 + 2*e + 2*i - h - k) % 7;
+      const m = Math.floor((a + 11*h + 22*l) / 451);
+      const month = Math.floor((h + l - 7*m + 114) / 31); // 3=March, 4=April
+      const day = ((h + l - 7*m + 114) % 31) + 1;
+      return new Date(year, month - 1, day);
+    }
+    // Each holiday's typical date (as a function of year, so it always
+    // resolves correctly whichever year it's booked for), the season it
+    // falls in, and a color used to theme any pre-booked item tied to it.
+    const HOLIDAYS = [
+      { key:"newyear",     name:"New Year's Day",  emoji:"🎉", season:"winter", color:"#b8860b", getDate:(y)=>new Date(y,0,1) },
+      { key:"valentines",  name:"Valentine's Day",  emoji:"💘", season:"winter", color:"#d1477a", getDate:(y)=>new Date(y,1,14) },
+      { key:"easter",      name:"Easter",           emoji:"🐰", season:"spring", color:"#9b6fc4", getDate:(y)=>easterDate(y) },
+      { key:"mothersday",  name:"Mother's Day",     emoji:"💐", season:"spring", color:"#e386ab", getDate:(y)=>nthWeekdayOfMonth(y,4,0,2) },
+      { key:"memorialday", name:"Memorial Day",     emoji:"🇺🇸", season:"spring", color:"#375a8c", getDate:(y)=>lastWeekdayOfMonth(y,4,1) },
+      { key:"fathersday",  name:"Father's Day",     emoji:"👔", season:"summer", color:"#3d6b8c", getDate:(y)=>nthWeekdayOfMonth(y,5,0,3) },
+      { key:"july4th",     name:"Fourth of July",   emoji:"🎆", season:"summer", color:"#b33b3b", getDate:(y)=>new Date(y,6,4) },
+      { key:"laborday",    name:"Labor Day",        emoji:"🛠️", season:"fall",   color:"#a15c2e", getDate:(y)=>nthWeekdayOfMonth(y,8,1,1) },
+      { key:"halloween",   name:"Halloween",        emoji:"🎃", season:"fall",   color:"#d9711f", getDate:(y)=>new Date(y,9,31) },
+      { key:"thanksgiving",name:"Thanksgiving",     emoji:"🦃", season:"fall",   color:"#a8602f", getDate:(y)=>nthWeekdayOfMonth(y,10,4,4) },
+      { key:"christmas",   name:"Christmas",        emoji:"🎄", season:"winter", color:"#b3272c", getDate:(y)=>new Date(y,11,25) },
+    ];
+    function holidayByKey(key){ return HOLIDAYS.find(h => h.key === key) || null; }
+    // The next upcoming occurrence of a holiday from today (rolls into next
+    // year automatically once this year's date has passed) — a pre-booked
+    // item is always pointing at a real, concrete date, not just a name.
+    function resolveHolidayDate(key, from){
+      const h = holidayByKey(key);
+      if(!h) return null;
+      const today = from ? new Date(from) : new Date();
+      today.setHours(0,0,0,0);
+      let d = h.getDate(today.getFullYear());
+      if(d < today) d = h.getDate(today.getFullYear() + 1);
+      return d;
+    }
+
+    function loadPrebook(){ return LS.get(LS.prebookKey, []); }
+    function savePrebook(list){ LS.set(LS.prebookKey, list); }
+
+    const prebookModal = document.getElementById("prebookModal");
+    let editingPrebookId = null;
+    document.getElementById("prebookAddBtn").addEventListener("click", () => openPrebookModal(null));
+    document.getElementById("prebookCloseBtn").addEventListener("click", closePrebookModal);
+    prebookModal.addEventListener("click", (e) => { if(e.target === prebookModal) closePrebookModal(); });
+    document.getElementById("prebookSearch").addEventListener("input", renderPrebook);
+    document.getElementById("prebookExportBtn").addEventListener("click", () => {
+      const items = loadPrebook().slice().sort((a,b) => (a.readyDate||"").localeCompare(b.readyDate||""));
+      if(!items.length){ alert("No pre-booked items to export."); return; }
+      downloadCSV("prebooking.csv", items.map(p => ({
+        Season: seasonForDate(p.readyDate).name, Vendor: p.vendor, Item: p.item, Quantity: p.qty ?? "",
+        ReadyDate: p.readyDate, Holiday: p.holidayKey ? (holidayByKey(p.holidayKey)?.name || "") : ""
+      })), ["Season","Vendor","Item","Quantity","ReadyDate","Holiday"]);
+    });
+
+    function fillPrebookHolidayOptions(selected){
+      const sel = document.getElementById("pb_holiday");
+      sel.innerHTML = HOLIDAYS.map(h => `<option value="${h.key}" ${h.key===selected?"selected":""}>${h.emoji} ${escapeHtml(h.name)}</option>`).join("");
+    }
+    function updatePrebookHolidayPreview(){
+      const key = document.getElementById("pb_holiday").value;
+      const d = resolveHolidayDate(key);
+      const el = document.getElementById("pb_holidayPreview");
+      if(el) el.textContent = d ? `Next occurrence: ${d.toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric",year:"numeric"})} — themed to this holiday.` : "";
+    }
+    document.getElementById("pb_holiday").addEventListener("change", updatePrebookHolidayPreview);
+    document.getElementById("pb_readyMode").addEventListener("change", () => {
+      const mode = document.getElementById("pb_readyMode").value;
+      document.getElementById("pb_dateRow").style.display = mode === "date" ? "" : "none";
+      document.getElementById("pb_holidayRow").style.display = mode === "holiday" ? "" : "none";
+      if(mode === "holiday") updatePrebookHolidayPreview();
+    });
+    function openPrebookModal(entry){
+      editingPrebookId = entry?.id ?? null;
+      document.getElementById("prebookModalTitle").textContent = editingPrebookId ? "Edit Pre-Book" : "Pre-book Item";
+      document.getElementById("pb_vendor").value = entry?.vendor || "";
+      document.getElementById("pb_item").value = entry?.item || "";
+      document.getElementById("pb_qty").value = entry?.qty ?? "";
+      const mode = entry?.readyMode || "date";
+      document.getElementById("pb_readyMode").value = mode;
+      document.getElementById("pb_date").value = (mode === "date" ? entry?.readyDate : "") || fmtDate(new Date());
+      fillPrebookHolidayOptions(entry?.holidayKey || HOLIDAYS[0].key);
+      document.getElementById("pb_dateRow").style.display = mode === "date" ? "" : "none";
+      document.getElementById("pb_holidayRow").style.display = mode === "holiday" ? "" : "none";
+      if(mode === "holiday") updatePrebookHolidayPreview();
+      const saveBtn = document.getElementById("prebookSaveBtn");
+      if(saveBtn) saveBtn.textContent = editingPrebookId ? "Save Changes" : "Save Pre-Book";
+      prebookModal.classList.add("active");
+      prebookModal.setAttribute("aria-hidden","false");
+    }
+    function closePrebookModal(){
+      prebookModal.classList.remove("active");
+      prebookModal.setAttribute("aria-hidden","true");
+      editingPrebookId = null;
+    }
+    document.getElementById("prebookSaveBtn").addEventListener("click", () => {
+      const vendor = document.getElementById("pb_vendor").value.trim();
+      const item = document.getElementById("pb_item").value.trim();
+      const qty = document.getElementById("pb_qty").value.trim();
+      const mode = document.getElementById("pb_readyMode").value;
+      if(!vendor || !item){ alert("Vendor and Item are required."); return; }
+      let readyDate = "", holidayKey = "";
+      if(mode === "holiday"){
+        holidayKey = document.getElementById("pb_holiday").value;
+        const d = resolveHolidayDate(holidayKey);
+        if(!d){ alert("Pick a holiday."); return; }
+        readyDate = fmtDate(d);
+      } else {
+        readyDate = document.getElementById("pb_date").value;
+        if(!readyDate){ alert("Pick a ready date."); return; }
+      }
+      const list = loadPrebook();
+      if(editingPrebookId){
+        const idx = list.findIndex(x => x.id === editingPrebookId);
+        if(idx >= 0) list[idx] = { ...list[idx], vendor, item, qty, readyMode: mode, readyDate, holidayKey };
+      } else {
+        list.push({ id: cryptoRandomId(), vendor, item, qty, readyMode: mode, readyDate, holidayKey, createdAt: new Date().toISOString() });
+      }
+      savePrebook(list);
+      markTabChanged("prebook");
+      closePrebookModal();
+      renderPrebook();
+    });
+    function prebookRowHtml(p){
+      const h = p.holidayKey ? holidayByKey(p.holidayKey) : null;
+      const d = parseDate(p.readyDate);
+      const dateLabel = d ? d.toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"}) : (p.readyDate || "—");
+      const readyHtml = h
+        ? `<span class="holidayBadge" style="--hColor:${h.color}">${h.emoji} ${escapeHtml(h.name)}</span><span class="prebookReadySub">${escapeHtml(dateLabel)}</span>`
+        : `<span class="prebookDatePlain">📅 ${escapeHtml(dateLabel)}</span>`;
+      return `
+        <div class="prebookRow" data-id="${p.id}">
+          <div class="prebookRowMain">
+            <div class="prebookItemName">${escapeHtml(p.item || "—")}</div>
+            <div class="prebookVendorName">${escapeHtml(p.vendor || "—")}</div>
+          </div>
+          <div class="prebookQty">${escapeHtml(p.qty !== "" && p.qty != null ? String(p.qty) : "—")}</div>
+          <div class="prebookReady">${readyHtml}</div>
+          <div class="prebookRowActions">
+            <button class="tinyBtn pb_edit">Edit</button>
+            <button class="tinyBtn danger pb_del">Delete</button>
+          </div>
+        </div>`;
+    }
+    function renderPrebook(){
+      const wrap = document.getElementById("prebookWrap");
+      if(!wrap) return;
+      const search = (document.getElementById("prebookSearch").value || "").trim().toLowerCase();
+      let items = loadPrebook();
+      if(search) items = items.filter(p => (p.vendor||"").toLowerCase().includes(search) || (p.item||"").toLowerCase().includes(search));
+      const countEl = document.getElementById("prebookCountLabel");
+      if(countEl) countEl.textContent = String(items.length);
+      wrap.innerHTML = "";
+      if(loadPrebook().length === 0){
+        wrap.innerHTML = `<div class="note">No pre-booked items yet. Click "+ Pre-book Item" to reserve stock ahead of a date or a holiday rush.</div>`;
+        return;
+      }
+      const bySeason = new Map(SEASONS.map(s => [s.key, []]));
+      items.forEach(p => { const s = seasonForDate(p.readyDate); bySeason.get(s.key).push(p); });
+      SEASONS.forEach(season => {
+        const list = bySeason.get(season.key).sort((a,b) => (a.readyDate||"").localeCompare(b.readyDate||""));
+        const box = document.createElement("div");
+        box.className = "prebookSeason";
+        box.dataset.season = season.key;
+        box.innerHTML = `
+          <div class="prebookSeasonHead">
+            <span class="prebookSeasonName">${season.emoji} ${season.name}</span>
+            <span class="pillMini">${list.length} item${list.length===1?"":"s"}</span>
+          </div>
+          <div class="prebookRows">${
+            list.length === 0
+              ? `<div class="note" style="padding:10px 4px;">Nothing booked for ${season.name} yet.</div>`
+              : list.map(p => prebookRowHtml(p)).join("")
+          }</div>
+        `;
+        list.forEach(p => {
+          const row = box.querySelector(`.prebookRow[data-id="${p.id}"]`);
+          if(!row) return;
+          row.querySelector(".pb_edit")?.addEventListener("click", () => openPrebookModal(p));
+          row.querySelector(".pb_del")?.addEventListener("click", () => {
+            if(!confirm(`Delete pre-booked "${p.item}" from ${p.vendor}?`)) return;
+            savePrebook(loadPrebook().filter(x => x.id !== p.id));
+            markTabChanged("prebook");
+            renderPrebook();
+          });
+        });
+        wrap.appendChild(box);
+      });
+    }
+
+    /*********************************************************
      * Issue Tracker
      *********************************************************/
     const issueModal = document.getElementById("issueModal");
@@ -6216,7 +6474,7 @@
         const now = Date.now();
         if(now - _lastNotif < 4000) return;          // debounce batch saves
         _lastNotif = now;
-        const labels = { order:"Order Tracker", photos:"Photo Library", checkin:"Order Check-In", issues:"Issue Tracker", training:"Training Documents", avail:"Availability" };
+        const labels = { order:"Order Tracker", photos:"Photo Library", checkin:"Order Check-In", issues:"Issue Tracker", training:"Training Documents", avail:"Availability", prebook:"Pre-Booking" };
         const icon = (document.querySelector('link[rel="apple-touch-icon"]') || {}).href;
         new Notification("HPA HUB 🦎", { body: "Saved a change in " + (labels[tabKey] || "the Hub") + ".", tag:"hpa-save", icon });
       } catch(e){}
@@ -6257,6 +6515,7 @@
       LS.trucksKey, LS.issuesKey,
       LS.trainingKey, LS.availLinkKey, LS.catalogKey, LS.checkinKey,
       LS.availKey, LS.availOrdersKey, LS.availAmountsKey, LS.availSpecOverridesKey,
+      LS.prebookKey,
       LS.skipWeeksKey, LS.weekMetaKey
     ];
     const MAX_SYNC_BYTES = 900000; // stay under Firestore's ~1MB document cap
@@ -6591,6 +6850,7 @@
           (key === LS.issuesKey     && currentPage === "issues")  ||
           (key === LS.checkinKey    && currentPage === "checkin") ||
           (key === LS.trainingKey   && currentPage === "training") ||
+          (key === LS.prebookKey    && currentPage === "prebook") ||
           ((key === LS.availKey || key === LS.availOrdersKey || key === LS.availAmountsKey || key === LS.availSpecOverridesKey) && currentPage === "avail");
         if(!rawStorageSet(key, data.value)) return; // direct write: no re-push
         this.lastReceived = Date.now(); this.applies++;
@@ -6641,6 +6901,7 @@
           else if(k === "training" && key === LS.trainingKey) renderTraining();
           else if(k === "photos" && key === LS.catalogKey) renderPhotosTab();
           else if(k === "avail" && (key === LS.availKey || key === LS.availOrdersKey || key === LS.availAmountsKey || key === LS.availSpecOverridesKey)) renderAvailability();
+          else if(k === "prebook" && key === LS.prebookKey) renderPrebook();
         } catch(e){}
         try {
           if(key === LS.skipWeeksKey && weekPickModal && weekPickModal.classList.contains("active")) renderWeekPick();
@@ -6744,7 +7005,8 @@
           const n = Object.keys(dump.data).length;
           statusChip.textContent = `Backed up ${n} section(s)`;
           setTimeout(() => { statusChip.textContent = "Ready"; }, 3500);
-          try { localStorage.setItem(LS.lastBackupKey, String(Date.now())); } catch(_){}
+          const by = (typeof getUser === "function" && getUser()?.name) || (window.HPASync && window.HPASync.user) || "Someone";
+          try { localStorage.setItem(LS.lastBackupKey, JSON.stringify({ by, at: Date.now() })); } catch(_){}
           refreshBackupReminder();
         } catch(e){
           console.error("[Backup] export failed", e);
@@ -6802,16 +7064,20 @@
     function refreshBackupReminder(){
       const el = document.getElementById("lastBackupNote");
       if(!el) return;
-      let last = null;
-      try { last = localStorage.getItem(LS.lastBackupKey); } catch(_){}
-      if(!last){ el.textContent = "Never backed up — do it once you have data worth keeping."; el.style.color = "var(--state-warn-fg, #b36b00)"; return; }
-      const days = Math.floor((Date.now() - Number(last)) / 86400000);
-      if(days <= 0){ el.textContent = "Backed up today."; el.style.color = ""; }
-      else if(days === 1){ el.textContent = "Last backup: yesterday."; el.style.color = ""; }
-      else {
-        el.textContent = `Last backup: ${days} days ago.`;
-        el.style.color = days >= 7 ? "var(--state-warn-fg, #b36b00)" : "";
-      }
+      let raw = null;
+      try { raw = localStorage.getItem(LS.lastBackupKey); } catch(_){}
+      if(!raw){ el.textContent = "Never backed up — do it once you have data worth keeping."; el.style.color = "var(--state-warn-fg, #b36b00)"; return; }
+      let by = "Someone", at = NaN;
+      try {
+        const parsed = JSON.parse(raw);
+        if(parsed && typeof parsed === "object"){ by = parsed.by || by; at = Number(parsed.at); }
+        else at = Number(raw); // legacy backups stored a bare timestamp, no attribution
+      } catch(e){ at = Number(raw); } // legacy format
+      if(!at || isNaN(at)){ el.textContent = "Never backed up — do it once you have data worth keeping."; el.style.color = "var(--state-warn-fg, #b36b00)"; return; }
+      const dateStr = new Date(at).toLocaleDateString(undefined, { month:"short", day:"numeric", year:"numeric" });
+      const days = Math.floor((Date.now() - at) / 86400000);
+      el.textContent = `Backed up by ${by} on ${dateStr}`;
+      el.style.color = days >= 7 ? "var(--state-warn-fg, #b36b00)" : "";
     }
 
     /*********************************************************
@@ -6825,7 +7091,8 @@
           [LS.checkinKey]:"Check-In progress",
           [LS.trainingKey]:"Training docs", [LS.availLinkKey]:"Availability link", [LS.catalogKey]:"Plant catalog",
           [LS.availKey]:"Availability", [LS.availOrdersKey]:"Availability orders",
-          [LS.availAmountsKey]:"Availability amounts", [LS.availSpecOverridesKey]:"Availability spec edits"
+          [LS.availAmountsKey]:"Availability amounts", [LS.availSpecOverridesKey]:"Availability spec edits",
+          [LS.prebookKey]:"Pre-Booking"
         };
         return map[key] || null;  // null = not worth logging (ui state, notifs, etc.)
       },
@@ -6956,6 +7223,7 @@
           { icon:"🐛", title:"Go to Issue Tracker", tag:"Nav", run:()=>showPage("issues") },
           { icon:"📚", title:"Go to Training Documents", tag:"Nav", run:()=>showPage("training") },
           { icon:"📊", title:"Go to Availability", tag:"Nav", run:()=>showPage("avail") },
+          { icon:"📌", title:"Go to Pre-Booking", tag:"Nav", run:()=>showPage("prebook") },
           { icon:"➕", title:"New order", sub:"Create a truck order", tag:"Action", run:()=>{ showPage("order"); document.getElementById("newTruckBtn")?.click(); } },
           { icon:"🐛", title:"Log an issue", tag:"Action", run:()=>{ showPage("issues"); document.getElementById("newIssueBtn")?.click(); } },
           { icon:"✅", title:"Open Order Check-In", tag:"Nav", run:()=>showPage("checkin") },
@@ -6966,13 +7234,13 @@
           { icon:"📄", title:"Export Truck Breakdown", tag:"Export", run:()=>{ showPage("order"); document.getElementById("exportTruckBreakdownBtn")?.click(); } },
           { icon:"📥", title:"Import PO Analysis", tag:"Import", run:()=>{ showPage("checkin"); document.getElementById("checkinImportBtn")?.click(); } },
           { icon:"➕", title:"Add Availability", sub:"Add an item to the current week", tag:"Action", run:()=>{ showPage("avail"); document.getElementById("availAddBtn")?.click(); } },
+          { icon:"📌", title:"Pre-book an item", sub:"Reserve stock ahead of a date or holiday", tag:"Action", run:()=>{ showPage("prebook"); document.getElementById("prebookAddBtn")?.click(); } },
           { icon:"💾", title:"Backup all data", tag:"Data", run:()=>window.HPABackup.export() },
           { icon:"↺", title:"Restore from backup", tag:"Data", run:()=>document.getElementById("restoreBtn")?.click() },
           { icon:"🟢", title:"Open Team Sync", tag:"Data", run:()=>window.HPASync.openModal() },
           { icon:"⬅️", title:"Previous week", tag:"Nav", run:()=>{ weekAnchor = addDays(weekAnchor,-7); renderOrder(); } },
           { icon:"➡️", title:"Next week", tag:"Nav", run:()=>{ weekAnchor = addDays(weekAnchor,7); renderOrder(); } },
-          { icon:"📅", title:"Jump to this week", tag:"Nav", run:()=>{ weekAnchor = startOfWeek(new Date()); renderOrder(); } },
-          { icon:"◐", title:"Toggle high contrast mode", tag:"Accessibility", run:()=>document.getElementById("contrastToggleBtn")?.click() }
+          { icon:"📅", title:"Jump to this week", tag:"Nav", run:()=>{ weekAnchor = startOfWeek(new Date()); renderOrder(); } }
         ];
       },
 
@@ -6997,6 +7265,13 @@
         loadIssues().forEach(i => {
           if([i.vendor,i.item,i.notes,i.type,i.truckLabel].some(x => (x||"").toLowerCase().includes(q)))
             push("🐛", `${i.vendor||"Issue"} — ${i.type||""}`, `${i.status} · ${i.item||""}`, "Issue", ()=>{ showPage("issues"); });
+        });
+        // pre-booked items
+        loadPrebook().forEach(p => {
+          if([p.vendor,p.item].some(x => (x||"").toLowerCase().includes(q))){
+            const h = p.holidayKey ? holidayByKey(p.holidayKey) : null;
+            push("📌", `${p.item||"Item"} — ${p.vendor||""}`, `${seasonForDate(p.readyDate).name} · ${h ? h.emoji+" "+h.name : (p.readyDate||"")}`, "Pre-Book", ()=>{ showPage("prebook"); });
+          }
         });
         // training
         loadTraining().forEach(d => {
@@ -7115,8 +7390,6 @@
         el.addEventListener("click", open);
         el.addEventListener("keydown", (e) => { if(e.key === "Enter" || e.key === " ") open(e); });
       }
-      const sideBtn = document.getElementById("syncSideBtn");
-      if(sideBtn) sideBtn.addEventListener("click", () => Sync.openModal());
       const close = document.getElementById("syncCloseBtn");
       if(close) close.addEventListener("click", () => Sync.closeModal());
       const modal = document.getElementById("syncModal");
@@ -7127,13 +7400,6 @@
       if(reconnect) reconnect.addEventListener("click", () => { Sync.ready = false; Sync.starting = false; if(Sync._unsub){ try{ Sync._unsub(); }catch(_){} Sync._unsub = null; } Sync.init({ name: Sync.user }).then(() => Sync.renderModal()); });
       const teamBtn = document.getElementById("syncTeamBtn");
       if(teamBtn) teamBtn.addEventListener("click", () => { Sync.changeTeam(); setTimeout(() => Sync.renderModal(), 300); });
-    })();
-
-    // Mobile hides the whole topbar (including the 👥 presence chip), so the
-    // "More" sheet gets its own entry point to the same Active Now popup.
-    (function wirePresenceSideBtn(){
-      const sideBtn = document.getElementById("presenceSideBtn");
-      if(sideBtn) sideBtn.addEventListener("click", () => openPresenceModal());
     })();
 
     /*********************************************************
