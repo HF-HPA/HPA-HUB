@@ -492,8 +492,14 @@
     .otcStatLabel{ font-family:var(--sans); font-size:10.5px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-2); opacity:.72; }
     .otcStatValue{ font-family:var(--sans); font-size:15px; font-weight:700; color:var(--moss); font-variant-numeric:tabular-nums; }
     .otcEditBtn{ margin-left:auto; align-self:flex-start; }
-    .otcActions{ display:flex; gap:9px; flex-wrap:wrap; align-items:center; padding-top:14px; border-top:1px solid var(--line-soft); }
+    .otcWeekTotals{ display:flex; align-items:center; gap:14px; flex-wrap:wrap; padding:13px 0; border-top:1px solid var(--line-soft); border-bottom:1px solid var(--line-soft); }
+    .otcTotalsLabel{ font-family:var(--sans); font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--moss); opacity:.8; flex:none; }
+    .otcTotalsPills{ display:flex; gap:8px; flex-wrap:wrap; }
+    .otcActions{ display:flex; gap:9px; flex-wrap:wrap; align-items:center; padding-top:2px; }
     .otcActions .btn{ width:auto; flex:0 0 auto; padding:10px 20px; }
+    .otcActionsMain{ display:flex; flex-direction:column; gap:8px; }
+    .otcActionsMain .filterInput{ width:230px; max-width:100%; padding:9px 12px; border-radius:10px; border:1px solid var(--line); background:var(--paper); font-family:var(--sans); font-size:13.5px; color:var(--ink); outline:none; }
+    .otcActionsMain .filterInput:focus{ border-color:var(--mint-deep); box-shadow:0 0 0 3px rgba(43,212,154,.16); }
     .otcWeekNav{ display:flex; gap:6px; align-items:center; }
     .otcWeekNav select{ width:auto; }
     .availDetailSpecInput{ font-family:var(--sans); font-size:15px; font-weight:700; color:var(--moss); background:var(--paper-2); border:1px solid var(--line); border-radius:8px; padding:6px 9px; width:100%; min-width:0; }
@@ -512,16 +518,6 @@
     }
     .exportMenu .exportMenuPanel .btnGhost{ width:100%; text-align:left; }
 
-    .moreTools{ margin-bottom:14px; border:1px solid var(--line); border-radius:var(--radius-sm); background:var(--paper-2); overflow:hidden; }
-    .moreTools > summary{ cursor:pointer; padding:11px 14px; font-weight:600; font-size:13px; color:var(--moss); list-style:none; user-select:none; }
-    .moreTools > summary::-webkit-details-marker{ display:none; }
-    .moreTools > summary::before{ content:"\2699  "; }
-    .moreTools[open] > summary{ border-bottom:1px solid var(--line); }
-    .moreToolsInner{ padding:12px 14px; display:flex; flex-direction:column; gap:10px; }
-    .moreToolsInner .filterInput{ width:100%; padding:9px 12px; border-radius:10px; border:1px solid var(--line); background:var(--paper); font-family:var(--sans); font-size:13.5px; color:var(--ink); outline:none; }
-    .moreToolsInner .filterInput:focus{ border-color:var(--mint-deep); box-shadow:0 0 0 3px rgba(43,212,154,.16); }
-    .moreToolsBtns{ display:flex; gap:8px; flex-wrap:wrap; }
-
     @media (max-width:980px){
       .periodPicker{ padding:13px; gap:12px; }
       .ppYear{ font-size:21px; min-width:62px; }
@@ -531,11 +527,11 @@
       .otcActions{ display:grid; grid-template-columns:1fr 1fr; }
       .otcActions .btn, .otcActions .exportMenu, .otcActions .exportMenu summary{ width:100%; }
       .otcActions .btn{ grid-column:1 / -1; }
+      .otcActionsMain{ grid-column:1 / -1; }
+      .otcActionsMain .filterInput{ width:100%; }
       .otcWeekNav{ grid-column:1 / -1; justify-content:space-between; }
       .otcWeekNav select{ flex:1; min-width:0; }
       .otcSkipBtn{ margin-left:0; grid-column:1 / -1; width:100%; }
-      .moreToolsBtns{ display:grid; grid-template-columns:1fr 1fr; }
-      .moreToolsBtns .btnGhost{ width:100%; }
     }
 
     .weekNav{ display:flex; flex-direction:column; gap:6px; }
@@ -1309,10 +1305,6 @@
                 </div>
                 <div class="otcStats">
                   <div class="otcStat">
-                    <span class="otcStatLabel">Orders</span>
-                    <span class="otcStatValue" id="truckCountLabel">0</span>
-                  </div>
-                  <div class="otcStat">
                     <span class="otcStatLabel">Request date</span>
                     <span class="otcStatValue" id="requestDateLabel" title="Automatically set to the Monday of this week">—</span>
                   </div>
@@ -1323,8 +1315,15 @@
                 </div>
                 <button id="editWeekBtn" class="tinyBtn otcEditBtn" type="button" title="Set store grades shipping and store count for this week">✏️ Edit Week</button>
               </div>
+              <div class="otcWeekTotals" id="otcWeekTotals">
+                <span class="otcTotalsLabel">Week Totals</span>
+                <div class="otcTotalsPills" id="otcTotalsPills"></div>
+              </div>
               <div class="otcActions">
-                <button id="newTruckBtn" class="btn" type="button"><span data-icon="plus" aria-hidden="true"></span> New Order</button>
+                <div class="otcActionsMain">
+                  <button id="newTruckBtn" class="btn" type="button"><span data-icon="plus" aria-hidden="true"></span> New Order</button>
+                  <input id="orderFilter" class="filterInput" placeholder="Search vendor, item, PO, location, type..." />
+                </div>
                 <details class="exportMenu">
                   <summary class="btnGhost">⬇ Export</summary>
                   <div class="exportMenuPanel">
@@ -1338,18 +1337,6 @@
                 <button id="skipWeekBtn" class="btnGhost otcSkipBtn" type="button">🚫 Mark as Skip Week</button>
               </div>
             </div>
-            <details class="moreTools">
-              <summary>More tools &amp; filters</summary>
-              <div class="moreToolsInner">
-                <input id="orderFilter" class="filterInput" placeholder="Search vendor, item, PO, location, type..." />
-                <div class="moreToolsBtns">
-                  <button id="expandCollapseAllBtn" class="btnGhost" type="button">Collapse All</button>
-                  <button id="densityBtn" class="btnGhost">Comfortable</button>
-                  <button id="printBtn" class="btnGhost">Print</button>
-                  <button id="deleteWeekBtn" class="btnGhost" style="border-color:rgba(224,86,63,.3); color:#a8341f;">Delete Week</button>
-                </div>
-              </div>
-            </details>
             <div id="orderSheet" class="orderSheet"></div>
           </div>
         </div>
@@ -2648,30 +2635,12 @@
     let dashWeekAnchor = startOfWeek(new Date());
     const weekLabelEl = document.getElementById("weekLabel");
     const requestDateLabelEl = document.getElementById("requestDateLabel");
-    const truckCountLabel = document.getElementById("truckCountLabel");
 
     document.getElementById("prevWeek").addEventListener("click", () => { weekAnchor = addDays(weekAnchor, -7); renderOrder(); });
     document.getElementById("nextWeek").addEventListener("click", () => { weekAnchor = addDays(weekAnchor,  7); renderOrder(); });
     document.getElementById("todayWeek").addEventListener("click", () => { weekAnchor = startOfWeek(new Date()); renderOrder(); });
     document.getElementById("ppPrevYear")?.addEventListener("click", () => { weekAnchor = startOfWeek(new Date(weekAnchor.getFullYear() - 1, weekAnchor.getMonth(), 15)); renderOrder(); });
     document.getElementById("ppNextYear")?.addEventListener("click", () => { weekAnchor = startOfWeek(new Date(weekAnchor.getFullYear() + 1, weekAnchor.getMonth(), 15)); renderOrder(); });
-
-    document.getElementById("deleteWeekBtn").addEventListener("click", () => {
-      const wk = weekKeyFromDate(weekAnchor);
-      const trucks = loadTrucks();
-      const keep = trucks.filter(t => t.weekKey !== wk);
-      if(keep.length === trucks.length){
-        alert("No orders to delete for this week.");
-        return;
-      }
-      const ok = confirm(`Delete ALL orders for ${wk}? This cannot be undone.`);
-      if(!ok) return;
-      saveTrucks(keep);
-      renderAll();
-      renderOrder();
-    });
-
-    document.getElementById("printBtn").addEventListener("click", () => window.print());
 
     const skipWeekBtn = document.getElementById("skipWeekBtn");
     skipWeekBtn?.addEventListener("click", () => {
@@ -3721,39 +3690,6 @@
       if(x === "submitted") return "statusPill statusSubmitted";
       return "statusPill statusOpen";
     }
-    function setAllSectionsCollapsed(collapsed){
-      document.querySelectorAll(".orderSection[data-kind='group']").forEach(sec => {
-        sec.classList.toggle("collapsed", collapsed);
-        const btn = sec.querySelector("[data-action='toggleSection']");
-        if(btn) btn.setAttribute("aria-expanded", String(!collapsed));
-      });
-    }
-    function setAllPickupsCollapsed(collapsed){
-      document.querySelectorAll(".pickupBlock").forEach(p => {
-        p.classList.toggle("pickupCollapsed", collapsed);
-        const btn = p.querySelector("[data-action='togglePickup']");
-        if(btn) btn.setAttribute("aria-expanded", String(!collapsed));
-      });
-    }
-    const expandCollapseAllBtn = document.getElementById("expandCollapseAllBtn");
-    let allSectionsCollapsed = false;
-    expandCollapseAllBtn?.addEventListener("click", () => {
-      allSectionsCollapsed = !allSectionsCollapsed;
-      setAllSectionsCollapsed(allSectionsCollapsed);
-      setAllPickupsCollapsed(allSectionsCollapsed);
-      expandCollapseAllBtn.textContent = allSectionsCollapsed ? "Expand All" : "Collapse All";
-    });
-
-    const densityBtn = document.getElementById("densityBtn");
-    densityBtn.addEventListener("click", () => {
-      const body = document.body;
-      const comfortable = body.classList.contains("density-comfortable");
-      body.classList.toggle("density-comfortable", !comfortable);
-      body.classList.toggle("density-compact", comfortable);
-      densityBtn.textContent = comfortable ? "Compact" : "Comfortable";
-      renderOrder();
-    });
-
     const orderFilter = document.getElementById("orderFilter");
     orderFilter.addEventListener("input", () => applyOrderFilter());
     function applyOrderFilter(){
@@ -3784,7 +3720,24 @@
       updateWeekMetaUI();
 
       const trucks = loadTrucks().filter(t => t.weekKey === wk);
-      truckCountLabel.textContent = String(trucks.length);
+
+      const weekTotals = trucks.reduce((acc,t) => {
+        acc.racks += Number(t.totals?.racks || 0);
+        acc.cases += Number(t.totals?.cases || 0);
+        acc.qty   += Number(t.totals?.qty   || 0);
+        acc.price += Number(t.price || 0);
+        return acc;
+      }, { racks:0, cases:0, qty:0, price:0 });
+      const totalsPillsEl = document.getElementById("otcTotalsPills");
+      if(totalsPillsEl){
+        totalsPillsEl.innerHTML = `
+          <span class="pillMini">Orders: ${trucks.length}</span>
+          <span class="pillMini">Racks: ${weekTotals.racks.toLocaleString()}</span>
+          <span class="pillMini">Cases: ${weekTotals.cases.toLocaleString()}</span>
+          <span class="pillMini">Plants: ${weekTotals.qty.toLocaleString()}</span>
+          <span class="pillMini">Trucking: ${money(weekTotals.price)}</span>
+        `;
+      }
 
       const wrap = document.getElementById("orderSheet");
       wrap.innerHTML = "";
@@ -3794,35 +3747,6 @@
         refreshWeekSelectors();
         return;
       }
-
-      const weekTotals = trucks.reduce((acc,t) => {
-        acc.racks += Number(t.totals?.racks || 0);
-        acc.cases += Number(t.totals?.cases || 0);
-        acc.qty   += Number(t.totals?.qty   || 0);
-        acc.price += Number(t.price || 0);
-        return acc;
-      }, { racks:0, cases:0, qty:0, price:0 });
-
-      const summary = document.createElement("div");
-      summary.className = "orderSummary";
-      summary.innerHTML = `
-        <div class="sectionHeader">
-          <div class="left">
-            <div class="sectionTitle">Week Totals</div>
-            <div class="sectionMeta">
-              <span class="pillMini">Orders: ${trucks.length}</span>
-              <span class="pillMini">Racks: ${weekTotals.racks.toLocaleString()}</span>
-              <span class="pillMini">Cases: ${weekTotals.cases.toLocaleString()}</span>
-              <span class="pillMini">Plants: ${weekTotals.qty.toLocaleString()}</span>
-              <span class="pillMini">Trucking: ${money(weekTotals.price)}</span>
-            </div>
-          </div>
-          <div class="sectionMeta">
-            <span class="pillMini">Sticky headers • Zebra rows • Search</span>
-          </div>
-        </div>
-      `;
-      wrap.appendChild(summary);
 
       const groupMap = new Map();
       for(const t of trucks){
