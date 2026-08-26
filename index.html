@@ -163,6 +163,18 @@
     .toolbar{ display:flex; align-items:flex-start; justify-content:space-between; gap:10px; margin-bottom:16px; flex-wrap:wrap; padding-bottom:14px; border-bottom:1px solid var(--line); }
     .toolbar h2{ margin:0; font-size:24px; color:var(--ink); }
     .tools{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+    /* Dashboard header — title, week navigator, and search/commands unified
+       into one row instead of a title bar stacked on top of a separate
+       dashed "note" bar; the week navigator reads as one pill control. */
+    .dashHeader{ display:flex; align-items:center; justify-content:space-between; gap:14px; margin-bottom:16px; flex-wrap:wrap; padding-bottom:14px; border-bottom:1px solid var(--line); }
+    .dashHeaderMain{ display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+    .dashHeaderMain h2{ margin:0; font-size:24px; color:var(--ink); }
+    .dashWeekNav{ display:flex; align-items:center; gap:10px; padding:6px 8px; border-radius:999px; background:var(--paper-2); border:1px solid var(--line); font-size:12.5px; font-weight:600; color:var(--ink-2); }
+    .dashWeekNav .tinyBtn{ border:none; background:transparent; padding:3px 6px; }
+    .dashWeekNav .tinyBtn:hover{ background:var(--rowHover); border-radius:6px; }
+    @media (max-width:640px){
+      .dashHeaderMain{ flex-direction:column; align-items:flex-start; gap:10px; }
+    }
 
     .weekHeader{ display:flex; gap:10px; align-items:center; justify-content:space-between; margin-bottom:14px; flex-wrap:wrap; }
     .weekHeader .chip{ background:var(--paper-3); color:var(--moss); border:1px solid var(--line); backdrop-filter:none; font-weight:600; }
@@ -929,6 +941,7 @@
     .dashPanelTitle{ font-family:var(--display); font-weight:600; font-size:15px; color:var(--ink); }
     .dashPanelBody{ padding:8px 12px 12px; overflow:auto; }
     .dashItem{ display:flex; align-items:center; gap:10px; padding:9px 6px; border-bottom:1px solid var(--line-soft); font-size:13.5px; }
+    .dashActivityAvatar{ width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:var(--display); font-weight:700; font-size:9.5px; color:#04231a; flex:none; }
     .dashItem:last-child{ border-bottom:none; }
     .dashItem .di_main{ flex:1; min-width:0; }
     .dashItem .di_title{ font-weight:600; color:var(--ink); }
@@ -1079,6 +1092,22 @@
     .side .sideNote{ color:rgba(168,214,190,.55); font-size:11px; line-height:1.45; margin-top:12px; }
 
     /* =====================================================================
+       CUSTOM SCROLLBARS — themed to the app instead of default browser
+       chrome. A thin rounded thumb everywhere; the permanently-dark
+       sidebar/topbar surfaces get a lighter thumb since --line is tuned
+       for the (mostly light) paper surfaces, not the jungle canopy.
+       ===================================================================== */
+    ::-webkit-scrollbar{ width:11px; height:11px; }
+    ::-webkit-scrollbar-track{ background:transparent; }
+    ::-webkit-scrollbar-thumb{ background:var(--line); border-radius:999px; border:2px solid transparent; background-clip:padding-box; }
+    ::-webkit-scrollbar-thumb:hover{ background:var(--fern); }
+    ::-webkit-scrollbar-corner{ background:transparent; }
+    html{ scrollbar-width:thin; scrollbar-color:var(--line) transparent; }
+    .side, .paletteOverlay, .modal{ scrollbar-color:rgba(214,239,226,.35) transparent; }
+    .side::-webkit-scrollbar-thumb, .paletteOverlay::-webkit-scrollbar-thumb{ background:rgba(214,239,226,.32); }
+    .side::-webkit-scrollbar-thumb:hover, .paletteOverlay::-webkit-scrollbar-thumb:hover{ background:rgba(214,239,226,.5); }
+
+    /* =====================================================================
        DARK MODE — the sidebar/topbar chrome is already the dark jungle
        canopy in both themes; this swaps the "paper" reading surface (the
        .main card and everything on it) to a dark equivalent. Toggled via
@@ -1201,20 +1230,20 @@
 
       <main class="main">
         <div id="page-dashboard" class="page" style="display:none;">
-          <div class="toolbar">
-            <h2>Dashboard</h2>
+          <div class="dashHeader">
+            <div class="dashHeaderMain">
+              <h2>Dashboard</h2>
+              <div class="dashWeekNav">
+                <button id="dashPrevWeek" class="tinyBtn" type="button" aria-label="Previous week">‹</button>
+                <span id="dashWeekNoteText"></span>
+                <button id="dashNextWeek" class="tinyBtn" type="button" aria-label="Next week">›</button>
+              </div>
+              <button id="dashThisWeek" class="tinyBtn" type="button">This week</button>
+            </div>
             <div class="tools">
               <button id="dashSearchBtn" class="btnGhost"><span data-icon="search" aria-hidden="true"></span> Search everything</button>
               <button id="dashCmdBtn" class="btnGhost">⌘K Commands</button>
             </div>
-          </div>
-          <div class="note" id="dashWeekNote" style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-            <span id="dashWeekNoteText"></span>
-            <span style="display:inline-flex; align-items:center; gap:6px;">
-              <button id="dashPrevWeek" class="tinyBtn" type="button" aria-label="Previous week">‹</button>
-              <button id="dashThisWeek" class="tinyBtn" type="button">This week</button>
-              <button id="dashNextWeek" class="tinyBtn" type="button" aria-label="Next week">›</button>
-            </span>
           </div>
           <div class="dashGrid" id="dashStats"></div>
           <div class="dashRow">
@@ -6901,7 +6930,7 @@
 
     const Sync = {
       ready:false, starting:false, fs:null, db:null, col:null,
-      photosCol:null, trainingFilesCol:null, _pendingTrainingFiles:{},
+      photosCol:null, trainingFilesCol:null, _pendingTrainingFiles:{}, activityCol:null,
       presenceCol:null, presenceMap:{}, presenceError:"", _presenceUnsub:null, _presenceHeartbeatT:null, _presenceTickT:null, _presenceWarned:false,
       clientId: stableClientId(),
       user:"someone", _t:{}, _seeded:false, _warned:{},
@@ -6938,12 +6967,14 @@
           this.trainingFilesCol = fs.collection(db, "hubs", this.teamCode(), "trainingFiles");
           this.poImportsCol = fs.collection(db, "hubs", this.teamCode(), "poImports");
           this.presenceCol = fs.collection(db, "hubs", this.teamCode(), "presence");
-          this.ready = true; this._seeded = false; this._seededPhotos = false; this._seededTrainingFiles = false; this._seededPoImports = false;
+          this.activityCol = fs.collection(db, "hubs", this.teamCode(), "activity");
+          this.ready = true; this._seeded = false; this._seededPhotos = false; this._seededTrainingFiles = false; this._seededPoImports = false; this._seededActivity = false;
           this.subscribe();
           this.subscribePhotos();
           this.subscribeTrainingFiles();
           this.subscribePoImports();
           this.subscribePresence();
+          this.subscribeActivity();
           this.startPresenceHeartbeat();
           this.setStatus("on", "Sync: on · " + this.teamCode());
           console.log("[HPA sync] connected ✓");
@@ -7027,6 +7058,52 @@
         if(!this.ready || !this.photosCol) return;
         try{ const { doc, deleteDoc } = this.fs; await deleteDoc(doc(this.photosCol, id)); }
         catch(e){ console.error("[HPA sync] photo delete failed for", id, e); }
+      },
+
+      /* --- Activity feed: same one-doc-per-item pattern as photos, so
+         everyone's "recent activity" shows what the whole team is doing —
+         not a shared last-write-wins blob, which would drop entries
+         whenever two people acted close together in time. --- */
+      subscribeActivity(){
+        const { onSnapshot } = this.fs;
+        if(this._unsubActivity){ try{ this._unsubActivity(); }catch(e){} }
+        this._unsubActivity = onSnapshot(this.activityCol, (snap) => {
+          snap.docChanges().forEach(ch => {
+            if(ch.type === "removed") return;
+            this.applyRemoteActivity(ch.doc.id, ch.doc.data());
+          });
+          if(!this._seededActivity){ this._seededActivity = true; this.seedMissingActivity(snap); }
+        }, (err) => console.error("[HPA sync] activity listener error:", err));
+      },
+      seedMissingActivity(snap){
+        const present = new Set(); snap.forEach(d => present.add(d.id));
+        HPAActivity.all().forEach(e => { if(e.id && !present.has(e.id)) this.pushActivity(e.id); });
+      },
+      applyRemoteActivity(id, data){
+        if(!data || typeof data.value !== "string") return;
+        let entry; try { entry = JSON.parse(data.value); } catch(e){ return; }
+        entry.id = id;
+        HPAActivity.applyRemote(entry);
+        if(currentPage === "dashboard" && window.HPAExtras) window.HPAExtras.renderActivity();
+      },
+      async pushActivity(id){
+        if(!this.ready || !this.activityCol) return;
+        const entry = HPAActivity.all().find(e => e.id === id);
+        if(!entry) return;
+        try{
+          const val = JSON.stringify(entry);
+          if(val.length > MAX_SYNC_BYTES) return; // activity entries are tiny; this should never trip
+          const { doc, setDoc } = this.fs;
+          await setDoc(doc(this.activityCol, id), { value: val, updatedAt: Date.now(), by: this.user, client: this.clientId });
+        } catch(e){ console.error("[HPA sync] activity push failed for", id, e); }
+      },
+      async clearActivityRemote(){
+        if(!this.ready || !this.activityCol) return;
+        try{
+          const { getDocs, doc, deleteDoc } = this.fs;
+          const snap = await getDocs(this.activityCol);
+          await Promise.all(snap.docs.map(d => deleteDoc(doc(this.activityCol, d.id))));
+        } catch(e){ console.error("[HPA sync] activity clear failed:", e); }
       },
 
       /* --- Training files: same one-doc-per-file pattern; big files should use "+ Add Link" instead --- */
@@ -7480,17 +7557,39 @@
         const list = LS.get(ACTIVITY_KEY, []);
         const last = list[0];
         const now = Date.now();
-        // collapse rapid repeats of the same who+what (e.g. batch saves)
+        let entry;
+        // collapse rapid repeats of the same who+what (e.g. batch saves) —
+        // bump the existing entry's time instead of adding a new one, so a
+        // flurry of edits doesn't flood the shared feed with duplicates.
         if(last && last.what === what && last.who === who && (now - last.t) < 8000){
           last.t = now;
+          entry = last;
         } else {
-          list.unshift({ t:now, who, what });
+          entry = { id: cryptoRandomId(), t:now, who, what };
+          list.unshift(entry);
         }
         if(list.length > 80) list.length = 80;
         try { localStorage.setItem(ACTIVITY_KEY, JSON.stringify(list)); } catch(_){}  // direct: never recurse
+        // Share this with the rest of the team — same one-doc-per-item
+        // pattern as photos — so "recent activity" isn't just this device.
+        try { if(window.HPASync) window.HPASync.pushActivity(entry.id); } catch(_){}
+      },
+      // Merge one incoming entry from another team member (or a redelivered
+      // echo of our own) into the local list, newest first, deduped by id.
+      applyRemote(entry){
+        if(!entry || !entry.id) return;
+        const list = LS.get(ACTIVITY_KEY, []);
+        if(list.some(e => e.id === entry.id)) return;
+        list.push(entry);
+        list.sort((a,b) => (b.t||0) - (a.t||0));
+        if(list.length > 80) list.length = 80;
+        try { localStorage.setItem(ACTIVITY_KEY, JSON.stringify(list)); } catch(_){}
       },
       all(){ return LS.get(ACTIVITY_KEY, []); },
-      clear(){ try{ localStorage.removeItem(ACTIVITY_KEY); }catch(_){} }
+      clear(){
+        try{ localStorage.removeItem(ACTIVITY_KEY); }catch(_){}
+        try { if(window.HPASync) window.HPASync.clearActivityRemote(); } catch(_){}
+      }
     };
     window.HPAActivity = HPAActivity;
 
@@ -7604,8 +7703,15 @@
         const box = document.getElementById("dashActivity");
         if(!box) return;
         const list = HPAActivity.all();
+        // Colored initials per person — same scheme as the presence badges —
+        // so a team-wide feed reads at a glance as "who did what", not just
+        // a wall of identical rows.
         box.innerHTML = list.length ? list.map(a =>
-          `<div class="dashItem"><div class="di_main"><div class="di_title">${escapeHtml(a.what)} updated</div><div class="di_sub">by ${escapeHtml(a.who)}</div></div><div class="di_when">${escapeHtml(timeAgo(a.t))}</div></div>`
+          `<div class="dashItem">
+            <span class="dashActivityAvatar" style="background:${presenceColor(a.who)}">${escapeHtml(presenceInitials(a.who))}</span>
+            <div class="di_main"><div class="di_title">${escapeHtml(a.what)} updated</div><div class="di_sub">by ${escapeHtml(a.who)}</div></div>
+            <div class="di_when">${escapeHtml(timeAgo(a.t))}</div>
+          </div>`
         ).join("") : `<div class="palEmpty">No activity yet. Changes you and your team make will show here.</div>`;
       },
 
