@@ -585,6 +585,9 @@
     .poFileMeta{ min-width:0; }
     .poFileName{ font-weight:700; color:var(--ink); word-break:break-word; }
 
+    .plantHistoryRow{ cursor:pointer; transition:background .12s; }
+    .plantHistoryRow:hover{ background:var(--rowHover); }
+
     .photoSubTabs{ display:flex; gap:6px; flex-wrap:wrap; margin:0 0 16px; padding-bottom:12px; border-bottom:1px solid var(--line); }
     .subTab{ padding:9px 16px; border-radius:999px; border:1px solid var(--line); background:var(--paper-2); color:var(--moss); cursor:pointer; font-family:var(--sans); font-weight:600; font-size:13px; transition:background .15s, border-color .15s, color .15s; }
     .subTab:hover{ background:var(--rowHover); }
@@ -1329,6 +1332,7 @@
                     <button id="exportTruckBreakdownBtn" class="btnGhost" type="button">Truck Breakdown</button>
                   </div>
                 </details>
+                <button id="plantHistoryBtn" class="btnGhost" type="button"><span data-icon="search" aria-hidden="true"></span> Plant History</button>
                 <button id="skipWeekBtn" class="btnGhost otcSkipBtn" type="button">🚫 Mark as Skip Week</button>
               </div>
             </div>
@@ -1728,6 +1732,20 @@
           <button id="poFileRemoveBtn" class="tinyBtn danger">Remove</button>
         </div>
       </div>
+    </div>
+  </div>
+
+  <div id="plantHistoryModal" class="modal" aria-hidden="true">
+    <div class="modalCard">
+      <div class="modalHead">
+        <div>
+          <h3>Plant / SKU History</h3>
+          <div class="note">Search any plant name or SKU to see every PO across every week it's appeared on.</div>
+        </div>
+        <button id="plantHistoryCloseBtn" class="closeX">Close</button>
+      </div>
+      <input id="plantHistorySearch" placeholder="e.g., Pothos, 4in Mums, SKU-1042..." />
+      <div id="plantHistoryResults" style="margin-top:14px;"></div>
     </div>
   </div>
 
@@ -3573,6 +3591,104 @@
       renderPoFileModalState();
       renderOrder();
     });
+
+    /*********************************************************
+     * Plant / SKU history — search across EVERY order ever saved
+     * (not just the currently-viewed week) for a plant name or SKU,
+     * and list every PO line it turned up on.
+     *********************************************************/
+    function searchPlantHistory(q){
+      q = (q||"").trim().toLowerCase();
+      if(!q) return [];
+      const rows = [];
+      loadTrucks().forEach(t => {
+        (t.vendorBlocks || []).forEach(vb => {
+          (vb.items || []).forEach(it => {
+            if((it.item||"").toLowerCase().includes(q)){
+              rows.push({
+                truckId: t.id, weekKey: t.weekKey, pickupDate: t.pickupDate,
+                region: t.region, vendor: (vb.name||"").trim() || "Vendor —", po: (vb.po||"").trim(),
+                item: it.item || "", qty: Number(it.qty || 0), racks: Number(it.racks || 0),
+                poFile: vb.poFile || null
+              });
+            }
+          });
+        });
+      });
+      rows.sort((a,b) => (b.pickupDate||"").localeCompare(a.pickupDate||"")); // most recent first
+      return rows;
+    }
+    const plantHistoryModal = document.getElementById("plantHistoryModal");
+    function openPlantHistoryModal(){
+      const input = document.getElementById("plantHistorySearch");
+      input.value = "";
+      renderPlantHistoryResults();
+      plantHistoryModal.classList.add("active");
+      plantHistoryModal.setAttribute("aria-hidden","false");
+      setTimeout(() => input.focus(), 50);
+    }
+    function closePlantHistoryModal(){
+      plantHistoryModal.classList.remove("active");
+      plantHistoryModal.setAttribute("aria-hidden","true");
+    }
+    function renderPlantHistoryResults(){
+      const q = document.getElementById("plantHistorySearch").value;
+      const wrap = document.getElementById("plantHistoryResults");
+      if(!q.trim()){
+        wrap.innerHTML = `<div class="note">Start typing a plant name or SKU to see every PO it's appeared on.</div>`;
+        return;
+      }
+      const rows = searchPlantHistory(q);
+      if(!rows.length){
+        wrap.innerHTML = emptyStateHtml(`No POs found matching "${escapeHtml(q.trim())}".`, "search");
+        return;
+      }
+      const vendors = new Set(rows.map(r => r.vendor));
+      const totalQty = rows.reduce((s,r) => s + r.qty, 0);
+      wrap.innerHTML = `
+        <div class="note" style="margin-bottom:10px;">${rows.length} PO line${rows.length===1?"":"s"} · ${vendors.size} vendor${vendors.size===1?"":"s"}${totalQty ? ` · ${totalQty.toLocaleString()} plants total` : ``}</div>
+        <table class="sheetTable">
+          <thead><tr>
+            <th>Date</th><th>Vendor</th><th>PO #</th><th>Item</th><th class="num nowrap">Qty</th><th class="num nowrap">Racks</th><th>Region</th><th></th>
+          </tr></thead>
+          <tbody>
+            ${rows.map((r,i) => `
+              <tr class="plantHistoryRow" data-i="${i}">
+                <td>${escapeHtml(r.pickupDate || "—")}</td>
+                <td>${escapeHtml(r.vendor)}</td>
+                <td>${r.po ? escapeHtml(r.po) : "—"}</td>
+                <td>${escapeHtml(r.item)}</td>
+                <td class="num">${r.qty ? r.qty.toLocaleString() : ""}</td>
+                <td class="num">${r.racks ? r.racks.toLocaleString() : ""}</td>
+                <td>${escapeHtml(r.region || "—")}</td>
+                <td>${r.poFile && r.poFile.dataUrl ? `<button type="button" class="tinyBtn plantHistoryViewPo" data-i="${i}" title="View the uploaded PO PDF">📄 PDF</button>` : ``}</td>
+              </tr>`).join("")}
+          </tbody>
+        </table>
+      `;
+      wrap.querySelectorAll(".plantHistoryRow").forEach(tr => {
+        tr.addEventListener("click", (e) => {
+          if(e.target.closest(".plantHistoryViewPo")) return;
+          const r = rows[Number(tr.dataset.i)];
+          closePlantHistoryModal();
+          showPage("order");
+          weekAnchor = dateFromWeekKey(r.weekKey);
+          renderOrder();
+          openTruckDetail(r.truckId);
+        });
+      });
+      wrap.querySelectorAll(".plantHistoryViewPo").forEach(btn => {
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const r = rows[Number(btn.dataset.i)];
+          if(r.poFile && r.poFile.dataUrl) window.open(dataUrlToBlobUrl(r.poFile.dataUrl), "_blank");
+        });
+      });
+    }
+    document.getElementById("plantHistoryBtn")?.addEventListener("click", openPlantHistoryModal);
+    document.getElementById("plantHistoryCloseBtn")?.addEventListener("click", closePlantHistoryModal);
+    document.getElementById("plantHistorySearch")?.addEventListener("input", renderPlantHistoryResults);
+    plantHistoryModal?.addEventListener("click", e => { if(e.target === plantHistoryModal) closePlantHistoryModal(); });
 
     /*********************************************************
      * Manual "added to order" checkbox on saved order items.
