@@ -79,6 +79,9 @@
     .screen.active{ display:flex; }
     .topbar{ position:fixed; top:14px; left:14px; right:14px; display:flex; justify-content:space-between; gap:10px; z-index:10; pointer-events:none; }
     .chip{ pointer-events:auto; padding:7px 13px; border-radius:999px; border:1px solid rgba(255,255,255,.14); background:rgba(8,29,22,.55); backdrop-filter:blur(10px); color:rgba(231,245,238,.95); font-size:12.5px; font-weight:600; letter-spacing:.2px; user-select:none; }
+    button.chip{ font-family:var(--sans); cursor:pointer; appearance:none; -webkit-appearance:none; transition:background .15s, transform .1s; }
+    button.chip:hover{ background:rgba(43,212,154,.16); }
+    button.chip:active{ transform:scale(.93); }
 
     .card{ background:var(--paper-2); border:1px solid var(--line); border-radius:var(--radius); padding:30px; box-shadow:var(--shadow); width:min(440px, 92vw); position:relative; z-index:2; }
     h2{ font-family:var(--display); font-weight:600; letter-spacing:-.01em; }
@@ -117,13 +120,21 @@
     .navSub{ font-size:11px; color:rgba(168,214,190,.7); letter-spacing:.18em; text-transform:uppercase; margin:0 4px 16px; }
     .navBtn{ width:100%; text-align:left; padding:11px 12px; border-radius:var(--radius-sm); border:1px solid transparent; background:transparent; color:rgba(214,239,226,.82); cursor:pointer; margin:3px 0; font-family:var(--sans); font-weight:500; font-size:14px; display:flex; align-items:center; gap:10px; transition:background .15s, color .15s, border-color .15s; }
     .navIcon{ flex:none; font-size:15px; line-height:1; }
+    /* Icon system — sized in em so it inherits whatever font-size the
+       emoji it replaced used to be styled with, everywhere in the app. */
+    .iconSvg{ width:1em; height:1em; display:inline-block; flex:none; vertical-align:-0.15em; }
+    button .iconSvg, .btn .iconSvg, .btnGhost .iconSvg, .tinyBtn .iconSvg{ margin-right:.4em; vertical-align:-0.18em; }
+    .navIcon .iconSvg{ margin-right:0; width:1em; height:1em; }
+    .btnIcon{ display:inline-flex; }
+    .btnIcon .iconSvg{ margin-right:.5em; vertical-align:-0.15em; }
     .navLabel{ min-width:0; }
     .navLabelShort{ display:none; }
     #navMoreBtn{ display:none; font-family:var(--sans); font-weight:600; cursor:pointer; }
     .navBtn:hover{ background:rgba(43,212,154,.1); color:#eafff5; }
     .navBtn.active{ background:rgba(43,212,154,.16); border-color:rgba(43,212,154,.34); color:#eafff5; font-weight:600; }
     .navDot{ margin-left:auto; flex:none; width:9px; height:9px; border-radius:50%; background:#e0563f; box-shadow:0 0 0 2px rgba(224,86,63,.28); display:none; }
-    .navBtn.hasChange .navDot{ display:block; }
+    .navBtn.hasChange .navDot{ display:block; animation:dotPulse 1.8s ease-in-out infinite; }
+    @keyframes dotPulse{ 0%,100%{ box-shadow:0 0 0 2px rgba(224,86,63,.28); } 50%{ box-shadow:0 0 0 5px rgba(224,86,63,.12); } }
     .navSpacer{ flex:1; min-height:10px; }
     /* Presence — colored initials next to a nav tab for whoever's currently
        looking at it, and the little "Active Now" popup off the topbar chip. */
@@ -137,7 +148,18 @@
     .presenceName{ font-weight:600; color:var(--ink); font-size:14px; }
     .presencePage{ font-size:12px; color:var(--ink-2); margin-top:1px; }
     .presenceYou{ font-size:11px; font-weight:700; color:var(--moss); margin-left:auto; flex:none; }
-    .main{ background:var(--paper); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); padding:20px 22px; overflow:auto; position:relative; }
+    .main{ background:var(--paper); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow), inset 0 1px 0 rgba(255,255,255,.35); padding:20px 22px; overflow:auto; position:relative; }
+    /* A faint botanical watermark in the corner of the main card — pure
+       decoration, kept inside the box so it can't add scroll, kept behind
+       real content via a negative z-index inside .main's own stacking
+       context, and ignored by clicks. */
+    .main::after{
+      content:""; position:absolute; right:10px; bottom:10px; width:150px; height:150px;
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Cpath d='M90 170C40 140 30 90 60 40C90 10 140 10 160 40' stroke='%231f5c43' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3Cpath d='M70 120C60 100 65 80 85 65' stroke='%231f5c43' stroke-width='2.5' fill='none' stroke-linecap='round'/%3E%3Cpath d='M100 100C110 85 130 80 145 90' stroke='%231f5c43' stroke-width='2.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat:no-repeat; background-size:contain;
+      opacity:.05; pointer-events:none; z-index:-1;
+    }
+    @media (max-width:900px){ .main::after{ display:none; } }
     .toolbar{ display:flex; align-items:flex-start; justify-content:space-between; gap:10px; margin-bottom:16px; flex-wrap:wrap; padding-bottom:14px; border-bottom:1px solid var(--line); }
     .toolbar h2{ margin:0; font-size:24px; color:var(--ink); }
     .tools{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
@@ -288,14 +310,20 @@
     .prebookSeasonTab.active{ background:linear-gradient(120deg, var(--seasonA), var(--seasonB)); border-color:transparent; color:#fff; box-shadow:0 2px 8px rgba(0,0,0,.15); text-shadow:0 1px 2px rgba(0,0,0,.15); }
     .prebookSeasonTab .count{ font-size:11px; font-weight:700; background:rgba(0,0,0,.08); color:inherit; padding:1px 8px; border-radius:999px; }
     .prebookSeasonTab.active .count{ background:rgba(255,255,255,.28); }
-    /* The month bar and calendar below the tabs always reflect whichever
-       season is currently active, via a data-season attribute set on the
-       whole page section — these variables cascade down to both. */
+    /* The whole tab — search row, month bar, calendar — sits on a soft wash
+       of whichever season is currently active, via a data-season attribute
+       set on the page section; these variables cascade down to everything
+       inside it. The month bar and calendar keep a plain paper background
+       so they read as cards floating on the tinted backdrop. */
     #page-prebook[data-season="spring"]{ --seasonA:#d9679a; --seasonB:#7fb069; --seasonSoft:#fdf1f6; }
     #page-prebook[data-season="summer"]{ --seasonA:#e8a33d; --seasonB:#3aa6a6; --seasonSoft:#fffaf0; }
     #page-prebook[data-season="fall"]{   --seasonA:#c8622c; --seasonB:#8a4b2e; --seasonSoft:#fdf1e8; }
     #page-prebook[data-season="winter"]{ --seasonA:#3f7dbf; --seasonB:#2f5233; --seasonSoft:#eef5fb; }
-    .prebookMonthBar{ display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin:0 0 14px; padding:10px 12px; border:1px solid var(--line); border-radius:var(--radius-sm); background:var(--seasonSoft, var(--paper-2)); }
+    #page-prebook{ transition:background .25s ease, box-shadow .25s ease; }
+    #page-prebook[data-season]{ background:var(--seasonSoft); border-radius:var(--radius-sm); box-shadow:inset 0 3px 0 0 var(--seasonA); padding:16px 16px 4px; }
+    .prebookSearchRow{ margin:2px 0 12px; }
+    .prebookSearchRow input{ max-width:360px; }
+    .prebookMonthBar{ display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin:0 0 14px; padding:10px 12px; border:1px solid var(--line); border-radius:var(--radius-sm); background:var(--paper-2); }
     .prebookMonthNavBtns{ display:flex; align-items:center; gap:8px; }
     .prebookMonthArrow{ width:30px; height:30px; border-radius:50%; border:1px solid var(--line); background:var(--paper-2); color:var(--ink); cursor:pointer; font-size:14px; display:flex; align-items:center; justify-content:center; transition:background .15s; }
     .prebookMonthArrow:hover{ background:var(--rowHover); }
@@ -832,6 +860,16 @@
     .card, .side, .main, .orderSummary, .vendorBlockXL,
     .photoTile, .plantTile, .trainingCard, .linkCard{ box-shadow:var(--shadow-sm); }
 
+    /* Hover-lift micro-interaction for card-like surfaces — a small nudge
+       that makes the grid feel tactile without being distracting. */
+    .statCard, .photoTile, .plantTile, .trainingCard, .linkCard{
+      transition:transform .15s ease, box-shadow .15s ease;
+    }
+    .statCard:hover, .photoTile:hover, .plantTile:hover, .trainingCard:hover, .linkCard:hover{
+      transform:translateY(-3px);
+      box-shadow:0 14px 32px rgba(4,18,12,.16);
+    }
+
     /* ---------------------------------------------------------------
        MOBILE — comfortable 44px tap targets for warehouse phones
        --------------------------------------------------------------- */
@@ -848,13 +886,39 @@
     @media (prefers-reduced-motion: reduce){
       .modal.active .modalCard{ animation:none !important; }
       .sheetTable td, .poTable td{ transition:none !important; }
+      .page.pageEnter{ animation:none !important; }
+      .navBtn.hasChange .navDot{ animation:none !important; }
+      .statCard, .photoTile, .plantTile, .trainingCard, .linkCard{ transition:none !important; }
+      .statCard:hover, .photoTile:hover, .plantTile:hover, .trainingCard:hover, .linkCard:hover{ transform:none !important; }
+      .toast{ animation:none !important; }
     }
+
+    /* ---------------------------------------------------------------
+       PAGE TRANSITIONS — a soft fade+rise every time a tab switches in,
+       instead of the content just snapping into place.
+       --------------------------------------------------------------- */
+    @keyframes pageFadeIn{ from{ opacity:0; transform:translateY(6px); } to{ opacity:1; transform:none; } }
+    .page.pageEnter{ animation:pageFadeIn .28s ease; }
+
+    /* ---------------------------------------------------------------
+       TOASTS — brief, quiet confirmation after a save.
+       --------------------------------------------------------------- */
+    .toastStack{ position:fixed; left:50%; bottom:26px; transform:translateX(-50%); z-index:200; display:flex; flex-direction:column; gap:8px; align-items:center; pointer-events:none; }
+    .toast{ display:flex; align-items:center; gap:8px; padding:10px 18px; border-radius:999px; background:var(--forest); color:#eafff5; font-family:var(--sans); font-weight:600; font-size:13.5px; box-shadow:0 12px 30px rgba(4,18,12,.35); border:1px solid rgba(95,224,166,.28); animation:toastIn .25s cubic-bezier(.2,.8,.25,1), toastOut .25s ease 2.2s forwards; }
+    .toast .iconSvg{ color:var(--mint); margin-right:0; }
+    @keyframes toastIn{ from{ opacity:0; transform:translateY(10px) scale(.95); } to{ opacity:1; transform:none; } }
+    @keyframes toastOut{ to{ opacity:0; transform:translateY(-6px) scale(.97); } }
+    @media (max-width:560px){ .toastStack{ bottom:calc(90px + env(safe-area-inset-bottom)); } }
     /* =====================================================================
        NEXT-LEVEL v3 — dashboard, command palette, global search
        ===================================================================== */
     .dashGrid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(150px,1fr)); gap:12px; margin:14px 0 18px; }
     .statCard{ background:linear-gradient(180deg,#fffdf6,#f4f0e2); border:1px solid var(--line); border-radius:var(--radius); padding:16px; box-shadow:var(--shadow-sm); position:relative; overflow:hidden; }
     .statCard::after{ content:""; position:absolute; left:0; top:0; bottom:0; width:4px; background:var(--statAccent, var(--moss)); }
+    .statTop{ display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+    .statBadge{ width:30px; height:30px; border-radius:9px; display:flex; align-items:center; justify-content:center; background:color-mix(in srgb, var(--statAccent, var(--moss)) 16%, transparent); color:var(--statAccent, var(--moss)); }
+    .statBadge .iconSvg{ width:16px; height:16px; margin-right:0; }
+    .statRing{ width:30px; height:30px; flex:none; }
     .statNum{ font-family:var(--display); font-weight:600; font-size:30px; line-height:1; color:var(--ink); font-variant-numeric:tabular-nums; }
     .statLbl{ margin-top:6px; font-size:12px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-2); }
     .statSub{ margin-top:4px; font-size:12px; color:var(--moss); font-weight:600; }
@@ -869,7 +933,17 @@
     .dashItem .di_main{ flex:1; min-width:0; }
     .dashItem .di_title{ font-weight:600; color:var(--ink); }
     .dashItem .di_sub{ font-size:12px; color:var(--ink-2); }
-    .dashItem .di_when{ font-size:11.5px; color:var(--moss); white-space:nowrap; font-weight:600; }
+    .dashItem .di_when{ font-size:11.5px; color:var(--moss); white-space:nowrap; font-weight:600; text-align:right; }
+    .di_bar{ margin-top:6px; height:4px; border-radius:2px; background:var(--line-soft); overflow:hidden; max-width:220px; }
+    .di_bar span{ display:block; height:100%; background:var(--mint-deep); border-radius:2px; }
+    .di_qty{ font-size:10.5px; color:var(--ink-2); font-weight:600; margin-top:2px; }
+    /* Illustrated empty states — an icon-in-a-circle standing in for the
+       plain "No X yet" text notes on the main content pages. */
+    .emptyState{ display:flex; flex-direction:column; align-items:center; text-align:center; gap:12px; padding:36px 20px; border:1.5px dashed var(--line); border-radius:var(--radius); background:linear-gradient(180deg, var(--paper-2), var(--paper-3)); color:var(--ink-2); margin-top:12px; }
+    .emptyStateIcon{ width:54px; height:54px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:rgba(43,212,154,.14); color:var(--moss); }
+    .emptyStateIcon .iconSvg{ width:26px; height:26px; margin-right:0; }
+    .emptyStateMsg{ font-weight:600; max-width:380px; line-height:1.5; }
+    .emptyStateMsg strong{ color:var(--ink); }
     .dashItem.clickable{ cursor:pointer; border-radius:8px; }
     .dashItem.clickable:hover{ background:var(--rowHover); }
 
@@ -1003,6 +1077,63 @@
     .navFooter .navLogoutBtn{ margin-top:10px; border-color:rgba(224,86,63,.3); color:#ffb4a4; }
     .navFooter .navLogoutBtn:hover{ background:rgba(224,86,63,.12); border-color:rgba(224,86,63,.45); color:#ffcdc2; }
     .side .sideNote{ color:rgba(168,214,190,.55); font-size:11px; line-height:1.45; margin-top:12px; }
+
+    /* =====================================================================
+       DARK MODE — the sidebar/topbar chrome is already the dark jungle
+       canopy in both themes; this swaps the "paper" reading surface (the
+       .main card and everything on it) to a dark equivalent. Toggled via
+       the topbar sun/moon button, persisted in localStorage, defaults to
+       the original light look for everyone until they flip it themselves.
+       ===================================================================== */
+    html[data-theme="dark"]{
+      --paper:#182821;
+      --paper-2:#1f3126;
+      --paper-3:#25392c;
+      --ink:#eaf3ec;
+      --ink-2:#a9c2b0;
+      --line:#35493c;
+      --line-soft:#2a3d31;
+      --thead:#24382c;
+      --rowA:#1f3126;
+      --rowB:#223528;
+      --rowHover:#2a4433;
+      --shadow:0 18px 50px rgba(0,0,0,.55);
+      --shadow-sm:0 4px 14px rgba(0,0,0,.35);
+      --state-ok-bd:#3f8a63;      --state-ok-bg:#16382a;      --state-ok-fg:#7be3b3;
+      --state-warn-bd:#a3821f;    --state-warn-bg:#3a2f10;    --state-warn-fg:#f0cf6e;
+      --state-info-bd:#3f7690;    --state-info-bg:#132a35;    --state-info-fg:#8fd0ea;
+      --state-danger-bd:#a8503d;  --state-danger-bg:#3a1912;  --state-danger-fg:#f0a794;
+      --state-neutral-bd:#465347; --state-neutral-bg:#232f26; --state-neutral-fg:#b9c7bb;
+      color-scheme:dark;
+    }
+    html[data-theme="dark"] body{
+      /* same jungle backdrop, just a touch dimmer so the now-dark card doesn't fight it */
+      background:
+        radial-gradient(1200px 700px at 18% -10%, rgba(43,212,154,.10), transparent 60%),
+        radial-gradient(1000px 800px at 100% 0%, rgba(20,58,42,.5), transparent 55%),
+        linear-gradient(160deg, #081a12 0%, #071810 60%, #05130d 100%);
+    }
+    html[data-theme="dark"] .vendorHeadXL,
+    html[data-theme="dark"] .availVendorHead{ background:#23362b; }
+    html[data-theme="dark"] .statCard{ background:linear-gradient(180deg,#25392c,#1c2c22); }
+    html[data-theme="dark"] .dashPanelHead{ background:linear-gradient(180deg,#24382c,var(--paper-2)); }
+    html[data-theme="dark"] #availWrap > .note,
+    html[data-theme="dark"] .photoGrid > .note,
+    html[data-theme="dark"] .plantGrid > .note,
+    html[data-theme="dark"] .trainingGrid > .note{ background:linear-gradient(180deg,#213529,#1c2c22); }
+    html[data-theme="dark"] .prebookSeasonTab[data-season="spring"]{ --seasonSoft:#2a2027; }
+    html[data-theme="dark"] .prebookSeasonTab[data-season="summer"]{ --seasonSoft:#2c2519; }
+    html[data-theme="dark"] .prebookSeasonTab[data-season="fall"]{   --seasonSoft:#2a2119; }
+    html[data-theme="dark"] .prebookSeasonTab[data-season="winter"]{ --seasonSoft:#1c2530; }
+    html[data-theme="dark"] #page-prebook[data-season="spring"]{ --seasonSoft:#2a2027; }
+    html[data-theme="dark"] #page-prebook[data-season="summer"]{ --seasonSoft:#2c2519; }
+    html[data-theme="dark"] #page-prebook[data-season="fall"]{   --seasonSoft:#2a2119; }
+    html[data-theme="dark"] #page-prebook[data-season="winter"]{ --seasonSoft:#1c2530; }
+    html[data-theme="dark"] input, html[data-theme="dark"] textarea, html[data-theme="dark"] select{ background:#1c2c22; color:var(--ink); border-color:var(--line); }
+    html[data-theme="dark"] .main{ box-shadow:var(--shadow), inset 0 1px 0 rgba(255,255,255,.06); }
+    html[data-theme="dark"] .emptyState{ background:linear-gradient(180deg, var(--paper-2), var(--paper-3)); }
+    html[data-theme="dark"] .logo{ filter:brightness(1.05); }
+    #themeToggleBtn .iconSvg{ display:block; }
   </style>
 </head>
 <body class="density-comfortable atmos">
@@ -1015,7 +1146,8 @@
     <div id="statusChip" class="chip subtle">Cinematic Jungle</div>
     <div style="display:flex; gap:10px; pointer-events:none;">
       <div id="syncChip" class="chip subtle" role="button" tabindex="0" title="Team sync" style="pointer-events:auto; cursor:pointer;">Sync: off</div>
-      <div id="presenceChip" class="chip subtle" role="button" tabindex="0" title="No one else is online right now" style="pointer-events:auto; cursor:pointer;">👥 0</div>
+      <div id="presenceChip" class="chip subtle" role="button" tabindex="0" title="No one else is online right now" style="pointer-events:auto; cursor:pointer;"><span data-icon="people" aria-hidden="true"></span> 0</div>
+      <button id="themeToggleBtn" class="chip" type="button" title="Switch to dark mode" style="pointer-events:auto; display:flex; align-items:center; justify-content:center; width:32px; height:32px; padding:0;"><span data-icon="moon" aria-hidden="true"></span></button>
       <div id="userChip" class="chip subtle">Not signed in</div>
     </div>
   </div>
@@ -1045,24 +1177,24 @@
         <div class="navTitle">HPA HUB</div>
         <div class="navSub">Logistics</div>
         <nav class="navList" role="navigation" aria-label="Main">
-          <button class="navBtn" data-page="dashboard" aria-label="Dashboard"><span class="navIcon" aria-hidden="true">📊</span><span class="navLabel"><span class="navLabelFull">Dashboard</span><span class="navLabelShort">Dashboard</span></span></button>
-          <button class="navBtn active" data-page="order" aria-label="Order Tracker"><span class="navIcon" aria-hidden="true">🚛</span><span class="navLabel"><span class="navLabelFull">Order Tracker</span><span class="navLabelShort">Orders</span></span></button>
-          <button class="navBtn" data-page="photos" aria-label="Photo Library"><span class="navIcon" aria-hidden="true">🪴</span><span class="navLabel"><span class="navLabelFull">Photo Library</span><span class="navLabelShort">Photos</span></span></button>
-          <button class="navBtn" data-page="avail" aria-label="Availability"><span class="navIcon" aria-hidden="true">📈</span><span class="navLabel"><span class="navLabelFull">Availability</span><span class="navLabelShort">Avail</span></span></button>
-          <button class="navBtn" data-page="prebook" aria-label="Pre-Booking"><span class="navIcon" aria-hidden="true">📌</span><span class="navLabel"><span class="navLabelFull">Pre-Booking</span><span class="navLabelShort">Pre-Book</span></span></button>
-          <button class="navBtn" data-page="checkin" aria-label="Order Check-In"><span class="navIcon" aria-hidden="true">✅</span><span class="navLabel"><span class="navLabelFull">Order Check-In</span><span class="navLabelShort">Check-In</span></span></button>
-          <button class="navBtn" data-page="issues" aria-label="Issue Tracker"><span class="navIcon" aria-hidden="true">🐛</span><span class="navLabel"><span class="navLabelFull">Issue Tracker</span><span class="navLabelShort">Issues</span></span></button>
-          <button class="navBtn" data-page="training" aria-label="Training Documents"><span class="navIcon" aria-hidden="true">📚</span><span class="navLabel"><span class="navLabelFull">Training Documents</span><span class="navLabelShort">Training</span></span></button>
+          <button class="navBtn" data-page="dashboard" aria-label="Dashboard"><span class="navIcon" data-icon="dashboard" aria-hidden="true"></span><span class="navLabel"><span class="navLabelFull">Dashboard</span><span class="navLabelShort">Dashboard</span></span></button>
+          <button class="navBtn active" data-page="order" aria-label="Order Tracker"><span class="navIcon" data-icon="truck" aria-hidden="true"></span><span class="navLabel"><span class="navLabelFull">Order Tracker</span><span class="navLabelShort">Orders</span></span></button>
+          <button class="navBtn" data-page="photos" aria-label="Photo Library"><span class="navIcon" data-icon="plant" aria-hidden="true"></span><span class="navLabel"><span class="navLabelFull">Photo Library</span><span class="navLabelShort">Photos</span></span></button>
+          <button class="navBtn" data-page="avail" aria-label="Availability"><span class="navIcon" data-icon="trending" aria-hidden="true"></span><span class="navLabel"><span class="navLabelFull">Availability</span><span class="navLabelShort">Avail</span></span></button>
+          <button class="navBtn" data-page="prebook" aria-label="Pre-Booking"><span class="navIcon" data-icon="pin" aria-hidden="true"></span><span class="navLabel"><span class="navLabelFull">Pre-Booking</span><span class="navLabelShort">Pre-Book</span></span></button>
+          <button class="navBtn" data-page="checkin" aria-label="Order Check-In"><span class="navIcon" data-icon="checkCircle" aria-hidden="true"></span><span class="navLabel"><span class="navLabelFull">Order Check-In</span><span class="navLabelShort">Check-In</span></span></button>
+          <button class="navBtn" data-page="issues" aria-label="Issue Tracker"><span class="navIcon" data-icon="bug" aria-hidden="true"></span><span class="navLabel"><span class="navLabelFull">Issue Tracker</span><span class="navLabelShort">Issues</span></span></button>
+          <button class="navBtn" data-page="training" aria-label="Training Documents"><span class="navIcon" data-icon="book" aria-hidden="true"></span><span class="navLabel"><span class="navLabelFull">Training Documents</span><span class="navLabelShort">Training</span></span></button>
         </nav>
-        <button id="navMoreBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="More options"><span class="navIcon" aria-hidden="true">⋯</span><span class="navLabel">More</span></button>
+        <button id="navMoreBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="More options"><span class="navIcon" data-icon="more" aria-hidden="true"></span><span class="navLabel">More</span></button>
         <div class="navSpacer"></div>
         <div class="navFooter">
           <div class="navFooterLabel">Data</div>
-          <button id="backupBtn" class="navBtn">💾 Backup all data</button>
+          <button id="backupBtn" class="navBtn"><span class="btnIcon" data-icon="save" aria-hidden="true"></span> Backup all data</button>
           <div class="note sideNote" id="lastBackupNote" style="margin:-2px 4px 4px;"></div>
-          <button id="restoreBtn" class="navBtn">↺ Restore from backup</button>
+          <button id="restoreBtn" class="navBtn"><span class="btnIcon" data-icon="restore" aria-hidden="true"></span> Restore from backup</button>
           <input id="restoreFile" type="file" accept=".json,application/json" style="display:none;">
-          <button id="logoutBtn" class="navBtn navLogoutBtn">Log out</button>
+          <button id="logoutBtn" class="navBtn navLogoutBtn"><span class="btnIcon" data-icon="logout" aria-hidden="true"></span> Log out</button>
         </div>
         <div class="note sideNote">Everything here saves automatically and syncs with the team — even offline, it catches up once you're back online.</div>
       </aside>
@@ -1072,7 +1204,7 @@
           <div class="toolbar">
             <h2>Dashboard</h2>
             <div class="tools">
-              <button id="dashSearchBtn" class="btnGhost">🔍 Search everything</button>
+              <button id="dashSearchBtn" class="btnGhost"><span data-icon="search" aria-hidden="true"></span> Search everything</button>
               <button id="dashCmdBtn" class="btnGhost">⌘K Commands</button>
             </div>
           </div>
@@ -1087,11 +1219,11 @@
           <div class="dashGrid" id="dashStats"></div>
           <div class="dashRow">
             <div class="dashPanel" id="dashTodayPanel">
-              <div class="dashPanelHead"><span class="dashPanelTitle" id="dashTodayTitle">🚛 Arriving this week</span></div>
+              <div class="dashPanelHead"><span class="dashPanelTitle" id="dashTodayTitle"><span data-icon="truck" aria-hidden="true"></span> Arriving this week</span></div>
               <div class="dashPanelBody" id="dashToday"></div>
             </div>
             <div class="dashPanel" id="dashActivityPanel">
-              <div class="dashPanelHead"><span class="dashPanelTitle">🧾 Recent activity</span><button id="dashClearLog" class="tinyBtn">Clear</button></div>
+              <div class="dashPanelHead"><span class="dashPanelTitle"><span data-icon="receipt" aria-hidden="true"></span> Recent activity</span><button id="dashClearLog" class="tinyBtn">Clear</button></div>
               <div class="dashPanelBody" id="dashActivity"></div>
             </div>
           </div>
@@ -1144,7 +1276,7 @@
                 <button id="editWeekBtn" class="tinyBtn otcEditBtn" type="button" title="Set store grades shipping and store count for this week">✏️ Edit Week</button>
               </div>
               <div class="otcActions">
-                <button id="newTruckBtn" class="btn" type="button">+ New Order</button>
+                <button id="newTruckBtn" class="btn" type="button"><span data-icon="plus" aria-hidden="true"></span> New Order</button>
                 <details class="exportMenu">
                   <summary class="btnGhost">⬇ Export</summary>
                   <div class="exportMenuPanel">
@@ -1177,7 +1309,7 @@
           <div class="toolbar">
             <h2>Photo Library</h2>
             <div class="tools">
-              <button id="photoOpenAirBtn" class="btnGhost">↗ Open in Air</button>
+              <button id="photoOpenAirBtn" class="btnGhost"><span data-icon="externalLink" aria-hidden="true"></span> Open in Air</button>
             </div>
           </div>
           <div class="note">Plant Library, powered by Air.</div>
@@ -1198,7 +1330,7 @@
             </div>
             <div id="photoCatalogView"></div>
             <div id="photoOrderView">
-              <button id="photoAddBtn" class="btnGhost">+ Add Photos</button>
+              <button id="photoAddBtn" class="btnGhost"><span data-icon="plus" aria-hidden="true"></span> Add Photos</button>
               <select id="photoWeekFilter"></select>
               <input id="photoVendorFilter" placeholder="Filter vendor (optional)" />
               <input id="photoItemFilter" placeholder="Filter item (optional)" />
@@ -1243,9 +1375,9 @@
                   <button id="availThisMonth" class="btnGhost">This Month</button>
                 </div>
                 <input id="availSearch" placeholder="Search vendor or item..." />
-                <button id="availAddBtn" class="btn">+ Add Availability</button>
-                <button id="availCreateOrderBtn" class="btnGhost" title="Build a new Order Tracker order from every checked item this week">📦 Create Order from Checked</button>
-                <button id="availExportBtn" class="btnGhost">⬇ Export CSV</button>
+                <button id="availAddBtn" class="btn"><span data-icon="plus" aria-hidden="true"></span> Add Availability</button>
+                <button id="availCreateOrderBtn" class="btnGhost" title="Build a new Order Tracker order from every checked item this week"><span data-icon="package" aria-hidden="true"></span> Create Order from Checked</button>
+                <button id="availExportBtn" class="btnGhost"><span data-icon="download" aria-hidden="true"></span> Export CSV</button>
               </div>
             </div>
           </div>
@@ -1255,15 +1387,7 @@
         </div>
 
         <div id="page-prebook" class="page" style="display:none;">
-          <div class="toolbar">
-            <h2>Pre-Booking <span class="pillMini" id="prebookCountLabel">0</span></h2>
-            <div class="tools">
-              <button id="prebookAddBtn" class="btn">+ Pre-book Item</button>
-              <input id="prebookSearch" placeholder="Search vendor or item..." />
-              <button id="prebookExportBtn" class="btnGhost">⬇ Export CSV</button>
-            </div>
-          </div>
-          <div class="note">Pick a season, then arrow through its months. Click a day to pre-book it, or an item to edit it. Pick a holiday instead of a specific date and that item gets themed to it.</div>
+          <div class="prebookSearchRow"><input id="prebookSearch" placeholder="Search vendor or item..." /></div>
           <div class="prebookSeasonTabs" id="prebookSeasonTabs"></div>
           <div class="prebookMonthBar" id="prebookMonthBar"></div>
           <div id="prebookWrap"></div>
@@ -1292,14 +1416,14 @@
           <div class="toolbar">
             <h2>Issue Tracker</h2>
             <div class="tools">
-              <button id="newIssueBtn" class="btnGhost">+ New Issue</button>
+              <button id="newIssueBtn" class="btnGhost"><span data-icon="plus" aria-hidden="true"></span> New Issue</button>
               <select id="issueStatusFilter">
                 <option value="">All statuses</option>
                 <option value="Open">Open</option>
                 <option value="Submitted">Submitted</option>
                 <option value="Resolved">Resolved</option>
               </select>
-              <button id="issueExportBtn" class="btnGhost">Export CSV</button>
+              <button id="issueExportBtn" class="btnGhost"><span data-icon="download" aria-hidden="true"></span> Export CSV</button>
             </div>
           </div>
           <table class="table" id="issueTable">
@@ -1316,8 +1440,8 @@
           <div class="toolbar">
             <h2>Training Documents</h2>
             <div class="tools">
-              <button id="trainingAddLinkBtn" class="btnGhost">+ Add Link</button>
-              <button id="trainingUploadBtn" class="btnGhost">⬆ Upload File</button>
+              <button id="trainingAddLinkBtn" class="btnGhost"><span data-icon="plus" aria-hidden="true"></span> Add Link</button>
+              <button id="trainingUploadBtn" class="btnGhost"><span data-icon="upload" aria-hidden="true"></span> Upload File</button>
               <input id="trainingUploadFile" type="file" style="display:none;" />
               <input id="trainingSearch" placeholder="Search documents (optional)" />
             </div>
@@ -1488,18 +1612,12 @@
       </div>
       <div class="row">
         <label><span class="lbl">Quantity</span><input id="pb_qty" type="number" min="0" step="1" placeholder="Qty"/></label>
-        <label><span class="lbl">Ready Date</span>
-          <select id="pb_readyMode">
-            <option value="date">Specific date</option>
-            <option value="holiday">Holiday</option>
-          </select>
-        </label>
+        <label><span class="lbl">Ready Date</span><input id="pb_date" type="date" required/></label>
       </div>
-      <div id="pb_dateRow"><label><span class="lbl">Date</span><input id="pb_date" type="date"/></label></div>
-      <div id="pb_holidayRow" style="display:none;">
-        <label><span class="lbl">Holiday</span><select id="pb_holiday"></select></label>
-        <div class="note" id="pb_holidayPreview"></div>
+      <div class="row">
+        <label><span class="lbl">Holiday theme (optional)</span><select id="pb_holiday"></select></label>
       </div>
+      <div class="note" id="pb_holidayPreview"></div>
       <div style="display:flex; gap:8px; margin-top:4px;">
         <button id="prebookSaveBtn" class="btn" style="width:auto; flex:1;">Save Pre-Book</button>
         <button id="prebookDeleteBtn" class="btnDanger" style="display:none; flex:0 0 auto;">Delete</button>
@@ -1815,6 +1933,112 @@
         .replaceAll("'", "&#039;");
     }
     /*********************************************************
+     * Icon system — a small hand-drawn line-icon set (stroke-only,
+     * currentColor, 24x24) standing in for structural/navigational emoji
+     * (nav, topbar, toolbar actions). Decorative content emoji (seasons,
+     * holidays, activity feed, command palette) are left alone on purpose —
+     * those are content, not chrome. Icons size themselves in `em` units so
+     * every existing font-size/opacity/filter/color rule that used to style
+     * an emoji glyph keeps working unchanged on the SVG that replaces it.
+     *********************************************************/
+    const ICONS = {
+      dashboard: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+      truck: '<rect x="1" y="6" width="13" height="10" rx="1.5"/><path d="M14 10h4l3 3v3h-7z"/><circle cx="6" cy="18.5" r="1.8"/><circle cx="17.5" cy="18.5" r="1.8"/>',
+      plant: '<path d="M8 21h8l-1-8H9l-1 8z"/><path d="M7 13h10"/><path d="M12 13V7"/><path d="M12 7C10 7 8.5 5.5 8.5 3.5 10.5 3.5 12 5 12 7z"/><path d="M12 7c2 0 3.5-1.8 3.5-4C13.5 3 12 4.8 12 7z"/>',
+      trending: '<polyline points="3,17 9,11 13,15 21,6"/><polyline points="15,6 21,6 21,12"/>',
+      pin: '<path d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7z"/><circle cx="12" cy="9" r="2.5"/>',
+      checkCircle: '<circle cx="12" cy="12" r="9"/><polyline points="8,12.5 11,15.5 16,9"/>',
+      bug: '<ellipse cx="12" cy="13" rx="5" ry="6"/><path d="M12 7V4"/><path d="M9.5 5.5 8 4"/><path d="M14.5 5.5 16 4"/><path d="M4 11h3"/><path d="M17 11h3"/><path d="M4 15h3"/><path d="M17 15h3"/><path d="M5.5 19 8 17"/><path d="M18.5 19 16 17"/>',
+      book: '<path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v17H6.5A2.5 2.5 0 0 0 4 21.5z"/><path d="M4 4.5v17"/><path d="M20 19H6.5A2.5 2.5 0 0 0 4 21.5"/>',
+      more: '<circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/>',
+      people: '<circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.4"/><path d="M15 14.2c2.6.4 4.5 2.6 4.5 5.3"/>',
+      search: '<circle cx="10.5" cy="10.5" r="6.5"/><line x1="20" y1="20" x2="15.3" y2="15.3"/>',
+      save: '<path d="M5 3h11l3 3v15H5z"/><path d="M8 3v6h8V3"/><rect x="7" y="13" width="10" height="7"/>',
+      restore: '<path d="M20 12a8 8 0 1 1-2.6-5.9"/><polyline points="20,3 20,8 15,8"/>',
+      logout: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16,17 21,12 16,7"/><line x1="21" y1="12" x2="9" y2="12"/>',
+      externalLink: '<path d="M14 3h7v7"/><line x1="21" y1="3" x2="10" y2="14"/><path d="M19 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5"/>',
+      plus: '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
+      package: '<path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v9l9 5 9-5V8"/><path d="M12 13v9"/>',
+      download: '<path d="M12 3v13"/><polyline points="7,11 12,16 17,11"/><path d="M4 19h16"/>',
+      upload: '<path d="M12 21V8"/><polyline points="7,13 12,8 17,13"/><path d="M4 19h16"/>',
+      receipt: '<path d="M6 2h12v20l-2-1.5L14 22l-2-1.5L10 22l-2-1.5L6 22z"/><line x1="9" y1="7" x2="15" y2="7"/><line x1="9" y1="11" x2="15" y2="11"/><line x1="9" y1="15" x2="12" y2="15"/>',
+      sun: '<circle cx="12" cy="12" r="4.5"/><path d="M12 2.5v2.5M12 19v2.5M4.4 4.4l1.8 1.8M17.8 17.8l1.8 1.8M2.5 12H5M19 12h2.5M4.4 19.6l1.8-1.8M17.8 6.2l1.8-1.8"/>',
+      moon: '<path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z"/>',
+      dollar: '<path d="M12 3v18"/><path d="M17 7.5c0-2-2.2-3.5-5-3.5s-5 1.5-5 3.5 2.2 3 5 3 5 1 5 3.5-2.2 3.5-5 3.5-5-1.5-5-3.5"/>'
+    };
+    function icon(name, extraClass){
+      const body = ICONS[name];
+      if(!body) return "";
+      return `<svg class="iconSvg${extraClass?" "+extraClass:""}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${body}</svg>`;
+    }
+    function hydrateIcons(root){
+      (root || document).querySelectorAll("[data-icon]").forEach(el => {
+        el.innerHTML = icon(el.dataset.icon);
+      });
+    }
+    // A small progress ring for stat cards that have a natural percentage
+    // (vendors confirmed, check-in completion) — grounded in the real
+    // number already being computed, not a fabricated trend line.
+    function ringSvg(pct, color){
+      const p = Math.max(0, Math.min(100, Number(pct) || 0));
+      const r = 15.5, c = 2 * Math.PI * r;
+      const dash = (p / 100) * c;
+      return `<svg class="statRing" viewBox="0 0 36 36" aria-hidden="true">
+        <circle cx="18" cy="18" r="${r}" fill="none" stroke="var(--line)" stroke-width="3"/>
+        <circle cx="18" cy="18" r="${r}" fill="none" stroke="${color}" stroke-width="3" stroke-linecap="round" stroke-dasharray="${dash.toFixed(1)} ${c.toFixed(1)}" transform="rotate(-90 18 18)"/>
+      </svg>`;
+    }
+    // A small illustrated empty-state block (icon in a soft circle + a
+    // message) standing in for the plain "No X yet" text notes scattered
+    // through the content pages. `message` may contain markup (a couple of
+    // callers bold a button name), so callers are responsible for escaping
+    // any user-supplied text before it reaches here.
+    function emptyStateHtml(message, iconName){
+      return `<div class="emptyState"><div class="emptyStateIcon">${icon(iconName || "plant")}</div><div class="emptyStateMsg">${message}</div></div>`;
+    }
+    hydrateIcons(); // all the static nav/topbar/toolbar markup above is already in the DOM by this point
+    let toastStackEl = null;
+    function showToast(message, iconName){
+      if(!toastStackEl){
+        toastStackEl = document.createElement("div");
+        toastStackEl.className = "toastStack";
+        toastStackEl.setAttribute("aria-live", "polite");
+        document.body.appendChild(toastStackEl);
+      }
+      const el = document.createElement("div");
+      el.className = "toast";
+      el.innerHTML = `${icon(iconName || "checkCircle")}<span>${escapeHtml(message)}</span>`;
+      toastStackEl.appendChild(el);
+      setTimeout(() => el.remove(), 2500);
+    }
+    /*********************************************************
+     * Dark mode — swaps the "paper" reading surface only; the sidebar and
+     * topbar chrome are already the dark jungle canopy in both themes (see
+     * the DARK MODE block at the end of <style>). Defaults to the original
+     * light look until the person flips it themselves; the choice sticks
+     * per-browser via localStorage.
+     *********************************************************/
+    const THEME_KEY = "hpa_theme_v1";
+    function applyTheme(theme){
+      document.documentElement.setAttribute("data-theme", theme);
+      try { localStorage.setItem(THEME_KEY, theme); } catch(e){}
+      const btn = document.getElementById("themeToggleBtn");
+      if(btn){
+        btn.innerHTML = icon(theme === "dark" ? "sun" : "moon");
+        btn.title = theme === "dark" ? "Switch to light mode" : "Switch to dark mode";
+      }
+    }
+    function initTheme(){
+      let saved = null;
+      try { saved = localStorage.getItem(THEME_KEY); } catch(e){}
+      applyTheme(saved === "dark" ? "dark" : "light");
+    }
+    document.getElementById("themeToggleBtn")?.addEventListener("click", () => {
+      const isDark = document.documentElement.getAttribute("data-theme") === "dark";
+      applyTheme(isDark ? "light" : "dark");
+    });
+    initTheme();
+    /*********************************************************
      * Fuzzy matching — used by the command palette so a typo or partial
      * word still finds things.
      *********************************************************/
@@ -2065,8 +2289,11 @@
     }
     function showPage(key){
       currentPage = key;
-      Object.values(pages).forEach(p => p.style.display = "none");
-      pages[key].style.display = "block";
+      Object.values(pages).forEach(p => { p.style.display = "none"; p.classList.remove("pageEnter"); });
+      const activePage = pages[key];
+      activePage.style.display = "block";
+      void activePage.offsetWidth; // restart the entrance animation every switch, not just the first time
+      activePage.classList.add("pageEnter");
       navBtns.forEach(b => b.classList.toggle("active", b.dataset.page === key));
       clearTabNotif(key);
       if(key === "dashboard" && window.HPAExtras){ dashWeekAnchor = startOfWeek(new Date()); window.HPAExtras.renderDashboard(); }
@@ -2136,13 +2363,13 @@
       const chip = document.getElementById("presenceChip");
       if(chip){
         if(err){
-          chip.textContent = `👥 ⚠`;
+          chip.innerHTML = `${icon("people")} ⚠`;
           chip.title = `Active users: ${err}`;
         } else if(!syncReady){
-          chip.textContent = `👥 …`;
+          chip.innerHTML = `${icon("people")} …`;
           chip.title = "Active users: waiting on Team Sync to connect";
         } else {
-          chip.textContent = `👥 ${active.length}`;
+          chip.innerHTML = `${icon("people")} ${active.length}`;
           chip.title = active.length ? `${active.length} active now — click to view` : "No one else is online right now";
         }
       }
@@ -2976,6 +3203,7 @@
       }
       saveTrucks(trucks);
       markTabChanged("order");
+      showToast("Order saved");
       closeTruckModal();
       // Jump the tracker to whichever week the order now belongs to, so a
       // customized request date takes you straight to that week's view.
@@ -3073,6 +3301,7 @@
       it.notes = it.notes ? `${it.notes} • ${note}` : note;
       saveTrucks(trucks);
       markTabChanged("order");
+      showToast("Substitution saved");
       closeSubModal();
       renderOrder();
     });
@@ -3247,7 +3476,7 @@
       wrap.innerHTML = "";
 
       if(!trucks.length){
-        wrap.innerHTML = `<div class="note">No orders in this week yet. Click "+ New Order".</div>`;
+        wrap.innerHTML = emptyStateHtml(`No orders in this week yet. Click <strong>+ New Order</strong>.`, "truck");
         refreshWeekSelectors();
         return;
       }
@@ -4402,7 +4631,7 @@
         <div class="toolbar">
           <h2>Plant Catalog</h2>
           <div class="tools">
-            <button id="plantAddBtn" class="btnGhost" type="button">+ Add Plant</button>
+            <button id="plantAddBtn" class="btnGhost" type="button">${icon("plus")} Add Plant</button>
             <input id="plantSearch" placeholder="Search plants (optional)" />
           </div>
         </div>
@@ -4573,6 +4802,7 @@
         const msg = `Saved ${savedCount} photo${savedCount===1?"":"s"} (${fmtBytes(savedBytes)} total).`;
         statusChip.textContent = stoppedEarly ? "Storage full — some skipped" : msg;
         setTimeout(() => { statusChip.textContent = "Ready"; }, 4000);
+        if(!stoppedEarly) showToast(msg);
       }
     });
 
@@ -4593,7 +4823,7 @@
         .sort((a,b) => (b.createdAt||"").localeCompare(a.createdAt||""));
       photoGrid.innerHTML = "";
       if(photos.length === 0){
-        photoGrid.innerHTML = `<div class="note">No photos yet. Add photos and tag them by week, vendor, truck, and item.</div>`;
+        photoGrid.innerHTML = emptyStateHtml(`No photos yet. Add photos and tag them by week, vendor, truck, and item.`, "plant");
         return;
       }
       for(const p of photos){
@@ -5251,6 +5481,7 @@
       }
       saveAvail(list);
       markTabChanged("avail");
+      showToast("Availability saved");
       closeAvailModal();
       renderAvailability();
     });
@@ -5380,7 +5611,7 @@
         entries = entries.filter(e => (e.vendor||"").toLowerCase().includes(search) || (e.item||"").toLowerCase().includes(search));
       }
       if(entries.length === 0){
-        wrap.innerHTML = `<div class="note">No ${escapeHtml(availActiveCat)} availability tracked yet. Click "+ Add Availability" to add a one-off item.</div>`;
+        wrap.innerHTML = emptyStateHtml(`No ${escapeHtml(availActiveCat)} availability tracked yet. Click <strong>+ Add Availability</strong> to add a one-off item.`, "trending");
         return;
       }
       const byVendor = new Map();
@@ -5756,49 +5987,34 @@
 
     const prebookModal = document.getElementById("prebookModal");
     let editingPrebookId = null;
-    document.getElementById("prebookAddBtn").addEventListener("click", () => openPrebookModal(null));
     document.getElementById("prebookCloseBtn").addEventListener("click", closePrebookModal);
     prebookModal.addEventListener("click", (e) => { if(e.target === prebookModal) closePrebookModal(); });
     document.getElementById("prebookSearch").addEventListener("input", renderPrebook);
-    document.getElementById("prebookExportBtn").addEventListener("click", () => {
-      const items = loadPrebook().slice().sort((a,b) => (a.readyDate||"").localeCompare(b.readyDate||""));
-      if(!items.length){ alert("No pre-booked items to export."); return; }
-      downloadCSV("prebooking.csv", items.map(p => ({
-        Season: seasonForDate(p.readyDate).name, Vendor: p.vendor, Item: p.item, Quantity: p.qty ?? "",
-        ReadyDate: p.readyDate, Holiday: p.holidayKey ? (holidayByKey(p.holidayKey)?.name || "") : ""
-      })), ["Season","Vendor","Item","Quantity","ReadyDate","Holiday"]);
-    });
 
+    // The holiday picker is theming only now — it no longer decides the
+    // ready date, so "None" is a real, first-class option.
     function fillPrebookHolidayOptions(selected){
       const sel = document.getElementById("pb_holiday");
-      sel.innerHTML = HOLIDAYS.map(h => `<option value="${h.key}" ${h.key===selected?"selected":""}>${h.emoji} ${escapeHtml(h.name)}</option>`).join("");
+      sel.innerHTML = `<option value="">No holiday theme</option>` +
+        HOLIDAYS.map(h => `<option value="${h.key}" ${h.key===selected?"selected":""}>${h.emoji} ${escapeHtml(h.name)}</option>`).join("");
+      sel.value = selected || "";
     }
     function updatePrebookHolidayPreview(){
       const key = document.getElementById("pb_holiday").value;
-      const d = resolveHolidayDate(key);
+      const h = key ? holidayByKey(key) : null;
       const el = document.getElementById("pb_holidayPreview");
-      if(el) el.textContent = d ? `Next occurrence: ${d.toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric",year:"numeric"})} — themed to this holiday.` : "";
+      if(el) el.textContent = h ? `Themed to ${h.emoji} ${h.name} — the ready date above is unaffected.` : "";
     }
     document.getElementById("pb_holiday").addEventListener("change", updatePrebookHolidayPreview);
-    document.getElementById("pb_readyMode").addEventListener("change", () => {
-      const mode = document.getElementById("pb_readyMode").value;
-      document.getElementById("pb_dateRow").style.display = mode === "date" ? "" : "none";
-      document.getElementById("pb_holidayRow").style.display = mode === "holiday" ? "" : "none";
-      if(mode === "holiday") updatePrebookHolidayPreview();
-    });
     function openPrebookModal(entry, prefillDate){
       editingPrebookId = entry?.id ?? null;
       document.getElementById("prebookModalTitle").textContent = editingPrebookId ? "Edit Pre-Book" : "Pre-book Item";
       document.getElementById("pb_vendor").value = entry?.vendor || "";
       document.getElementById("pb_item").value = entry?.item || "";
       document.getElementById("pb_qty").value = entry?.qty ?? "";
-      const mode = entry?.readyMode || "date";
-      document.getElementById("pb_readyMode").value = mode;
-      document.getElementById("pb_date").value = (mode === "date" ? entry?.readyDate : "") || prefillDate || fmtDate(new Date());
-      fillPrebookHolidayOptions(entry?.holidayKey || HOLIDAYS[0].key);
-      document.getElementById("pb_dateRow").style.display = mode === "date" ? "" : "none";
-      document.getElementById("pb_holidayRow").style.display = mode === "holiday" ? "" : "none";
-      if(mode === "holiday") updatePrebookHolidayPreview();
+      document.getElementById("pb_date").value = entry?.readyDate || prefillDate || fmtDate(new Date());
+      fillPrebookHolidayOptions(entry?.holidayKey || "");
+      updatePrebookHolidayPreview();
       const saveBtn = document.getElementById("prebookSaveBtn");
       if(saveBtn) saveBtn.textContent = editingPrebookId ? "Save Changes" : "Save Pre-Book";
       const delBtn = document.getElementById("prebookDeleteBtn");
@@ -5824,24 +6040,16 @@
       const vendor = document.getElementById("pb_vendor").value.trim();
       const item = document.getElementById("pb_item").value.trim();
       const qty = document.getElementById("pb_qty").value.trim();
-      const mode = document.getElementById("pb_readyMode").value;
+      const readyDate = document.getElementById("pb_date").value;
+      const holidayKey = document.getElementById("pb_holiday").value || "";
       if(!vendor || !item){ alert("Vendor and Item are required."); return; }
-      let readyDate = "", holidayKey = "";
-      if(mode === "holiday"){
-        holidayKey = document.getElementById("pb_holiday").value;
-        const d = resolveHolidayDate(holidayKey);
-        if(!d){ alert("Pick a holiday."); return; }
-        readyDate = fmtDate(d);
-      } else {
-        readyDate = document.getElementById("pb_date").value;
-        if(!readyDate){ alert("Pick a ready date."); return; }
-      }
+      if(!readyDate){ alert("Pick a ready date."); return; }
       const list = loadPrebook();
       if(editingPrebookId){
         const idx = list.findIndex(x => x.id === editingPrebookId);
-        if(idx >= 0) list[idx] = { ...list[idx], vendor, item, qty, readyMode: mode, readyDate, holidayKey };
+        if(idx >= 0) list[idx] = { ...list[idx], vendor, item, qty, readyDate, holidayKey };
       } else {
-        list.push({ id: cryptoRandomId(), vendor, item, qty, readyMode: mode, readyDate, holidayKey, createdAt: new Date().toISOString() });
+        list.push({ id: cryptoRandomId(), vendor, item, qty, readyDate, holidayKey, createdAt: new Date().toISOString() });
       }
       savePrebook(list);
       markTabChanged("prebook");
@@ -5913,8 +6121,6 @@
       const search = (document.getElementById("prebookSearch").value || "").trim().toLowerCase();
       let items = loadPrebook();
       if(search) items = items.filter(p => (p.vendor||"").toLowerCase().includes(search) || (p.item||"").toLowerCase().includes(search));
-      const countEl = document.getElementById("prebookCountLabel");
-      if(countEl) countEl.textContent = String(items.length);
 
       // Seasons always show, whether or not anything's booked in them yet —
       // the counts on each tab reflect the current search.
@@ -6074,6 +6280,7 @@
       }
       saveIssues(issues);
       markTabChanged("issues");
+      showToast("Issue saved");
       closeIssueModal();
       renderIssues();
     });
@@ -6099,7 +6306,7 @@
       const issues = filteredIssues();
       tbody.innerHTML = "";
       if(issues.length === 0){
-        tbody.innerHTML = `<tr><td colspan="8" style="color:var(--ink-2); font-weight:600;">No issues yet. Click "New Issue" to log one.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" style="padding:0; border:none;">${emptyStateHtml(`No issues yet. Click <strong>+ New Issue</strong> to log one.`, "bug")}</td></tr>`;
         return;
       }
       for(const i of issues){
@@ -6550,6 +6757,7 @@
       list.unshift({ id:cryptoRandomId(), type:"link", title, url, cat:document.getElementById("tr_cat").value.trim(), desc:document.getElementById("tr_desc").value.trim(), createdAt:new Date().toISOString() });
       saveTraining(list);
       markTabChanged("training");
+      showToast("Document added");
       closeTrainingModal();
       renderTraining();
     });
@@ -6560,7 +6768,7 @@
       let docs = loadTraining();
       if(q) docs = docs.filter(d => ((d.title||"") + " " + (d.cat||"") + " " + (d.desc||"")).toLowerCase().includes(q));
       if(!docs.length){
-        grid.innerHTML = `<div class="linkCard"><div class="linkCardIcon">📚</div><div><div class="linkCardTitle">No training documents yet</div><div class="note">Use <strong>+ Add Link</strong> for online docs (OneDrive, Google Docs, PDFs, videos) or <strong>⬆ Upload File</strong> to store one in this browser.</div></div></div>`;
+        grid.innerHTML = emptyStateHtml(`No training documents yet. Use <strong>+ Add Link</strong> for online docs (OneDrive, Google Docs, PDFs, videos) or <strong>Upload File</strong> to store one in this browser.`, "book");
         return;
       }
       grid.innerHTML = "";
@@ -7343,29 +7551,48 @@
           }
         } catch(_){}
 
+        const vendorPct = (totals.confirmed + totals.open) ? Math.round(totals.confirmed / (totals.confirmed + totals.open) * 100) : null;
         const stats = [
-          { num: totals.poCount, lbl:"Orders this week", sub: totals.poCount===1 ? "1 PO" : totals.poCount + " POs", accent:"var(--moss)" },
-          { num: trucks.length, lbl:"Number of trucks", sub: trucks.length===1 ? "1 truck" : trucks.length + " trucks", accent:"var(--gold)" },
-          { num: totals.confirmed + "/" + (totals.confirmed+totals.open), lbl:"Vendors confirmed", sub: totals.open + " still open", accent: totals.open ? "var(--state-warn-fg)" : "var(--state-ok-fg)" },
-          { num: totals.racks.toLocaleString(), lbl:"CC racks", sub: totals.qty.toLocaleString() + " plants", accent:"var(--fern)" },
-          { num: money(totals.price), lbl:"Trucking spend", sub: trucks.length + " load(s)", accent:"var(--gold)" },
-          { num: ciPct===null ? "—" : ciPct+"%", lbl:"Check-in done", sub: ciLabel, accent: ciPct===100 ? "var(--state-ok-fg)" : "var(--state-info-fg)" },
-          { num: openIssues, lbl:"Open issues", sub: issues.length + " total", accent: openIssues ? "var(--state-danger-fg)" : "var(--state-ok-fg)" }
+          { num: totals.poCount, lbl:"Orders this week", sub: totals.poCount===1 ? "1 PO" : totals.poCount + " POs", accent:"var(--moss)", icon:"receipt" },
+          { num: trucks.length, lbl:"Number of trucks", sub: trucks.length===1 ? "1 truck" : trucks.length + " trucks", accent:"var(--gold)", icon:"truck" },
+          { num: totals.confirmed + "/" + (totals.confirmed+totals.open), lbl:"Vendors confirmed", sub: totals.open + " still open", accent: totals.open ? "var(--state-warn-fg)" : "var(--state-ok-fg)", icon:"checkCircle", ring: vendorPct },
+          { num: totals.racks.toLocaleString(), lbl:"CC racks", sub: totals.qty.toLocaleString() + " plants", accent:"var(--fern)", icon:"plant" },
+          { num: money(totals.price), lbl:"Trucking spend", sub: trucks.length + " load(s)", accent:"var(--gold)", icon:"dollar" },
+          { num: ciPct===null ? "—" : ciPct+"%", lbl:"Check-in done", sub: ciLabel, accent: ciPct===100 ? "var(--state-ok-fg)" : "var(--state-info-fg)", icon:"checkCircle", ring: ciPct },
+          { num: openIssues, lbl:"Open issues", sub: issues.length + " total", accent: openIssues ? "var(--state-danger-fg)" : "var(--state-ok-fg)", icon:"bug" }
         ];
         const grid = document.getElementById("dashStats");
-        if(grid) grid.innerHTML = stats.map(s =>
-          `<div class="statCard" style="--statAccent:${s.accent}"><div class="statNum">${escapeHtml(String(s.num))}</div><div class="statLbl">${escapeHtml(s.lbl)}</div><div class="statSub">${escapeHtml(s.sub)}</div></div>`
+        if(grid) grid.innerHTML = stats.map(s => `
+          <div class="statCard" style="--statAccent:${s.accent}">
+            <div class="statTop">
+              <div class="statBadge">${icon(s.icon)}</div>
+              ${s.ring !== undefined && s.ring !== null ? ringSvg(s.ring, s.accent) : ""}
+            </div>
+            <div class="statNum">${escapeHtml(String(s.num))}</div>
+            <div class="statLbl">${escapeHtml(s.lbl)}</div>
+            <div class="statSub">${escapeHtml(s.sub)}</div>
+          </div>`
         ).join("");
 
         // arriving this week
         const todayTitle = document.getElementById("dashTodayTitle");
-        if(todayTitle) todayTitle.textContent = isCurrentWeek ? "🚛 Arriving this week" : "🚛 Arriving " + weekLabel(dashWeekAnchor).split(" · ")[0];
+        if(todayTitle) todayTitle.innerHTML = icon("truck") + (isCurrentWeek ? " Arriving this week" : " Arriving " + escapeHtml(weekLabel(dashWeekAnchor).split(" · ")[0]));
         const today = document.getElementById("dashToday");
         if(today){
           const sorted = trucks.slice().sort((a,b)=>(a.pickupDate||"").localeCompare(b.pickupDate||""));
+          const maxQty = Math.max(1, ...sorted.map(t => Number(t.totals?.qty||0)));
           today.innerHTML = sorted.length ? sorted.map(t => {
             const vendors = (t.vendorBlocks||[]).map(v=>v.name).filter(Boolean).join(", ") || "—";
-            return `<div class="dashItem clickable" data-tid="${t.id}"><div class="di_main"><div class="di_title">${escapeHtml(t.region||"—")} · ${escapeHtml(orderTypeLabel(t.orderType||"CC"))}</div><div class="di_sub">${escapeHtml(vendors)}</div></div><div class="di_when">${escapeHtml(t.pickupDate||"")}</div></div>`;
+            const qty = Number(t.totals?.qty||0);
+            const barPct = qty ? Math.max(4, Math.round(qty / maxQty * 100)) : 0;
+            return `<div class="dashItem clickable" data-tid="${t.id}">
+              <div class="di_main">
+                <div class="di_title">${escapeHtml(t.region||"—")} · ${escapeHtml(orderTypeLabel(t.orderType||"CC"))}</div>
+                <div class="di_sub">${escapeHtml(vendors)}</div>
+                ${qty ? `<div class="di_bar"><span style="width:${barPct}%"></span></div>` : ""}
+              </div>
+              <div class="di_when">${escapeHtml(t.pickupDate||"")}${qty ? `<div class="di_qty">${qty.toLocaleString()} plants</div>` : ""}</div>
+            </div>`;
           }).join("") : `<div class="palEmpty">No orders scheduled this week.</div>`;
           today.querySelectorAll(".dashItem[data-tid]").forEach(el => el.addEventListener("click", () => { showPage("order"); openTruckDetail(el.dataset.tid); }));
         }
@@ -7403,7 +7630,7 @@
           { icon:"📄", title:"Export Truck Breakdown", tag:"Export", run:()=>{ showPage("order"); document.getElementById("exportTruckBreakdownBtn")?.click(); } },
           { icon:"📥", title:"Import PO Analysis", tag:"Import", run:()=>{ showPage("checkin"); document.getElementById("checkinImportBtn")?.click(); } },
           { icon:"➕", title:"Add Availability", sub:"Add an item to the current week", tag:"Action", run:()=>{ showPage("avail"); document.getElementById("availAddBtn")?.click(); } },
-          { icon:"📌", title:"Pre-book an item", sub:"Reserve stock ahead of a date or holiday", tag:"Action", run:()=>{ showPage("prebook"); document.getElementById("prebookAddBtn")?.click(); } },
+          { icon:"📌", title:"Pre-book an item", sub:"Reserve stock ahead of a date or holiday", tag:"Action", run:()=>{ showPage("prebook"); openPrebookModal(null); } },
           { icon:"💾", title:"Backup all data", tag:"Data", run:()=>window.HPABackup.export() },
           { icon:"↺", title:"Restore from backup", tag:"Data", run:()=>document.getElementById("restoreBtn")?.click() },
           { icon:"🟢", title:"Open Team Sync", tag:"Data", run:()=>window.HPASync.openModal() },
