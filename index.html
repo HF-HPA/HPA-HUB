@@ -587,6 +587,8 @@
 
     .plantHistoryRow{ cursor:pointer; transition:background .12s; }
     .plantHistoryRow:hover{ background:var(--rowHover); }
+    .plantHistoryNotes{ max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--ink-2); }
+    .plantHistoryNotes mark{ background:rgba(43,212,154,.35); color:var(--ink); border-radius:3px; padding:0 2px; }
 
     .photoSubTabs{ display:flex; gap:6px; flex-wrap:wrap; margin:0 0 16px; padding-bottom:12px; border-bottom:1px solid var(--line); }
     .subTab{ padding:9px 16px; border-radius:999px; border:1px solid var(--line); background:var(--paper-2); color:var(--moss); cursor:pointer; font-family:var(--sans); font-weight:600; font-size:13px; transition:background .15s, border-color .15s, color .15s; }
@@ -1740,11 +1742,11 @@
       <div class="modalHead">
         <div>
           <h3>Plant / SKU History</h3>
-          <div class="note">Search any plant name or SKU to see every PO across every week it's appeared on.</div>
+          <div class="note">Search any plant name, SKU, or a keyword from an item's notes to see every PO across every week it's appeared on.</div>
         </div>
         <button id="plantHistoryCloseBtn" class="closeX">Close</button>
       </div>
-      <input id="plantHistorySearch" placeholder="e.g., Pothos, 4in Mums, SKU-1042..." />
+      <input id="plantHistorySearch" placeholder="e.g., Pothos, 4in Mums, SKU-1042, or a note keyword..." />
       <div id="plantHistoryResults" style="margin-top:14px;"></div>
     </div>
   </div>
@@ -3604,11 +3606,14 @@
       loadTrucks().forEach(t => {
         (t.vendorBlocks || []).forEach(vb => {
           (vb.items || []).forEach(it => {
-            if((it.item||"").toLowerCase().includes(q)){
+            const itemHit = (it.item||"").toLowerCase().includes(q);
+            const notesHit = (it.notes||"").toLowerCase().includes(q);
+            if(itemHit || notesHit){
               rows.push({
                 truckId: t.id, weekKey: t.weekKey, pickupDate: t.pickupDate,
                 region: t.region, vendor: (vb.name||"").trim() || "Vendor —", po: (vb.po||"").trim(),
                 item: it.item || "", qty: Number(it.qty || 0), racks: Number(it.racks || 0),
+                notes: it.notes || "", matchedIn: itemHit ? "item" : "notes",
                 poFile: vb.poFile || null
               });
             }
@@ -3635,7 +3640,7 @@
       const q = document.getElementById("plantHistorySearch").value;
       const wrap = document.getElementById("plantHistoryResults");
       if(!q.trim()){
-        wrap.innerHTML = `<div class="note">Start typing a plant name or SKU to see every PO it's appeared on.</div>`;
+        wrap.innerHTML = `<div class="note">Start typing a plant name, SKU, or a keyword from an item's notes to see every PO it's appeared on.</div>`;
         return;
       }
       const rows = searchPlantHistory(q);
@@ -3649,7 +3654,7 @@
         <div class="note" style="margin-bottom:10px;">${rows.length} PO line${rows.length===1?"":"s"} · ${vendors.size} vendor${vendors.size===1?"":"s"}${totalQty ? ` · ${totalQty.toLocaleString()} plants total` : ``}</div>
         <table class="sheetTable">
           <thead><tr>
-            <th>Date</th><th>Vendor</th><th>PO #</th><th>Item</th><th class="num nowrap">Qty</th><th class="num nowrap">Racks</th><th>Region</th><th></th>
+            <th>Date</th><th>Vendor</th><th>PO #</th><th>Item</th><th class="num nowrap">Qty</th><th class="num nowrap">Racks</th><th>Region</th><th>Notes</th><th></th>
           </tr></thead>
           <tbody>
             ${rows.map((r,i) => `
@@ -3661,6 +3666,7 @@
                 <td class="num">${r.qty ? r.qty.toLocaleString() : ""}</td>
                 <td class="num">${r.racks ? r.racks.toLocaleString() : ""}</td>
                 <td>${escapeHtml(r.region || "—")}</td>
+                <td class="plantHistoryNotes" title="${escapeHtml(r.notes)}">${r.notes ? (r.matchedIn === "notes" ? `<mark>${escapeHtml(r.notes)}</mark>` : escapeHtml(r.notes)) : "—"}</td>
                 <td>${r.poFile && r.poFile.dataUrl ? `<button type="button" class="tinyBtn plantHistoryViewPo" data-i="${i}" title="View the uploaded PO PDF">📄 PDF</button>` : ``}</td>
               </tr>`).join("")}
           </tbody>
