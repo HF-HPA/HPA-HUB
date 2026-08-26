@@ -571,6 +571,15 @@
     .editablePill:hover{ background:var(--rowHover); border-color:var(--fern); }
     .inlineEdit{ font-family:var(--sans); font-size:13px; padding:3px 8px; border-radius:999px; border:1px solid var(--mint-deep); background:#fff; color:var(--ink); width:auto; min-width:90px; max-width:220px; outline:none; box-shadow:0 0 0 3px rgba(43,212,154,.18); }
 
+    .poPill{ font-family:inherit; }
+    .poPill.hasFile{ border-style:solid !important; border-color:rgba(43,212,154,.45); background:rgba(43,212,154,.14); color:#0d7a55; }
+    .poPill.hasFile:hover{ background:rgba(43,212,154,.24); }
+    .poPill .iconSvg{ margin-right:3px; }
+    .poFileCard{ display:flex; align-items:center; gap:12px; padding:14px; border:1px solid var(--line); border-radius:12px; background:var(--paper-2); margin-top:12px; }
+    .poFileIcon{ font-size:28px; flex:none; line-height:1; }
+    .poFileMeta{ min-width:0; }
+    .poFileName{ font-weight:700; color:var(--ink); word-break:break-word; }
+
     .photoSubTabs{ display:flex; gap:6px; flex-wrap:wrap; margin:0 0 16px; padding-bottom:12px; border-bottom:1px solid var(--line); }
     .subTab{ padding:9px 16px; border-radius:999px; border:1px solid var(--line); background:var(--paper-2); color:var(--moss); cursor:pointer; font-family:var(--sans); font-weight:600; font-size:13px; transition:background .15s, border-color .15s, color .15s; }
     .subTab:hover{ background:var(--rowHover); }
@@ -1683,6 +1692,37 @@
       <label><span class="lbl">Link (URL)</span><input id="tr_url" placeholder="https://..."/></label>
       <label><span class="lbl">Description (optional)</span><textarea id="tr_desc" placeholder="What is this document for?"></textarea></label>
       <button id="trainingSaveBtn" class="btn">Save Document</button>
+    </div>
+  </div>
+
+  <div id="poFileModal" class="modal" aria-hidden="true">
+    <div class="modalCard" style="width:min(480px,96vw);">
+      <div class="modalHead">
+        <div>
+          <h3>PO Document</h3>
+          <div class="note" id="poFileModalSub"></div>
+        </div>
+        <button id="poFileCloseBtn" class="closeX">Close</button>
+      </div>
+      <input id="poFileUploadInput" type="file" accept="application/pdf,.pdf" style="display:none;" />
+      <div id="poFileEmptyState">
+        <div class="note">Upload the completed PO as a PDF. Once it's uploaded, everyone on the team can view it here by clicking the PO number.</div>
+        <button id="poFileUploadBtn" class="btn btnIcon" style="margin-top:10px;"><span data-icon="upload" aria-hidden="true"></span> Upload PO PDF</button>
+      </div>
+      <div id="poFileHasState" style="display:none;">
+        <div class="poFileCard">
+          <span class="poFileIcon">📄</span>
+          <div class="poFileMeta">
+            <div id="poFileName" class="poFileName"></div>
+            <div id="poFileSize" class="note"></div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;">
+          <button id="poFileViewBtn" class="btn btnIcon"><span data-icon="externalLink" aria-hidden="true"></span> View PDF</button>
+          <button id="poFileReplaceBtn" class="tinyBtn">Replace</button>
+          <button id="poFileRemoveBtn" class="tinyBtn danger">Remove</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -3412,6 +3452,103 @@
     }
 
     /*********************************************************
+     * PO document (PDF) attached to a vendor line on an order —
+     * uploaded once the PO is complete, viewable by the whole team
+     * (via poFilesCol, same one-doc-per-file pattern as training files)
+     * by clicking the PO pill in the Order Tracker.
+     *********************************************************/
+    let poFileModalTruckId = null, poFileModalVIdx = null, poFileModalTargetId = null;
+    const poFileModal = document.getElementById("poFileModal");
+    function currentPoFileVendorBlock(){
+      if(!poFileModalTruckId) return null;
+      const t = loadTrucks().find(x => x.id === poFileModalTruckId);
+      return t && t.vendorBlocks ? t.vendorBlocks[poFileModalVIdx] : null;
+    }
+    function openPoFileModal(truckId, vIdx){
+      poFileModalTruckId = truckId; poFileModalVIdx = vIdx;
+      const vb = currentPoFileVendorBlock();
+      poFileModalTargetId = vb && vb.poFile ? vb.poFile.id : null;
+      const vendorName = ((vb && vb.name) || "Vendor").trim() || "Vendor";
+      const po = ((vb && vb.po) || "").trim();
+      document.getElementById("poFileModalSub").textContent = `${vendorName}${po ? " · PO " + po : ""}`;
+      renderPoFileModalState();
+      poFileModal.classList.add("active");
+      poFileModal.setAttribute("aria-hidden","false");
+    }
+    function closePoFileModal(){
+      poFileModal.classList.remove("active");
+      poFileModal.setAttribute("aria-hidden","true");
+      poFileModalTruckId = null; poFileModalVIdx = null; poFileModalTargetId = null;
+      document.getElementById("poFileUploadInput").value = "";
+    }
+    function renderPoFileModalState(){
+      const vb = currentPoFileVendorBlock();
+      const has = !!(vb && vb.poFile);
+      document.getElementById("poFileEmptyState").style.display = has ? "none" : "";
+      document.getElementById("poFileHasState").style.display = has ? "" : "none";
+      if(has){
+        document.getElementById("poFileName").textContent = vb.poFile.name || "PO document.pdf";
+        const waiting = !vb.poFile.dataUrl;
+        document.getElementById("poFileSize").textContent = waiting
+          ? "Syncing from the team…"
+          : (vb.poFile.size ? fmtBytes(vb.poFile.size) : "");
+        const viewBtn = document.getElementById("poFileViewBtn");
+        viewBtn.disabled = waiting;
+        viewBtn.title = waiting ? "Still downloading from the team — try again in a moment" : "";
+      }
+    }
+    document.getElementById("poFileCloseBtn").addEventListener("click", closePoFileModal);
+    poFileModal.addEventListener("click", e => { if(e.target === poFileModal) closePoFileModal(); });
+    document.getElementById("poFileUploadBtn").addEventListener("click", () => document.getElementById("poFileUploadInput").click());
+    document.getElementById("poFileReplaceBtn").addEventListener("click", () => document.getElementById("poFileUploadInput").click());
+    document.getElementById("poFileUploadInput").addEventListener("change", async (e) => {
+      const f = e.target.files && e.target.files[0]; if(!f) return;
+      if(f.type && f.type !== "application/pdf" && !/\.pdf$/i.test(f.name || "")){
+        if(!confirm(`"${f.name}" doesn't look like a PDF. Upload it anyway?`)){ e.target.value = ""; return; }
+      }
+      const MAXB = 5 * 1024 * 1024;
+      if(f.size > MAXB && !confirm(`"${f.name}" is ${fmtBytes(f.size)}. Large files can be slow to sync to the team. Upload anyway?`)){ e.target.value = ""; return; }
+      let dataUrl;
+      try { dataUrl = await fileToDataURL(f); } catch { alert("Couldn't read that file."); e.target.value = ""; return; }
+      const trucks = loadTrucks();
+      const t = trucks.find(x => x.id === poFileModalTruckId);
+      const vb = t && t.vendorBlocks && t.vendorBlocks[poFileModalVIdx];
+      if(!vb){ e.target.value = ""; closePoFileModal(); return; }
+      const oldId = vb.poFile && vb.poFile.id;
+      const id = cryptoRandomId();
+      vb.poFile = { id, name:f.name, mime:f.type||"", size:f.size, dataUrl };
+      try { saveTrucks(trucks); } catch { alert("Storage limit reached — couldn't save that file."); e.target.value = ""; return; }
+      poFileModalTargetId = id;
+      if(oldId && window.HPASync) window.HPASync.deletePoFileRemote(oldId);
+      if(window.HPASync) window.HPASync.pushPoFile(id);
+      markTabChanged("order");
+      showToast("PO document uploaded", "receipt");
+      e.target.value = "";
+      renderPoFileModalState();
+      renderOrder();
+    });
+    document.getElementById("poFileViewBtn").addEventListener("click", () => {
+      const vb = currentPoFileVendorBlock();
+      if(vb && vb.poFile && vb.poFile.dataUrl) window.open(vb.poFile.dataUrl, "_blank");
+    });
+    document.getElementById("poFileRemoveBtn").addEventListener("click", () => {
+      const vb = currentPoFileVendorBlock();
+      if(!vb || !vb.poFile) return;
+      if(!confirm("Remove the PO document for this vendor?")) return;
+      const id = vb.poFile.id;
+      const trucks = loadTrucks();
+      const t = trucks.find(x => x.id === poFileModalTruckId);
+      const target = t && t.vendorBlocks && t.vendorBlocks[poFileModalVIdx];
+      if(target) delete target.poFile;
+      saveTrucks(trucks);
+      if(window.HPASync) window.HPASync.deletePoFileRemote(id);
+      markTabChanged("order");
+      poFileModalTargetId = null;
+      renderPoFileModalState();
+      renderOrder();
+    });
+
+    /*********************************************************
      * Manual "added to order" checkbox on saved order items.
      * Purely manual — never set automatically from anything else.
      *********************************************************/
@@ -3689,7 +3826,7 @@
               <div class="vendorHeadXL">
                 <div class="vendorTitleXL">
                   <span>${escapeHtml(vendorName)}</span>
-                  ${vendorPO ? `<span class="pillMini">PO ${escapeHtml(vendorPO)}</span>` : ``}
+                  ${vendorPO ? `<button type="button" class="pillMini editablePill poPill${vb.poFile ? " hasFile" : ""}" data-tid="${t.id}" data-vidx="${vIdx}" title="${vb.poFile ? "View or manage the PO PDF" : "Upload the PO PDF"}">${vb.poFile ? icon("receipt") + " " : ""}PO ${escapeHtml(vendorPO)}${vb.poFile ? "" : " · Upload"}</button>` : ``}
                   <button class="${statusPillClass(vendorStatus)} statusToggle" data-tid="${t.id}" data-vidx="${vIdx}" type="button" title="Click to toggle Open / Confirmed">${escapeHtml(vendorStatus)}</button>
                 </div>
                 <div class="sectionMeta">
@@ -3735,6 +3872,9 @@
 
             const stBtn = v.querySelector(".statusToggle");
             if(stBtn) stBtn.addEventListener("click", (e) => { e.stopPropagation(); toggleVendorStatus(t.id, vIdx, stBtn); });
+
+            const poBtn = v.querySelector(".poPill");
+            if(poBtn) poBtn.addEventListener("click", (e) => { e.stopPropagation(); openPoFileModal(t.id, vIdx); });
 
             v.querySelectorAll(".itemRow").forEach(row => {
               const cell = row.querySelector(".itemNameCell");
@@ -6931,6 +7071,7 @@
     const Sync = {
       ready:false, starting:false, fs:null, db:null, col:null,
       photosCol:null, trainingFilesCol:null, _pendingTrainingFiles:{}, activityCol:null,
+      poFilesCol:null, _pendingPoFiles:{},
       presenceCol:null, presenceMap:{}, presenceError:"", _presenceUnsub:null, _presenceHeartbeatT:null, _presenceTickT:null, _presenceWarned:false,
       clientId: stableClientId(),
       user:"someone", _t:{}, _seeded:false, _warned:{},
@@ -6968,13 +7109,15 @@
           this.poImportsCol = fs.collection(db, "hubs", this.teamCode(), "poImports");
           this.presenceCol = fs.collection(db, "hubs", this.teamCode(), "presence");
           this.activityCol = fs.collection(db, "hubs", this.teamCode(), "activity");
-          this.ready = true; this._seeded = false; this._seededPhotos = false; this._seededTrainingFiles = false; this._seededPoImports = false; this._seededActivity = false;
+          this.poFilesCol = fs.collection(db, "hubs", this.teamCode(), "poFiles");
+          this.ready = true; this._seeded = false; this._seededPhotos = false; this._seededTrainingFiles = false; this._seededPoImports = false; this._seededActivity = false; this._seededPoFiles = false;
           this.subscribe();
           this.subscribePhotos();
           this.subscribeTrainingFiles();
           this.subscribePoImports();
           this.subscribePresence();
           this.subscribeActivity();
+          this.subscribePoFiles();
           this.startPresenceHeartbeat();
           this.setStatus("on", "Sync: on · " + this.teamCode());
           console.log("[HPA sync] connected ✓");
@@ -7164,6 +7307,82 @@
         catch(e){ console.error("[HPA sync] training file delete failed for", id, e); }
       },
 
+      /* --- PO documents: same one-doc-per-file pattern as training files,
+       * but the metadata (id/name/mime/size) lives nested inside a vendor
+       * block on the truck itself (part of LS.trucksKey) since a PO belongs
+       * to one vendor line on one order — only the PDF bytes travel
+       * separately, same reasoning as trainingFiles above. */
+      findPoFileTarget(id){
+        const trucks = loadTrucks();
+        for(const t of trucks){
+          const vIdx = (t.vendorBlocks || []).findIndex(vb => vb.poFile && vb.poFile.id === id);
+          if(vIdx !== -1) return { trucks, truck:t, vIdx };
+        }
+        return null;
+      },
+      subscribePoFiles(){
+        const { onSnapshot } = this.fs;
+        if(this._unsubPoFiles){ try{ this._unsubPoFiles(); }catch(e){} }
+        this._unsubPoFiles = onSnapshot(this.poFilesCol, (snap) => {
+          snap.docChanges().forEach(ch => {
+            if(ch.type === "removed") return; // deleting the PO itself clears the metadata already
+            this.applyRemotePoFile(ch.doc.id, ch.doc.data());
+          });
+          if(!this._seededPoFiles){ this._seededPoFiles = true; this.seedMissingPoFiles(snap); }
+        }, (err) => console.error("[HPA sync] PO files listener error:", err));
+      },
+      seedMissingPoFiles(snap){
+        const present = new Set(); snap.forEach(d => present.add(d.id));
+        loadTrucks().forEach(t => (t.vendorBlocks || []).forEach(vb => {
+          if(vb.poFile && vb.poFile.dataUrl && !present.has(vb.poFile.id)) this.pushPoFile(vb.poFile.id);
+        }));
+      },
+      applyRemotePoFile(id, data){
+        if(!data || typeof data.value !== "string") return;
+        const target = this.findPoFileTarget(id);
+        if(!target){ this._pendingPoFiles[id] = data.value; return; } // metadata hasn't arrived yet
+        const vb = target.truck.vendorBlocks[target.vIdx];
+        if(vb.poFile.dataUrl === data.value) return;
+        vb.poFile = { ...vb.poFile, dataUrl: data.value };
+        if(!rawStorageSet(LS.trucksKey, JSON.stringify(target.trucks))) return; // direct write: no re-push
+        if(currentPage === "order") renderOrder();
+        if(typeof poFileModalTargetId !== "undefined" && poFileModalTargetId === id) renderPoFileModalState();
+      },
+      reconcilePendingPoFiles(){
+        const pending = this._pendingPoFiles;
+        if(!pending || Object.keys(pending).length === 0) return;
+        const trucks = loadTrucks();
+        let changed = false;
+        trucks.forEach(t => (t.vendorBlocks || []).forEach(vb => {
+          if(vb.poFile && !vb.poFile.dataUrl && pending[vb.poFile.id] != null){
+            vb.poFile = { ...vb.poFile, dataUrl: pending[vb.poFile.id] };
+            delete pending[vb.poFile.id]; changed = true;
+          }
+        }));
+        if(changed){
+          if(!rawStorageSet(LS.trucksKey, JSON.stringify(trucks))) return;
+          if(currentPage === "order") renderOrder();
+          if(typeof poFileModalTargetId !== "undefined" && poFileModalTargetId) renderPoFileModalState();
+        }
+      },
+      async pushPoFile(id){
+        if(!this.ready || !this.poFilesCol) return;
+        const target = this.findPoFileTarget(id);
+        const vb = target && target.truck.vendorBlocks[target.vIdx];
+        if(!vb || !vb.poFile || !vb.poFile.dataUrl) return;
+        try{
+          const val = vb.poFile.dataUrl;
+          if(val.length > MAX_SYNC_BYTES){ console.warn("Sync: PO file '"+id+"' too large to share with the team; kept on this device only."); return; }
+          const { doc, setDoc } = this.fs;
+          await setDoc(doc(this.poFilesCol, id), { value: val, updatedAt: Date.now(), by: this.user, client: this.clientId });
+        } catch(e){ console.error("[HPA sync] PO file push failed for", id, e); }
+      },
+      async deletePoFileRemote(id){
+        if(!this.ready || !this.poFilesCol) return;
+        try{ const { doc, deleteDoc } = this.fs; await deleteDoc(doc(this.poFilesCol, id)); }
+        catch(e){ console.error("[HPA sync] PO file delete failed for", id, e); }
+      },
+
       /* --- Presence: "who's online, and on what tab" — one tiny doc per active
        * browser tab (id = a random clientId, not the username, so the same
        * person open in two tabs shows as two dots rather than clobbering each
@@ -7310,6 +7529,7 @@
         this.lastReceived = Date.now(); this.applies++;
         this.rerender(key);
         if(key === LS.trainingKey){ this.reconcilePendingTrainingFiles(); }
+        if(key === LS.trucksKey){ this.reconcilePendingPoFiles(); }
         if(editingThis && data.by && data.by !== this.user){
           const prev = statusChip.textContent;
           statusChip.textContent = `Updated by ${data.by} · refreshed`;
@@ -7334,6 +7554,17 @@
             try{
               const arr = JSON.parse(val);
               val = JSON.stringify(arr.map(d => (d && d.type === "file") ? { ...d, dataUrl: undefined } : d));
+            } catch(e){}
+          }
+          if(key === LS.trucksKey){
+            // Same idea as trainingKey above: PO PDFs travel separately via poFilesCol,
+            // so strip the (potentially large) dataUrl out of the synced trucks blob.
+            try{
+              const arr = JSON.parse(val);
+              val = JSON.stringify(arr.map(t => ({
+                ...t,
+                vendorBlocks: (t.vendorBlocks || []).map(vb => vb.poFile ? { ...vb, poFile: { ...vb.poFile, dataUrl: undefined } } : vb)
+              })));
             } catch(e){}
           }
           if(val.length > MAX_SYNC_BYTES){
