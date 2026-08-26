@@ -2167,6 +2167,27 @@
         reader.readAsDataURL(file);
       });
     }
+    // Chrome/Edge's built-in PDF viewer silently shows a blank tab when a
+    // data: URL is opened directly with window.open() — it only reliably
+    // renders PDFs from a blob: URL. We store files as data URLs (simplest
+    // thing to keep in localStorage/Firestore), so convert to a blob: URL
+    // right before opening one in a new tab. Revoked after a delay so the
+    // new tab has time to actually load it first.
+    function dataUrlToBlobUrl(dataUrl){
+      try {
+        const comma = dataUrl.indexOf(",");
+        const header = dataUrl.slice(0, comma);
+        const base64 = dataUrl.slice(comma + 1);
+        const mimeMatch = header.match(/^data:([^;]+);base64$/);
+        const mime = mimeMatch ? mimeMatch[1] : "application/octet-stream";
+        const binary = atob(base64);
+        const bytes = new Uint8Array(binary.length);
+        for(let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+        const url = URL.createObjectURL(new Blob([bytes], { type: mime }));
+        setTimeout(() => URL.revokeObjectURL(url), 60000);
+        return url;
+      } catch(e){ return dataUrl; } // fall back to the data: URL itself if conversion fails
+    }
 
     const PHOTO_MAX_EDGE = 1280;
     const PHOTO_QUALITY  = 0.6;
@@ -3534,7 +3555,7 @@
     });
     document.getElementById("poFileViewBtn").addEventListener("click", () => {
       const vb = currentPoFileVendorBlock();
-      if(vb && vb.poFile && vb.poFile.dataUrl) window.open(vb.poFile.dataUrl, "_blank");
+      if(vb && vb.poFile && vb.poFile.dataUrl) window.open(dataUrlToBlobUrl(vb.poFile.dataUrl), "_blank");
     });
     document.getElementById("poFileRemoveBtn").addEventListener("click", () => {
       const vb = currentPoFileVendorBlock();
@@ -6987,7 +7008,8 @@
           </div>`;
         card.querySelector(".trOpen").addEventListener("click", () => {
           if(isFile){
-            if((d.mime||"").startsWith("image/") || d.mime === "application/pdf"){ window.open(d.dataUrl, "_blank"); }
+            if(d.mime === "application/pdf"){ window.open(dataUrlToBlobUrl(d.dataUrl), "_blank"); }
+            else if((d.mime||"").startsWith("image/")){ window.open(d.dataUrl, "_blank"); }
             else { const a = document.createElement("a"); a.href = d.dataUrl; a.download = d.name || d.title || "document"; document.body.appendChild(a); a.click(); a.remove(); }
           } else {
             let u = d.url; if(!/^https?:|^mailto:/i.test(u)) u = "https://" + u;
