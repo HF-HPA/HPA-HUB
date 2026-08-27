@@ -268,11 +268,18 @@
     .availTab .count{ font-size:11px; font-weight:700; background:rgba(255,255,255,.22); color:inherit; padding:1px 7px; border-radius:999px; }
     .availTab:not(.active) .count{ background:var(--paper-3); color:var(--moss); }
     .availVendor{ border:1px solid var(--line); background:var(--paper-2); border-radius:var(--radius-sm); margin-top:12px; box-shadow:var(--shadow-sm); overflow:hidden; }
-    .availVendorHead{ display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; padding:11px 13px; background:#edf4ec; border-bottom:1px solid var(--line-soft); }
-    .availVendorName{ font-family:var(--display); font-weight:600; font-size:16px; color:var(--ink); }
+    .availVendorHead{ display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; padding:11px 13px; background:#edf4ec; border-bottom:1px solid var(--line-soft); cursor:pointer; user-select:none; transition:background .15s; }
+    .availVendorHead:hover{ background:#e1efe4; }
+    html[data-theme="dark"] .availVendorHead:hover{ background:#2a4033; }
+    .availVendorName{ font-family:var(--display); font-weight:600; font-size:16px; color:var(--moss); }
+    .availVendorNameWrap{ display:flex; align-items:center; gap:8px; }
+    .availVendorToggle{ font-size:11px; color:var(--moss); opacity:.7; transition:transform .15s; flex:none; display:inline-block; }
+    .availVendor.expanded .availVendorToggle{ transform:rotate(90deg); }
+    .availNotesBadge{ margin-left:6px; font-size:12px; cursor:help; }
     .availItemGroupHead{ padding:9px 13px 3px; font-family:var(--display); font-weight:600; font-size:13.5px; color:var(--moss); border-top:1px solid var(--line-soft); }
     .availVendorHead + .availItemGroupHead, .availColHead + .availItemGroupHead{ border-top:none; }
-    .availVendorScroll{ overflow-x:auto; }
+    .availVendorScroll{ overflow-x:auto; display:none; }
+    .availVendor.expanded .availVendorScroll{ display:block; }
     .availRow{ display:grid; grid-template-columns:1.5fr repeat(var(--availWeeks,4), minmax(84px,104px)) 70px; gap:6px; align-items:center; padding:5px 13px 5px 20px; border-bottom:1px solid var(--line-soft); }
     .availRow:last-child{ border-bottom:none; }
     .availRow input[type="checkbox"]{ width:20px; height:20px; accent-color:var(--mint-deep); cursor:pointer; }
@@ -300,12 +307,12 @@
     .availWeekHead.isCurrentWeek{ color:var(--moss); font-weight:700; }
     .availItemsHead{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin:14px 0 6px; }
     .availItemsHead .lbl{ margin:0; }
-    .availEntryRow{ display:grid; grid-template-columns:1.8fr 1fr 40px; gap:8px; align-items:center; margin-bottom:8px; }
+    .availEntryRow{ display:grid; grid-template-columns:1.3fr 0.8fr 1.3fr 40px; gap:8px; align-items:center; margin-bottom:8px; }
     .availEntryRow input{ margin:0; }
     .availEntryRow .rmItem{ width:40px; height:40px; padding:0; line-height:1; display:flex; align-items:center; justify-content:center; }
     @media (max-width:560px){
       .availEntryRow{ grid-template-columns:1fr 1fr; }
-      .availEntryRow > input:nth-child(3){ grid-column:1; }
+      .availEntryRow > .ai_notes{ grid-column:1 / -1; }
       .availEntryRow > .rmItem{ grid-column:2; justify-self:end; }
     }
     /* Pre-Booking — a season tab bar (always all 4, each with its own color
@@ -503,6 +510,7 @@
     .otcWeekNav{ display:flex; gap:6px; align-items:center; }
     .otcWeekNav select{ width:auto; }
     .availDetailSpecInput{ font-family:var(--sans); font-size:15px; font-weight:700; color:var(--moss); background:var(--paper-2); border:1px solid var(--line); border-radius:8px; padding:6px 9px; width:100%; min-width:0; }
+    .availDetailNotesInput{ font-family:var(--sans); font-size:14px; color:var(--ink); background:var(--paper-2); border:1px solid var(--line); border-radius:8px; padding:8px 9px; width:100%; min-width:0; resize:vertical; margin-top:4px; }
     .availDetailSpecInput:focus{ outline:none; border-color:var(--moss); box-shadow:0 0 0 3px rgba(43,212,154,.15); }
     .otcSkipBtn{ margin-left:auto; border-color:rgba(224,86,63,.35); color:#a8341f; }
 
@@ -1617,6 +1625,11 @@
       </div>
       <div class="note" id="availDetailSpecSavedNote" style="margin-top:4px; min-height:16px;"></div>
       <div class="note" id="availDetailLastOrderNote" style="margin-top:6px;"></div>
+      <label style="display:block; margin-top:10px;">
+        <span class="lbl">Notes</span>
+        <textarea id="availDetailNotesInput" class="availDetailNotesInput" rows="3" placeholder="Order notes for this item (optional)"></textarea>
+      </label>
+      <div class="note" id="availDetailNotesSavedNote" style="margin-top:4px; min-height:16px;"></div>
     </div>
   </div>
 
@@ -5111,6 +5124,11 @@
     const AVAIL_CATEGORIES = ['4" Foliage', '6" Foliage', '10" Foliage', "Hanging Baskets", "Bromeliads"];
     let availActiveCat = AVAIL_CATEGORIES[0];
     let availMonthAnchor = startOfMonth(new Date());
+    // Which vendor sections are expanded — nothing shows under a vendor's
+    // green name until it's clicked open. Keyed by vendor name so the
+    // expanded/collapsed state survives re-renders (typing in search,
+    // switching months, editing an item, etc).
+    let availExpandedVendors = new Set();
 
     // Hardcoded plant catalog, pulled from the Hampshire Farms availability
     // reference sheet. This is the permanent list of vendor + item + size
@@ -5574,16 +5592,16 @@
     // physical size rarely changes): { [catalogId]: "spec value" }
     function loadAvailSpecOverrides(){ return LS.get(LS.availSpecOverridesKey, {}); }
     function saveAvailSpecOverrides(obj){ LS.set(LS.availSpecOverridesKey, obj); }
-    // The full item list — every hardcoded catalog item (code-managed, always
-    // present) plus every custom item added via "+ Add Availability" (user-
-    // managed, also always present going forward — it's a permanent addition
-    // to the list, not a one-week note). Only Amount and the order checkbox
-    // are week-specific; those live in availAmounts/availOrders, looked up
-    // separately per week by whoever renders this.
+    // The full item list. The old hardcoded AVAIL_CATALOG seed (a big
+    // preloaded list of common items) is intentionally no longer included
+    // here — every item now comes from "+ Add Availability" only, so the
+    // page starts empty and only ever shows what your team has actually
+    // typed in. isCatalog stays on every entry (always false now) so the
+    // rest of this page's code — which still checks it to decide things
+    // like whether Edit/Delete should show on a row — doesn't need to change.
     function getAllCatalogAndCustom(){
-      const catalog = AVAIL_CATALOG.map(c => ({ id:c.id, category:c.category, vendor:c.vendor, item:c.item, spec:c.spec, isCatalog:true }));
-      const custom = loadAvail().map(e => ({ id:e.id, category:e.category, vendor:e.vendor, item:e.item, spec:e.spec, isCatalog:false }));
-      return catalog.concat(custom);
+      const custom = loadAvail().map(e => ({ id:e.id, category:e.category, vendor:e.vendor, item:e.item, spec:e.spec, notes:e.notes||"", isCatalog:false }));
+      return custom;
     }
     // The full item list with each row's live spec (catalog items pick up any
     // saved override) and this one week's Amount resolved in.
@@ -5656,13 +5674,14 @@
       const sel = document.getElementById("a_category");
       sel.innerHTML = AVAIL_CATEGORIES.map(c => `<option ${c===selected?"selected":""}>${escapeHtml(c)}</option>`).join("");
     }
-    function addAvailItemRow(item = "", spec = ""){
+    function addAvailItemRow(item = "", spec = "", notes = ""){
       const rows = document.getElementById("a_itemRows");
       const row = document.createElement("div");
       row.className = "availEntryRow";
       row.innerHTML = `
         <input class="ai_item" placeholder='Item (e.g., Monstera Deliciosa)' value="${escapeHtml(item)}">
         <input class="ai_spec" type="number" step="0.5" min="0" inputmode="decimal" placeholder="Spec (e.g., 12)" value="${escapeHtml(spec)}">
+        <input class="ai_notes" placeholder="Notes (optional)" value="${escapeHtml(notes)}">
         <button class="tinyBtn danger rmItem" type="button" title="Remove item">x</button>
       `;
       row.querySelector(".rmItem").addEventListener("click", () => {
@@ -5686,7 +5705,7 @@
       document.getElementById("a_vendor").value = entry?.vendor ?? "";
       const rows = document.getElementById("a_itemRows");
       rows.innerHTML = "";
-      if(entry){ addAvailItemRow(entry.item ?? "", entry.spec ?? ""); }
+      if(entry){ addAvailItemRow(entry.item ?? "", entry.spec ?? "", entry.notes ?? ""); }
       else { addAvailItemRow(); }
       document.getElementById("a_addItemBtn").style.display = editingAvailId ? "none" : "";
       availModal.classList.add("active");
@@ -5704,7 +5723,8 @@
       const rows = Array.from(document.querySelectorAll("#a_itemRows .availEntryRow"));
       const items = rows.map(r => ({
         item: r.querySelector(".ai_item").value.trim(),
-        spec: r.querySelector(".ai_spec").value.trim()
+        spec: r.querySelector(".ai_spec").value.trim(),
+        notes: r.querySelector(".ai_notes").value.trim()
       })).filter(x => x.item);
       if(items.length === 0){ alert("Add at least one item (the Item field can't be blank)."); return; }
       const list = loadAvail();
@@ -5712,11 +5732,11 @@
         const idx = list.findIndex(e => e.id === editingAvailId);
         if(idx >= 0){
           const it = items[0];
-          list[idx] = { ...list[idx], category, vendor, item: it.item, spec: it.spec };
+          list[idx] = { ...list[idx], category, vendor, item: it.item, spec: it.spec, notes: it.notes };
         }
       } else {
         for(const it of items){
-          list.push({ id: cryptoRandomId(), category, vendor, item: it.item, spec: it.spec, createdAt: new Date().toISOString() });
+          list.push({ id: cryptoRandomId(), category, vendor, item: it.item, spec: it.spec, notes: it.notes, createdAt: new Date().toISOString() });
         }
         availActiveCat = category;
       }
@@ -5865,7 +5885,7 @@
         const items = byVendor.get(vendor).sort((a,b)=>(a.item||"").localeCompare(b.item||""));
         const checkedCount = items.filter(e => weekKeys.some(wk => e.weekData[wk].checked)).length;
         const box = document.createElement("div");
-        box.className = "availVendor";
+        box.className = "availVendor" + (availExpandedVendors.has(vendor) ? " expanded" : "");
         const curWeekKey = weekKeyFromDate(new Date());
         const weekHeadHtml = weeks.map(w => {
           const wk = weekKeyFromDate(w);
@@ -5877,7 +5897,10 @@
         }).join("");
         box.innerHTML = `
           <div class="availVendorHead">
-            <span class="availVendorName">${escapeHtml(vendor)}</span>
+            <span class="availVendorNameWrap">
+              <span class="availVendorToggle">▶</span>
+              <span class="availVendorName">${escapeHtml(vendor)}</span>
+            </span>
             <span class="sectionMeta">
               <span class="pillMini">${items.length} item(s)</span>
               <span class="pillMini">${checkedCount} to order</span>
@@ -5888,6 +5911,11 @@
             <span>Size</span>${weekHeadHtml}<span></span>
           </div>
         `;
+        box.querySelector(".availVendorHead").addEventListener("click", () => {
+          const nowExpanded = box.classList.toggle("expanded");
+          if(nowExpanded) availExpandedVendors.add(vendor);
+          else availExpandedVendors.delete(vendor);
+        });
         const scrollEl = box.querySelector(".availVendorScroll");
         // Group this vendor's entries by item name, like the reference sheet:
         // the item name is listed once, with each size/spec underneath it as
@@ -5951,8 +5979,9 @@
             const isDuplicateOfHeading = !singleUnlabeled && rawLabel === group.label;
             const displayLabel = singleUnlabeled ? rawLabel : (isDuplicateOfHeading ? "—" : rawLabel);
             const labelClass = "availItemName availItemNameBtn" + (singleUnlabeled ? " availItemNameOnly" : "");
+            const notesBadge = (e.notes && e.notes.trim()) ? `<span class="availNotesBadge" title="${escapeHtml(e.notes.trim())}">📝</span>` : "";
             row.innerHTML = `
-              <button type="button" class="${labelClass}" title="Click for order notes">${escapeHtml(displayLabel)}</button>
+              <button type="button" class="${labelClass}" title="Click for order notes">${escapeHtml(displayLabel)}${notesBadge}</button>
               ${weekCellsHtml}
               <div class="availRowActions">${actionsHtml}</div>
             `;
@@ -6074,10 +6103,39 @@
         else if(e.key === "Escape"){ input.value = originalSpec || ""; input.blur(); }
       };
     }
+    // Same auto-save-on-blur pattern as the spec input, but for notes.
+    // Catalog items no longer exist, but this stays safe either way —
+    // notes always live on the custom-item record itself.
+    function wireAvailDetailNotesInput(entry){
+      const input = document.getElementById("availDetailNotesInput");
+      const savedNote = document.getElementById("availDetailNotesSavedNote");
+      const originalNotes = entry.notes || "";
+      input.value = originalNotes;
+      savedNote.textContent = "";
+      function commit(){
+        const next = input.value.trim();
+        if(originalNotes === next) return;
+        const list = loadAvail();
+        const rec = list.find(x => x.id === entry.id);
+        if(!rec) return;
+        rec.notes = next;
+        saveAvail(list);
+        markTabChanged("avail");
+        renderAvailability(); // refreshes the row behind the popup
+        savedNote.textContent = "Saved ✓";
+        clearTimeout(savedNote._t);
+        savedNote._t = setTimeout(() => { savedNote.textContent = ""; }, 2000);
+      }
+      input.onblur = commit;
+      input.onkeydown = (e) => {
+        if(e.key === "Escape"){ input.value = originalNotes; input.blur(); }
+      };
+    }
     function openAvailItemDetail(entry){
       document.getElementById("availDetailTitle").textContent = entry.item || "Item";
       document.getElementById("availDetailSub").textContent = `${entry.vendor || "—"} · ${entry.category || ""}`;
       wireAvailDetailSpecInput(entry);
+      wireAvailDetailNotesInput(entry);
       const last = lastOrderDateForItem(entry.vendor, entry.item);
       const lastEl = document.getElementById("availDetailLastOrder");
       const noteEl = document.getElementById("availDetailLastOrderNote");
