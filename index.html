@@ -340,49 +340,45 @@
     #page-prebook[data-season="winter"]{ --seasonA:#3f7dbf; --seasonB:#2f5233; --seasonSoft:#eef5fb; }
     #page-prebook{ transition:background .25s ease, box-shadow .25s ease; }
     #page-prebook[data-season]{ background:var(--seasonSoft); border-radius:var(--radius-sm); box-shadow:inset 0 3px 0 0 var(--seasonA); padding:16px 16px 4px; }
-    .prebookSearchRow{ margin:2px 0 12px; }
-    .prebookSearchRow input{ max-width:360px; }
-    .prebookMonthBar{ display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin:0 0 14px; padding:10px 12px; border:1px solid var(--line); border-radius:var(--radius-sm); background:var(--paper-2); }
-    .prebookMonthNavBtns{ display:flex; align-items:center; gap:8px; }
-    .prebookMonthArrow{ width:30px; height:30px; border-radius:50%; border:1px solid var(--line); background:var(--paper-2); color:var(--ink); cursor:pointer; font-size:14px; display:flex; align-items:center; justify-content:center; transition:background .15s; }
-    .prebookMonthArrow:hover{ background:var(--rowHover); }
-    .prebookMonthLabel{ font-family:var(--display); font-weight:700; font-size:15.5px; color:var(--ink); min-width:140px; text-align:center; }
-    .prebookMonthSubTabs{ display:flex; gap:6px; flex-wrap:wrap; }
-    .prebookMonthSubTab{ padding:6px 12px; border-radius:999px; border:1px solid var(--line); background:var(--paper-2); color:var(--ink-2); cursor:pointer; font-family:var(--sans); font-weight:600; font-size:12px; transition:background .15s, color .15s, border-color .15s; }
-    .prebookMonthSubTab:hover{ background:var(--rowHover); }
-    .prebookMonthSubTab.active{ background:var(--seasonA, var(--moss)); border-color:var(--seasonA, var(--moss)); color:#fff; }
-    .prebookYearNav{ display:flex; align-items:center; gap:4px; font-size:12px; color:var(--ink-2); font-weight:600; }
-    .prebookYearNav button{ width:24px; height:24px; border-radius:50%; border:1px solid var(--line); background:var(--paper-2); cursor:pointer; font-size:12px; display:flex; align-items:center; justify-content:center; }
-    .prebookYearNav button:hover{ background:var(--rowHover); }
-    .prebookCal{ border:1px solid var(--line); border-radius:var(--radius-sm); overflow:hidden; box-shadow:var(--shadow-sm); background:var(--paper-2); }
-    .prebookCalDowRow{ display:grid; grid-template-columns:repeat(7,1fr); background:var(--thead); }
-    .prebookCalDow{ padding:8px 6px; text-align:center; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--moss); }
-    .prebookCalGrid{ display:grid; grid-template-columns:repeat(7,1fr); }
-    .prebookCalCell{ min-height:92px; border-top:1px solid var(--line-soft); border-left:1px solid var(--line-soft); padding:6px; display:flex; flex-direction:column; gap:4px; cursor:pointer; transition:background .15s; }
-    .prebookCalGrid .prebookCalCell:nth-child(7n+1){ border-left:none; }
-    .prebookCalGrid .prebookCalCell:nth-child(-n+7){ border-top:none; }
-    .prebookCalCell:hover{ background:var(--rowHover); }
-    .prebookCalCell.outMonth{ background:var(--paper-3); cursor:default; opacity:.55; }
-    .prebookCalCell.outMonth:hover{ background:var(--paper-3); }
-    .prebookCalCell.isToday .prebookCalDayNum{ background:var(--moss); color:#fff; border-radius:50%; }
-    .prebookCalCell.hasHoliday{ box-shadow:inset 3px 0 0 var(--hColor); }
-    .prebookCalCell.hasHoliday .prebookCalDayNum{ box-shadow:0 0 0 2px var(--hColor); border-radius:50%; }
-    .prebookCalDayNum{ width:22px; height:22px; display:flex; align-items:center; justify-content:center; font-size:11.5px; font-weight:700; color:var(--ink-2); }
-    .prebookCalHolidayTag{ font-size:9.5px; font-weight:700; padding:2px 6px; border-radius:6px; background:var(--hColor); color:#fff; align-self:flex-start; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-    .prebookCalItems{ display:flex; flex-direction:column; gap:3px; }
-    .prebookCalItem{ font-size:10.5px; font-weight:600; padding:3px 6px; border-radius:6px; background:var(--seasonSoft,#eee); color:var(--ink); border:1px solid rgba(0,0,0,.06); line-height:1.25; cursor:pointer; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-    .prebookCalItem:hover{ filter:brightness(0.97); }
-    .prebookCalItem.isHoliday{ background:var(--hColor); color:#fff; border-color:transparent; }
-    .prebookCalAddHint{ font-size:10px; color:var(--ink-2); opacity:0; transition:opacity .15s; margin-top:auto; }
-    .prebookCalCell:hover .prebookCalAddHint{ opacity:.85; }
-    @media (max-width:720px){
-      .prebookMonthBar{ justify-content:center; }
-      .prebookCalCell{ min-height:64px; padding:4px; }
-      .prebookCalDayNum{ width:18px; height:18px; font-size:10px; }
-      .prebookCalItem{ font-size:9px; padding:2px 4px; }
-      .prebookCalHolidayTag{ font-size:8.5px; padding:1px 4px; }
-      .prebookCalHolidayTag .tagText{ display:none; }
-      .prebookMonthLabel{ min-width:0; }
+    .prebookToolbar{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:2px 0 12px; }
+    .prebookToolbar input{ max-width:360px; flex:1 1 220px; }
+    .prebookSeasonSection{ border:1px solid var(--line); background:var(--paper-2); border-radius:var(--radius-sm); margin-bottom:16px; box-shadow:var(--shadow-sm); overflow:hidden; }
+    .prebookSeasonSectionHead{ display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; padding:11px 14px; background:var(--seasonSoft,#eee); border-bottom:1px solid var(--line-soft); box-shadow:inset 3px 0 0 0 var(--seasonA, var(--moss)); }
+    .prebookSeasonSectionHead h3{ margin:0; font-family:var(--display); font-weight:700; font-size:16px; color:var(--ink); }
+    .prebookMonthGroupHead{ padding:9px 14px 4px; font-family:var(--display); font-weight:600; font-size:13px; color:var(--ink-2); border-top:1px solid var(--line-soft); }
+    .prebookSeasonSectionHead + .prebookMonthGroupHead{ border-top:none; }
+    .prebookLineHead{ display:grid; grid-template-columns:1.1fr 1.4fr 70px 120px 1.5fr 78px; gap:10px; padding:6px 14px; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-2); background:var(--thead); }
+    .prebookLine{ display:grid; grid-template-columns:1.1fr 1.4fr 70px 120px 1.5fr 78px; gap:10px; align-items:center; padding:10px 14px; border-top:1px solid var(--line-soft); }
+    .prebookLine:hover{ background:var(--rowHover); }
+    .prebookLineVendor{ font-weight:700; color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .prebookLineItem{ color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; display:flex; align-items:center; gap:6px; }
+    .prebookLineQty{ font-weight:700; color:var(--ink); }
+    .prebookLineDate{ color:var(--ink-2); font-size:13px; }
+    .prebookLineActions{ display:flex; gap:6px; justify-content:flex-end; }
+    .prebookClaimWrap{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+    .prebookClaimBar{ flex:1 1 90px; min-width:70px; height:7px; border-radius:999px; background:var(--line-soft); overflow:hidden; }
+    .prebookClaimBarFill{ height:100%; background:linear-gradient(90deg, var(--seasonA, var(--moss)), var(--seasonB, var(--moss))); border-radius:999px; }
+    .prebookClaimBarFill.over{ background:#c0392b; }
+    .prebookClaimText{ font-size:11.5px; color:var(--ink-2); white-space:nowrap; cursor:pointer; }
+    .prebookClaimText:hover{ text-decoration:underline; }
+    .prebookClaimText.fulfilled{ color:var(--moss); font-weight:700; }
+    .prebookClaimText.over{ color:#c0392b; font-weight:700; }
+    .prebookClaimForm{ display:flex; gap:4px; align-items:center; }
+    .prebookClaimForm input{ width:64px; padding:5px 7px; font-size:12.5px; }
+    .prebookHolidayDot{ font-size:12px; }
+    .prebookClaimRow{ display:flex; align-items:center; gap:10px; padding:9px 0; border-top:1px solid var(--line-soft); }
+    .prebookClaimRow:first-child{ border-top:none; }
+    .prebookClaimRowQty{ font-weight:700; color:var(--ink); min-width:28px; }
+    .prebookClaimRowMeta{ flex:1; font-size:12.5px; color:var(--ink-2); }
+    @media (max-width:820px){
+      .prebookLineHead{ display:none; }
+      .prebookLine{ grid-template-columns:1fr 1fr; row-gap:6px; }
+      .prebookLine > .prebookLineVendor{ grid-column:1; }
+      .prebookLine > .prebookLineDate{ grid-column:2; text-align:right; }
+      .prebookLine > .prebookLineItem{ grid-column:1 / -1; }
+      .prebookLine > .prebookLineQty{ grid-column:1; }
+      .prebookLine > .prebookClaimWrap{ grid-column:1 / -1; }
+      .prebookLine > .prebookLineActions{ grid-column:1 / -1; justify-content:flex-start; }
     }
     .checkVendor{ border:1px solid var(--line); background:var(--paper-2); border-radius:var(--radius-sm); padding:14px; margin-top:12px; box-shadow:var(--shadow-sm); }
     .checkVendorHead{ display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:10px; }
@@ -729,6 +725,22 @@
     .poDetails{ white-space:pre-line; color:var(--ink-2); font-size:12px; line-height:1.35; max-width:340px; }
     .poNotes{ width:100%; min-height:40px; padding:7px 9px; border-radius:8px; border:1px solid var(--line); background:#fff; color:var(--ink); resize:vertical; font-family:var(--sans); font-size:12.5px; outline:none; }
     .poNotes:focus{ border-color:var(--mint-deep); box-shadow:0 0 0 3px rgba(43,212,154,.18); }
+    .poTable tr.checkinIssueRow td{ background:rgba(224,86,63,.16) !important; }
+    .poTable tr.checkinIssueRow td:first-child{ border-left:3px solid #e0563f; }
+    .checkinAddIssueBtn{ display:block; margin-top:6px; white-space:nowrap; font-size:10.5px; padding:4px 7px; }
+    .checkinIssueFlagPill{ display:inline-flex; align-items:center; gap:5px; margin-top:6px; padding:3px 7px; border-radius:999px; background:rgba(224,86,63,.15); color:#a8341f; font-size:10.5px; font-weight:700; border:1px solid rgba(224,86,63,.3); white-space:nowrap; }
+    .checkinIssueFlagPill button{ background:none; border:none; color:inherit; cursor:pointer; font-weight:700; padding:0; line-height:1; font-size:13px; }
+    /* Homestead / Hampshire chooser — shown before any check-in items */
+    .checkinChooser{ display:flex; gap:20px; flex-wrap:wrap; justify-content:center; padding:36px 16px; }
+    .checkinChooserBtn{ flex:1 1 260px; max-width:340px; min-height:170px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; padding:28px 22px; border-radius:var(--radius-md, 16px); border:1px solid var(--line); background:var(--paper-2); cursor:pointer; box-shadow:var(--shadow-sm); transition:transform .15s ease, box-shadow .15s ease, border-color .15s ease; text-align:center; font-family:var(--sans); }
+    .checkinChooserBtn:hover{ transform:translateY(-3px); box-shadow:0 10px 24px rgba(0,0,0,.14); border-color:var(--moss); }
+    .checkinChooserIcon{ font-size:38px; line-height:1; }
+    .checkinChooserLabel{ font-family:var(--display); font-weight:700; font-size:19px; color:var(--ink); }
+    .checkinChooserSub{ font-size:12.5px; color:var(--ink-2); line-height:1.4; }
+    .checkinChooserBtn[data-mode="homestead"]{ border-color:rgba(43,212,154,.35); }
+    .checkinChooserBtn[data-mode="homestead"]:hover{ border-color:var(--mint-deep); }
+    .checkinChooserBtn[data-mode="hampshire"]{ border-color:rgba(63,125,191,.35); }
+    .checkinChooserBtn[data-mode="hampshire"]:hover{ border-color:#3f7dbf; }
     @media (max-width:980px){
       #page-checkin .main, #page-checkin{ overflow:visible; }
       .poTableScroll{ overflow-x:auto; }
@@ -1420,7 +1432,6 @@
                 </div>
                 <input id="availSearch" placeholder="Search vendor or item..." />
                 <button id="availAddBtn" class="btn"><span data-icon="plus" aria-hidden="true"></span> Add Availability</button>
-                <button id="availCreateOrderBtn" class="btnGhost" title="Build a new Order Tracker order from every checked item this week"><span data-icon="package" aria-hidden="true"></span> Create Order from Checked</button>
                 <button id="availExportBtn" class="btnGhost"><span data-icon="download" aria-hidden="true"></span> Export CSV</button>
               </div>
             </div>
@@ -1431,16 +1442,19 @@
         </div>
 
         <div id="page-prebook" class="page" style="display:none;">
-          <div class="prebookSearchRow"><input id="prebookSearch" placeholder="Search vendor or item..." /></div>
+          <div class="prebookToolbar">
+            <input id="prebookSearch" placeholder="Search vendor or item..." />
+            <button id="prebookAddBtn" class="btn" type="button"><span data-icon="plus" aria-hidden="true"></span> Add Pre-Book</button>
+          </div>
           <div class="prebookSeasonTabs" id="prebookSeasonTabs"></div>
-          <div class="prebookMonthBar" id="prebookMonthBar"></div>
           <div id="prebookWrap"></div>
         </div>
 
         <div id="page-checkin" class="page" style="display:none;">
           <div class="toolbar">
-            <h2>Order Check-In</h2>
-            <div class="tools">
+            <h2>Order Check-In <span class="chip" id="checkinModeChip" style="display:none;"></span></h2>
+            <div class="tools" id="checkinToolbarTools" style="display:none;">
+              <button id="checkinSwitchModeBtn" class="btnGhost" title="Choose a different Check-In view">🔄 Switch View</button>
               <button id="checkinPrevWeek" class="btnGhost" title="Previous week">‹</button>
               <div class="chip" id="checkinWeekLabel">Week</div>
               <button id="checkinNextWeek" class="btnGhost" title="Next week">›</button>
@@ -1452,7 +1466,19 @@
               <button id="checkinResetWeekBtn" class="btnGhost" style="border-color:rgba(224,86,63,.3); color:#a8341f;">Reset Check-In</button>
             </div>
           </div>
-          <div class="note" id="checkinNote">Import a PO Analysis workbook for this week — every column comes in exactly as exported, with a checkbox and notes per line.</div>
+          <div id="checkinChooser" class="checkinChooser">
+            <button type="button" class="checkinChooserBtn" data-mode="homestead">
+              <span class="checkinChooserIcon">🏠</span>
+              <span class="checkinChooserLabel">Homestead Check In</span>
+              <span class="checkinChooserSub">Only items coming from our Homestead vendors</span>
+            </button>
+            <button type="button" class="checkinChooserBtn" data-mode="hampshire">
+              <span class="checkinChooserIcon">📦</span>
+              <span class="checkinChooserLabel">Hampshire Check In</span>
+              <span class="checkinChooserSub">Every item on this week's PO Analysis</span>
+            </button>
+          </div>
+          <div class="note" id="checkinNote" style="display:none;">Import a PO Analysis workbook for this week — every column comes in exactly as exported, with a checkbox and notes per line.</div>
           <div id="checkinWrap" style="margin-top:12px;"></div>
         </div>
 
@@ -1593,7 +1619,7 @@
       </div>
       <div class="row">
         <label><span class="lbl">Category</span><select id="a_category"></select></label>
-        <label><span class="lbl">Vendor</span><input id="a_vendor" placeholder="e.g., ANCHOR"/></label>
+        <label><span class="lbl">Vendor</span><select id="a_vendor"></select></label>
       </div>
       <div class="availItemsHead">
         <span class="lbl">Items Available</span>
@@ -1671,6 +1697,19 @@
         <button id="prebookSaveBtn" class="btn" style="width:auto; flex:1;">Save Pre-Book</button>
         <button id="prebookDeleteBtn" class="btnDanger" style="display:none; flex:0 0 auto;">Delete</button>
       </div>
+    </div>
+  </div>
+
+  <div id="prebookClaimModal" class="modal" aria-hidden="true">
+    <div class="modalCard" style="width:min(420px,96vw);">
+      <div class="modalHead">
+        <div>
+          <h3 id="prebookClaimModalTitle">Claims</h3>
+          <div class="note" id="prebookClaimModalSub"></div>
+        </div>
+        <button id="prebookClaimCloseBtn" class="closeX">Close</button>
+      </div>
+      <div id="prebookClaimList"></div>
     </div>
   </div>
 
@@ -2416,7 +2455,7 @@
       if(key === "photos") renderPhotosTab();
       if(key === "avail") renderAvailability();
       if(key === "prebook") renderPrebook();
-      if(key === "checkin") renderCheckIn();
+      if(key === "checkin"){ checkinViewMode = null; renderCheckIn(); }
       if(key === "issues") renderIssues();
       if(key === "training") renderTraining();
       // Presence: reflect the tab switch instantly (locally) and let the
@@ -5122,6 +5161,11 @@
      * Availability (manual entry, tabbed by category)
      *********************************************************/
     const AVAIL_CATEGORIES = ['4" Foliage', '6" Foliage', '10" Foliage', "Hanging Baskets", "Bromeliads"];
+    // Our Homestead vendors — the only choices in the Add Availability vendor
+    // dropdown. If an older custom item was saved under some other vendor
+    // name, fillAvailVendorOptions() below adds it back in as an extra
+    // option when editing that specific item, so nothing gets silently lost.
+    const HOMESTEAD_VENDORS = ["Anchor", "Omega", "St. Germain", "Legacy", "Diaz", "J&D", "Plants in Design"];
     let availActiveCat = AVAIL_CATEGORIES[0];
     let availMonthAnchor = startOfMonth(new Date());
     // Which vendor sections are expanded — nothing shows under a vendor's
@@ -5674,6 +5718,18 @@
       const sel = document.getElementById("a_category");
       sel.innerHTML = AVAIL_CATEGORIES.map(c => `<option ${c===selected?"selected":""}>${escapeHtml(c)}</option>`).join("");
     }
+    // Vendor is a fixed dropdown of our Homestead vendors — no more free
+    // typing. If we're editing an item whose saved vendor isn't one of the
+    // standard names (older data), it's added in as an extra option so it
+    // still shows up correctly instead of silently changing on save.
+    function fillAvailVendorOptions(selected){
+      const sel = document.getElementById("a_vendor");
+      const opts = HOMESTEAD_VENDORS.slice();
+      if(selected && !opts.includes(selected)) opts.push(selected);
+      let html = `<option value="" ${selected ? "" : "selected"}>Select a vendor…</option>`;
+      html += opts.map(v => `<option value="${escapeHtml(v)}" ${v===selected ? "selected" : ""}>${escapeHtml(v)}</option>`).join("");
+      sel.innerHTML = html;
+    }
     function addAvailItemRow(item = "", spec = "", notes = ""){
       const rows = document.getElementById("a_itemRows");
       const row = document.createElement("div");
@@ -5695,14 +5751,14 @@
       const row = addAvailItemRow();
       row.querySelector(".ai_item").focus();
     });
-    function openAvailModal(entry){
+    function openAvailModal(entry, prefillVendor){
       editingAvailId = entry?.id ?? null;
       document.getElementById("availModalTitle").textContent = editingAvailId ? "Edit Availability" : "Add Availability";
       document.getElementById("availModalSub").textContent = editingAvailId
         ? `Editing one custom item. Amount is entered per week directly in the grid.`
         : `Add one or more items for a vendor — they'll show up every month from now on, same as the rest of the list. Amount is entered per week directly in the grid.`;
       fillAvailCategoryOptions(entry?.category || availActiveCat);
-      document.getElementById("a_vendor").value = entry?.vendor ?? "";
+      fillAvailVendorOptions(entry?.vendor || prefillVendor || "");
       const rows = document.getElementById("a_itemRows");
       rows.innerHTML = "";
       if(entry){ addAvailItemRow(entry.item ?? "", entry.spec ?? "", entry.notes ?? ""); }
@@ -5763,58 +5819,6 @@
       });
       if(!rows.length){ alert("No availability reported this month to export."); return; }
       downloadCSV(`availability_${mk}.csv`, rows, ["Week","Category","Vendor","Item","Spec","Amount","Ordering"]);
-    });
-
-    // Create Order from Checked Items: gathers every item checked "to order"
-    // on any week shown this month, groups it by vendor (deduping an item
-    // checked on more than one week down to a single order line), and opens
-    // a brand-new Order Tracker order with vendor + item names pre-filled.
-    // Qty, racks, cases and PO are left blank on purpose — those depend on
-    // the plant, the truck's remaining rack space, and info Availability
-    // doesn't capture, so they stay exactly as manual as a normal new order.
-    // The most recent non-blank Amount across the checked weeks is carried
-    // over as a line note for reference.
-    document.getElementById("availCreateOrderBtn").addEventListener("click", () => {
-      const weeks = availWeeksInMonth(availMonthAnchor);
-      const monthEntries = getMonthEntries(weeks);
-      const weekKeys = weeks.map(w => weekKeyFromDate(w));
-      const checked = monthEntries.filter(e => weekKeys.some(wk => e.weekData[wk].checked));
-      if(checked.length === 0){
-        alert('No items are checked to order this month yet. Check the items you want on the Availability grid, then click "Create Order from Checked" again.');
-        return;
-      }
-      const byVendor = new Map();
-      for(const e of checked){
-        const v = (e.vendor || "").trim() || "—";
-        if(!byVendor.has(v)) byVendor.set(v, []);
-        byVendor.get(v).push(e);
-      }
-      const vendorBlocks = Array.from(byVendor.keys()).sort((a,b) => a.localeCompare(b)).map(v => ({
-        name: v, po: "", status: "Open",
-        items: byVendor.get(v)
-          .sort((a,b) => (a.item||"").localeCompare(b.item||""))
-          .map(e => {
-            // Most recent checked week with a non-blank amount, for the note.
-            let lastAmount = "";
-            for(let i = weekKeys.length - 1; i >= 0; i--){
-              const wd = e.weekData[weekKeys[i]];
-              if(wd.checked && wd.amount){ lastAmount = wd.amount; break; }
-            }
-            return {
-              item: e.item || "", racks: "", cases: "", qty: "",
-              notes: lastAmount ? `Available: ${lastAmount}` : "",
-              // Carried through only so Racks (and Case Count, where the
-              // rack guide gives a tray count) can auto-suggest once a
-              // Plant Qty is typed in — see findRackRule/tryAutoCalcRack.
-              avCategory: e.category || "", avSpec: e.spec ?? ""
-            };
-          })
-      }));
-      const data = blankTruckData();
-      data.vendorBlocks = vendorBlocks;
-      data.notes = `Created from ${checked.length} checked Availability item(s) — ${monthLabel(availMonthAnchor)}.`;
-      showPage("order");
-      openTruckModal(null, data);
     });
 
     function renderAvailTabs(weekEntries){
@@ -5902,6 +5906,7 @@
               <span class="availVendorName">${escapeHtml(vendor)}</span>
             </span>
             <span class="sectionMeta">
+              <button type="button" class="tinyBtn availVendorAddBtn" title="Add availability for ${escapeHtml(vendor)}">+ Add</button>
               <span class="pillMini">${items.length} item(s)</span>
               <span class="pillMini">${checkedCount} to order</span>
             </span>
@@ -5915,6 +5920,10 @@
           const nowExpanded = box.classList.toggle("expanded");
           if(nowExpanded) availExpandedVendors.add(vendor);
           else availExpandedVendors.delete(vendor);
+        });
+        box.querySelector(".availVendorAddBtn").addEventListener("click", (e) => {
+          e.stopPropagation();
+          openAvailModal(null, vendor);
         });
         const scrollEl = box.querySelector(".availVendorScroll");
         // Group this vendor's entries by item name, like the reference sheet:
@@ -6240,69 +6249,28 @@
     function loadPrebook(){ return LS.get(LS.prebookKey, []); }
     function savePrebook(list){ LS.set(LS.prebookKey, list); }
 
-    // Calendar navigation state: which season tab, which of its 3 months
-    // (by index into season.months), and which year that month falls in.
-    // Winter spans a year boundary (Dec, then Jan/Feb of the next year), so
-    // years are tracked per-month rather than as one number for the season.
-    function seasonMonthDates(season, anchorYear){
-      let year = anchorYear, prevM = null;
-      return season.months.map(m => {
-        if(prevM !== null && m < prevM) year++;
-        prevM = m;
-        return { year, month: m };
-      });
+    // How much of an entry's Quantity has been claimed so far (summed from
+    // its claims log) and how much is left. Remaining can go negative if
+    // more was claimed than booked — the UI flags that in red rather than
+    // silently clamping it, since that's a real "we're short" signal.
+    function prebookClaimedTotal(entry){
+      return (entry.claims || []).reduce((sum, c) => sum + (Number(c.qty) || 0), 0);
     }
-    function currentSeasonYearDefaults(){
-      const today = new Date();
-      const season = seasonForDate(fmtDate(today));
-      let year = today.getFullYear();
-      // If we're in Jan/Feb during winter, that winter started in the
-      // PREVIOUS calendar year (its Dec) — anchor there so today's month
-      // is actually inside the computed Dec/Jan/Feb set.
-      if(season.key === "winter" && (today.getMonth() === 0 || today.getMonth() === 1)) year -= 1;
-      return { seasonKey: season.key, year };
+    function prebookRemaining(entry){
+      return (Number(entry.qty) || 0) - prebookClaimedTotal(entry);
     }
-    const __pbDefaults = currentSeasonYearDefaults();
-    let prebookSeasonKey = __pbDefaults.seasonKey;
-    let prebookYear = __pbDefaults.year;
-    let prebookMonthIdx = 0;
-    (function initPrebookMonthIdx(){
-      const season = SEASONS.find(s => s.key === prebookSeasonKey);
-      const dates = seasonMonthDates(season, prebookYear);
-      const today = new Date();
-      const idx = dates.findIndex(d => d.year === today.getFullYear() && d.month === today.getMonth());
-      prebookMonthIdx = idx >= 0 ? idx : 0;
-    })();
-    function switchPrebookSeason(key){
-      prebookSeasonKey = key;
-      const season = SEASONS.find(s => s.key === key);
-      const today = new Date();
-      if(key === seasonForDate(fmtDate(today)).key){
-        const d = currentSeasonYearDefaults();
-        prebookYear = d.year;
-        const dates = seasonMonthDates(season, prebookYear);
-        const idx = dates.findIndex(dd => dd.year === today.getFullYear() && dd.month === today.getMonth());
-        prebookMonthIdx = idx >= 0 ? idx : 0;
-      } else {
-        prebookMonthIdx = 0;
-      }
-      renderPrebook();
-    }
-    function shiftPrebookMonth(delta){
-      const season = SEASONS.find(s => s.key === prebookSeasonKey);
-      prebookMonthIdx = (prebookMonthIdx + delta + season.months.length) % season.months.length;
-      renderPrebook();
-    }
-    function shiftPrebookYear(delta){
-      prebookYear += delta;
-      renderPrebook();
-    }
+
+    // Which season tab is showing. No more month/year calendar nav — the
+    // page just lists every pre-book in that season as neat lines, grouped
+    // by month, oldest ready date first.
+    let prebookSeasonKey = seasonForDate(fmtDate(new Date())).key;
 
     const prebookModal = document.getElementById("prebookModal");
     let editingPrebookId = null;
     document.getElementById("prebookCloseBtn").addEventListener("click", closePrebookModal);
     prebookModal.addEventListener("click", (e) => { if(e.target === prebookModal) closePrebookModal(); });
     document.getElementById("prebookSearch").addEventListener("input", renderPrebook);
+    document.getElementById("prebookAddBtn").addEventListener("click", () => openPrebookModal(null));
 
     // The holiday picker is theming only now — it no longer decides the
     // ready date, so "None" is a real, first-class option.
@@ -6362,77 +6330,128 @@
         const idx = list.findIndex(x => x.id === editingPrebookId);
         if(idx >= 0) list[idx] = { ...list[idx], vendor, item, qty, readyDate, holidayKey };
       } else {
-        list.push({ id: cryptoRandomId(), vendor, item, qty, readyDate, holidayKey, createdAt: new Date().toISOString() });
+        list.push({ id: cryptoRandomId(), vendor, item, qty, readyDate, holidayKey, claims: [], createdAt: new Date().toISOString() });
       }
       savePrebook(list);
       markTabChanged("prebook");
       closePrebookModal();
       renderPrebook();
     });
-    const PREBOOK_DOW_LABELS = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
-    function prebookCalItemChip(p){
-      const h = p.holidayKey ? holidayByKey(p.holidayKey) : null;
-      const title = `${p.item||"Item"} — ${p.vendor||"—"}${p.qty!=="" && p.qty!=null ? ` (qty ${p.qty})` : ""}${h?` · ${h.name}`:""}`;
-      return `<div class="prebookCalItem ${h?"isHoliday":""}" style="${h?`--hColor:${h.color};`:""}" data-id="${p.id}" title="${escapeHtml(title)}">${h?h.emoji:"📌"} ${escapeHtml(p.item||"Item")}</div>`;
+    // --- Claim history popover: shows every individual claim against one
+    // pre-book line (who claimed how much, when) with a way to remove a
+    // claim entered by mistake. Opened by clicking the "X claimed · Y left"
+    // text on a line.
+    const prebookClaimModal = document.getElementById("prebookClaimModal");
+    let openClaimEntryId = null;
+    document.getElementById("prebookClaimCloseBtn").addEventListener("click", closePrebookClaimModal);
+    prebookClaimModal.addEventListener("click", (e) => { if(e.target === prebookClaimModal) closePrebookClaimModal(); });
+    function closePrebookClaimModal(){
+      prebookClaimModal.classList.remove("active");
+      prebookClaimModal.setAttribute("aria-hidden","true");
+      openClaimEntryId = null;
     }
-    function renderPrebookCalendar(wrap, items, year, month, season){
-      const itemsByDay = new Map();
-      items.forEach(p => {
-        const d = parseDate(p.readyDate);
-        if(!d || d.getFullYear() !== year || d.getMonth() !== month) return;
-        const day = d.getDate();
-        if(!itemsByDay.has(day)) itemsByDay.set(day, []);
-        itemsByDay.get(day).push(p);
-      });
-      const holidayMap = holidaysForYearRange(year);
-
-      const daysInMonth = new Date(year, month + 1, 0).getDate();
-      const prevMonthDays = new Date(year, month, 0).getDate();
-      const startOffset = (new Date(year, month, 1).getDay() + 6) % 7; // Monday-first, matches the rest of the app
-      const totalCells = Math.ceil((startOffset + daysInMonth) / 7) * 7;
-      const today = new Date(); today.setHours(0,0,0,0);
-
-      let cellsHtml = "";
-      for(let i = 0; i < totalCells; i++){
-        const dayNum = i - startOffset + 1;
-        let displayDay, cellDate, outMonth = false;
-        if(dayNum < 1){ displayDay = prevMonthDays + dayNum; outMonth = true; cellDate = new Date(year, month - 1, displayDay); }
-        else if(dayNum > daysInMonth){ displayDay = dayNum - daysInMonth; outMonth = true; cellDate = new Date(year, month + 1, displayDay); }
-        else { displayDay = dayNum; cellDate = new Date(year, month, displayDay); }
-        const isToday = !outMonth && cellDate.getTime() === today.getTime();
-        const dayItems = outMonth ? [] : (itemsByDay.get(displayDay) || []).sort((a,b) => (a.item||"").localeCompare(b.item||""));
-        const hol = holidayMap.get(fmtDate(cellDate));
-        cellsHtml += `
-          <div class="prebookCalCell ${outMonth?"outMonth":""} ${isToday?"isToday":""} ${hol?"hasHoliday":""}" ${outMonth?"":`data-date="${fmtDate(cellDate)}"`} ${hol?`style="--hColor:${hol.color};"`:""}>
-            <div class="prebookCalDayNum">${displayDay}</div>
-            ${hol ? `<div class="prebookCalHolidayTag" title="${escapeHtml(hol.name)}">${hol.emoji}<span class="tagText"> ${escapeHtml(hol.name)}</span></div>` : ``}
-            <div class="prebookCalItems">${dayItems.map(p => prebookCalItemChip(p)).join("")}</div>
-            ${outMonth ? "" : `<div class="prebookCalAddHint">+ Pre-book</div>`}
-          </div>`;
+    function openPrebookClaimHistory(entry){
+      openClaimEntryId = entry.id;
+      renderPrebookClaimList();
+      prebookClaimModal.classList.add("active");
+      prebookClaimModal.setAttribute("aria-hidden","false");
+    }
+    function renderPrebookClaimList(){
+      const entry = loadPrebook().find(x => x.id === openClaimEntryId);
+      const listEl = document.getElementById("prebookClaimList");
+      if(!entry || !listEl){ closePrebookClaimModal(); return; }
+      const titleEl = document.getElementById("prebookClaimModalTitle");
+      const subEl = document.getElementById("prebookClaimModalSub");
+      if(titleEl) titleEl.textContent = entry.item || "Item";
+      const claimed = prebookClaimedTotal(entry);
+      const remaining = prebookRemaining(entry);
+      if(subEl) subEl.textContent = `${entry.vendor || "—"} · ${claimed} of ${entry.qty || 0} claimed · ${remaining < 0 ? `${Math.abs(remaining)} over` : `${remaining} left`}`;
+      const claims = (entry.claims || []).slice().sort((a,b) => (b.at||"").localeCompare(a.at||""));
+      if(claims.length === 0){
+        listEl.innerHTML = `<div class="note" style="padding:10px 0;">No claims yet — use the Claim box on the line to take some of this.</div>`;
+        return;
       }
-
-      wrap.innerHTML = `
-        <div class="prebookCal" data-season="${season.key}">
-          <div class="prebookCalDowRow">${PREBOOK_DOW_LABELS.map(d => `<div class="prebookCalDow">${d}</div>`).join("")}</div>
-          <div class="prebookCalGrid">${cellsHtml}</div>
-        </div>`;
-
-      wrap.querySelectorAll(".prebookCalItem").forEach(chip => {
-        chip.addEventListener("click", (e) => {
-          e.stopPropagation();
-          const p = loadPrebook().find(x => x.id === chip.dataset.id);
-          if(p) openPrebookModal(p);
+      listEl.innerHTML = claims.map(c => `
+        <div class="prebookClaimRow" data-id="${c.id}">
+          <span class="prebookClaimRowQty">${escapeHtml(String(c.qty))}</span>
+          <span class="prebookClaimRowMeta">${escapeHtml(c.by || "—")}${c.at ? ` · ${escapeHtml(new Date(c.at).toLocaleString(undefined,{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}))}` : ""}</span>
+          <button type="button" class="tinyBtn danger prebookClaimRowRemove" title="Remove this claim">x</button>
+        </div>`).join("");
+      listEl.querySelectorAll(".prebookClaimRowRemove").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const cid = btn.closest(".prebookClaimRow").dataset.id;
+          const list = loadPrebook();
+          const rec = list.find(x => x.id === openClaimEntryId);
+          if(!rec) return;
+          rec.claims = (rec.claims || []).filter(c => c.id !== cid);
+          savePrebook(list);
+          markTabChanged("prebook");
+          renderPrebookClaimList();
+          renderPrebook();
         });
       });
-      wrap.querySelectorAll(".prebookCalCell[data-date]").forEach(cell => {
-        cell.addEventListener("click", () => openPrebookModal(null, cell.dataset.date));
-      });
     }
+
+    // One line in the list: Vendor / Product / Qty / Ready Date / Claim
+    // status / Edit. The claim mini-form lets anyone take some of the
+    // booked quantity right from the list — no need to open the full
+    // Edit modal just to record that a pickup grabbed 40 of the 200 booked.
+    function prebookLineRow(p){
+      const row = document.createElement("div");
+      row.className = "prebookLine";
+      const h = p.holidayKey ? holidayByKey(p.holidayKey) : null;
+      const totalQty = Number(p.qty) || 0;
+      const claimed = prebookClaimedTotal(p);
+      const remaining = totalQty - claimed;
+      const pct = totalQty > 0 ? Math.max(0, Math.min(100, Math.round((claimed / totalQty) * 100))) : 0;
+      const isOver = remaining < 0;
+      const isFulfilled = totalQty > 0 && remaining <= 0 && !isOver;
+      const d = parseDate(p.readyDate);
+      const dateLabel = d ? d.toLocaleDateString(undefined, {month:"short", day:"numeric", year:"numeric"}) : (p.readyDate || "—");
+      const claimStatusClass = isOver ? "over" : (isFulfilled ? "fulfilled" : "");
+      const claimStatusText = totalQty > 0
+        ? `${claimed} claimed · ${isOver ? `${Math.abs(remaining)} over` : `${remaining} left`}`
+        : `${claimed} claimed`;
+      row.innerHTML = `
+        <div class="prebookLineVendor">${escapeHtml(p.vendor || "—")}</div>
+        <div class="prebookLineItem">${h ? `<span class="prebookHolidayDot" title="${escapeHtml(h.name)}">${h.emoji}</span>` : ""}${escapeHtml(p.item || "Item")}</div>
+        <div class="prebookLineQty">${totalQty || "—"}</div>
+        <div class="prebookLineDate">${escapeHtml(dateLabel)}</div>
+        <div class="prebookClaimWrap">
+          <div class="prebookClaimBar"><div class="prebookClaimBarFill ${isOver?"over":""}" style="width:${pct}%;"></div></div>
+          <span class="prebookClaimText ${claimStatusClass}" title="Click to see claim history">${escapeHtml(claimStatusText)}</span>
+          <form class="prebookClaimForm">
+            <input type="number" min="0" step="1" placeholder="Qty" class="prebookClaimInput">
+            <button type="submit" class="tinyBtn">Claim</button>
+          </form>
+        </div>
+        <div class="prebookLineActions">
+          <button type="button" class="tinyBtn pb_edit">Edit</button>
+        </div>
+      `;
+      row.querySelector(".prebookClaimText").addEventListener("click", () => openPrebookClaimHistory(p));
+      row.querySelector(".prebookClaimForm").addEventListener("submit", (e) => {
+        e.preventDefault();
+        const input = row.querySelector(".prebookClaimInput");
+        const qty = Number(input.value);
+        if(!qty || qty <= 0){ alert("Enter a quantity greater than 0 to claim."); return; }
+        const list = loadPrebook();
+        const rec = list.find(x => x.id === p.id);
+        if(!rec) return;
+        rec.claims = rec.claims || [];
+        rec.claims.push({ id: cryptoRandomId(), qty, by: getUser()?.name || "—", at: new Date().toISOString() });
+        savePrebook(list);
+        markTabChanged("prebook");
+        renderPrebook();
+      });
+      row.querySelector(".pb_edit").addEventListener("click", () => openPrebookModal(p));
+      return row;
+    }
+
     function renderPrebook(){
       const wrap = document.getElementById("prebookWrap");
       const tabsEl = document.getElementById("prebookSeasonTabs");
-      const barEl = document.getElementById("prebookMonthBar");
-      if(!wrap || !tabsEl || !barEl) return;
+      if(!wrap || !tabsEl) return;
 
       const search = (document.getElementById("prebookSearch").value || "").trim().toLowerCase();
       let items = loadPrebook();
@@ -6447,40 +6466,50 @@
           ${season.emoji} ${season.name} <span class="count">${countBySeason.get(season.key)}</span>
         </button>`).join("");
       tabsEl.querySelectorAll(".prebookSeasonTab").forEach(btn => {
-        btn.addEventListener("click", () => switchPrebookSeason(btn.dataset.season));
+        btn.addEventListener("click", () => { prebookSeasonKey = btn.dataset.season; renderPrebook(); });
       });
 
       const season = SEASONS.find(s => s.key === prebookSeasonKey) || SEASONS[0];
       document.getElementById("page-prebook").dataset.season = season.key;
-      const monthDates = seasonMonthDates(season, prebookYear);
-      if(prebookMonthIdx >= monthDates.length) prebookMonthIdx = 0;
-      const cur = monthDates[prebookMonthIdx];
-      const monthLabel = new Date(cur.year, cur.month, 1).toLocaleDateString(undefined, {month:"long", year:"numeric"});
-      const yearLabel = season.key === "winter" ? `${monthDates[0].year}–${monthDates[monthDates.length-1].year}` : String(cur.year);
 
-      barEl.innerHTML = `
-        <div class="prebookMonthNavBtns">
-          <button type="button" class="prebookMonthArrow" id="prebookMonthPrev" aria-label="Previous month in ${season.name}">‹</button>
-          <span class="prebookMonthLabel">${monthLabel}</span>
-          <button type="button" class="prebookMonthArrow" id="prebookMonthNext" aria-label="Next month in ${season.name}">›</button>
+      const seasonItems = items.filter(p => seasonForDate(p.readyDate).key === season.key)
+        .sort((a,b) => (a.readyDate||"").localeCompare(b.readyDate||"") || (a.vendor||"").localeCompare(b.vendor||""));
+
+      wrap.innerHTML = "";
+      if(seasonItems.length === 0){
+        wrap.innerHTML = emptyStateHtml(`No ${escapeHtml(season.name)} pre-books yet. Click <strong>+ Add Pre-Book</strong> to reserve stock ahead of a date or holiday.`, "pin");
+        return;
+      }
+
+      const section = document.createElement("div");
+      section.className = "prebookSeasonSection";
+      section.innerHTML = `
+        <div class="prebookSeasonSectionHead">
+          <h3>${season.emoji} ${escapeHtml(season.name)}</h3>
+          <span class="sectionMeta"><span class="pillMini">${seasonItems.length} item(s)</span></span>
         </div>
-        <div class="prebookMonthSubTabs">${
-          monthDates.map((d,i) => `<button type="button" class="prebookMonthSubTab ${i===prebookMonthIdx?"active":""}" data-idx="${i}">${new Date(d.year,d.month,1).toLocaleDateString(undefined,{month:"short"})}</button>`).join("")
-        }</div>
-        <div class="prebookYearNav">
-          <button type="button" id="prebookYearPrev" aria-label="Previous year">«</button>
-          <span>${yearLabel}</span>
-          <button type="button" id="prebookYearNext" aria-label="Next year">»</button>
+        <div class="prebookLineHead">
+          <span>Vendor</span><span>Product</span><span>Qty</span><span>Ready Date</span><span>Claimed</span><span></span>
         </div>`;
-      document.getElementById("prebookMonthPrev").addEventListener("click", () => shiftPrebookMonth(-1));
-      document.getElementById("prebookMonthNext").addEventListener("click", () => shiftPrebookMonth(1));
-      document.getElementById("prebookYearPrev").addEventListener("click", () => shiftPrebookYear(-1));
-      document.getElementById("prebookYearNext").addEventListener("click", () => shiftPrebookYear(1));
-      barEl.querySelectorAll(".prebookMonthSubTab").forEach(btn => {
-        btn.addEventListener("click", () => { prebookMonthIdx = Number(btn.dataset.idx); renderPrebook(); });
+      const body = document.createElement("div");
+      body.className = "prebookLines";
+      section.appendChild(body);
+
+      let lastMonthKey = null;
+      seasonItems.forEach(p => {
+        const d = parseDate(p.readyDate);
+        const monthKey = d ? `${d.getFullYear()}-${d.getMonth()}` : "unknown";
+        if(monthKey !== lastMonthKey){
+          lastMonthKey = monthKey;
+          const groupHead = document.createElement("div");
+          groupHead.className = "prebookMonthGroupHead";
+          groupHead.textContent = d ? d.toLocaleDateString(undefined, {month:"long", year:"numeric"}) : "No date set";
+          body.appendChild(groupHead);
+        }
+        body.appendChild(prebookLineRow(p));
       });
 
-      renderPrebookCalendar(wrap, items, cur.year, cur.month, season);
+      wrap.appendChild(section);
     }
 
     /*********************************************************
@@ -6681,11 +6710,48 @@
      * Order Check-In — imported live from a PO Analysis workbook
      *********************************************************/
     // LS.poImportKey = { [weekKey]: { headers:[...], rows:[{cells,key,vendor,item,po,comment,qty}], fileName, importedAt } }
-    // LS.checkinKey  = { [weekKey]: { [rowKey]: { checked, notes } } } — unchanged shape from before.
+    // LS.checkinKey  = { [weekKey]: { [rowKey]: { checked, notes, hasIssue } } } — hasIssue added for the
+    // per-line "⚠ Add Issue" flag (see renderCheckIn).
     function loadCheckinAll(){ return LS.get(LS.checkinKey, {}); }
     function saveCheckinAll(o){ LS.set(LS.checkinKey, o); }
     function checkinStateForWeek(wk){ const all = loadCheckinAll(); return all[wk] || {}; }
     function setCheckinStateForWeek(wk, obj){ const all = loadCheckinAll(); all[wk] = obj; saveCheckinAll(all); }
+
+    // Which view is showing: null = the Homestead/Hampshire chooser (nothing
+    // imported is displayed yet), "homestead" or "hampshire" once picked.
+    // Reset to null every time the page is freshly navigated to (see
+    // showPage) so the chooser always comes up first; preserved across
+    // re-renders triggered from within the page itself (week nav, filters,
+    // import, sync updates) so the choice sticks while you work.
+    let checkinViewMode = null;
+    function setCheckinViewMode(mode){
+      checkinViewMode = mode;
+      renderCheckIn();
+    }
+    // "Coming from Homestead" is decided by cross-referencing the rest of
+    // the app rather than anything in the PO Analysis file itself (it has
+    // no region column): a vendor counts as Homestead if it's one of our
+    // fixed Homestead vendors (same list used on the Availability page), OR
+    // if the Order Tracker has ever booked that vendor under the
+    // "Homestead" region. Either signal is enough — together they cover a
+    // vendor even if it's spelled slightly differently in the import.
+    function homesteadVendorNameSet(){
+      const set = new Set(HOMESTEAD_VENDORS.map(v => v.toLowerCase()));
+      loadTrucks().forEach(t => {
+        if((t.region || "").trim() === "Homestead"){
+          (t.vendorBlocks || []).forEach(vb => { if(vb.name) set.add(vb.name.trim().toLowerCase()); });
+        }
+      });
+      return set;
+    }
+    function isHomesteadCheckinRow(row, homesteadNames){
+      const v = (row.vendor || "").trim().toLowerCase();
+      if(!v) return false;
+      for(const name of homesteadNames){
+        if(v === name || v.includes(name) || name.includes(v)) return true;
+      }
+      return false;
+    }
 
     function loadPoImportAll(){ return LS.get(LS.poImportKey, {}); }
     function savePoImportAll(o){ LS.set(LS.poImportKey, o); }
@@ -6812,6 +6878,10 @@
 
     const checkinWrap = document.getElementById("checkinWrap");
     const checkinWeekLabelEl = document.getElementById("checkinWeekLabel");
+    document.querySelectorAll("#checkinChooser .checkinChooserBtn").forEach(btn => {
+      btn.addEventListener("click", () => setCheckinViewMode(btn.dataset.mode));
+    });
+    document.getElementById("checkinSwitchModeBtn").addEventListener("click", () => setCheckinViewMode(null));
     document.getElementById("checkinPrevWeek").addEventListener("click", () => { weekAnchor = addDays(weekAnchor, -7); renderCheckIn(); });
     document.getElementById("checkinNextWeek").addEventListener("click", () => { weekAnchor = addDays(weekAnchor,  7); renderCheckIn(); });
     document.getElementById("checkinVendorFilter").addEventListener("input", renderCheckIn);
@@ -6934,19 +7004,49 @@
       const wk = weekKeyFromDate(weekAnchor);
       checkinWeekLabelEl.textContent = weekLabel(weekAnchor);
       const note = document.getElementById("checkinNote");
+      const chooserEl = document.getElementById("checkinChooser");
+      const toolsEl = document.getElementById("checkinToolbarTools");
+      const modeChip = document.getElementById("checkinModeChip");
+
+      // Nothing renders until Homestead or Hampshire is picked.
+      if(!checkinViewMode){
+        chooserEl.style.display = "";
+        toolsEl.style.display = "none";
+        note.style.display = "none";
+        modeChip.style.display = "none";
+        checkinWrap.innerHTML = "";
+        return;
+      }
+      chooserEl.style.display = "none";
+      toolsEl.style.display = "";
+      note.style.display = "";
+      modeChip.style.display = "";
+      modeChip.textContent = checkinViewMode === "homestead" ? "🏠 Homestead" : "📦 Hampshire";
+
       const imp = poImportForWeek(wk);
       const headers = checkinDisplayColumns(checkinHeadersForWeek(wk));
       const allRows = checkinRowsForWeek(wk);
       const state = checkinStateForWeek(wk);
-      note.innerHTML = checkinSummaryHTML(imp, allRows, state);
+
+      // Homestead view only shows lines cross-referenced as coming from a
+      // Homestead vendor; Hampshire shows every imported line, unfiltered.
+      const modeRows = checkinViewMode === "homestead"
+        ? allRows.filter(r => isHomesteadCheckinRow(r, homesteadVendorNameSet()))
+        : allRows;
+
+      note.innerHTML = checkinSummaryHTML(imp, modeRows, state);
       checkinWrap.innerHTML = "";
       if(!allRows.length){
         checkinWrap.innerHTML = '<div class="linkCard"><div class="linkCardIcon">📥</div><div><div class="linkCardTitle">No PO Analysis imported for this week</div><div class="note">Click <strong>Import PO Analysis</strong> and pick the .xlsx for this week — every column comes in exactly as exported, ready to check off.</div></div></div>';
         return;
       }
+      if(!modeRows.length){
+        checkinWrap.innerHTML = emptyStateHtml(`No ${checkinViewMode === "homestead" ? "Homestead" : "Hampshire"} lines in this week's PO Analysis import.`, "checkCircle");
+        return;
+      }
       const vFilter = (document.getElementById("checkinVendorFilter").value || "").trim().toLowerCase();
       const iFilter = (document.getElementById("checkinItemFilter").value || "").trim().toLowerCase();
-      let rows = allRows.slice();
+      let rows = modeRows.slice();
       if(vFilter) rows = rows.filter(r => r.vendor.toLowerCase().includes(vFilter));
       if(iFilter) rows = rows.filter(r => (r.item + " " + r.comment + " " + r.po).toLowerCase().includes(iFilter));
 
@@ -6955,7 +7055,7 @@
       const table = document.createElement("table");
       table.className = "poTable";
       const notesHeader = findHeader(headers, /^notes$/i);
-      const theadCells = [`<th style="width:34px;">✓</th>`]
+      const theadCells = [`<th style="width:78px;">✓</th>`]
         .concat(headers.map(h => `<th${/ordered|qty|price|total|open|received|returned/i.test(h) ? ' class="num"' : ''}>${escapeHtml(h)}</th>`))
         .join("");
       table.innerHTML = `<thead><tr>${theadCells}</tr></thead><tbody></tbody>`;
@@ -6963,9 +7063,12 @@
       const colCount = headers.length + 1;
       if(!rows.length){ tb.innerHTML = `<tr><td colspan="${colCount}" class="note" style="padding:14px;">No lines match your filters.</td></tr>`; }
       rows.forEach(r => {
-        const s = state[r.key] || { checked:false, notes:undefined };
+        const s = state[r.key] || { checked:false, notes:undefined, hasIssue:false };
         const tr = document.createElement("tr");
-        if(s.checked) tr.className = "poChecked";
+        const rowClasses = [];
+        if(s.checked) rowClasses.push("poChecked");
+        if(s.hasIssue) rowClasses.push("checkinIssueRow");
+        if(rowClasses.length) tr.className = rowClasses.join(" ");
         const bodyCells = headers.map(h => {
           if(h === notesHeader){
             const notesVal = (s.notes !== undefined) ? s.notes : cleanCellText(String(r.cells[h] ?? ""));
@@ -6977,21 +7080,53 @@
           const cls = isNumericCol ? "num" : (isVendorCol ? "poVendor" : "poDetails");
           return `<td class="${cls}">${escapeHtml(display)}</td>`;
         }).join("");
-        tr.innerHTML = `<td><input type="checkbox" class="poChk" ${s.checked ? "checked" : ""}></td>${bodyCells}`;
+        // Below the checkbox: an "Add Issue" button (turns into a small
+        // "Flagged" pill once clicked, which highlights the whole line red
+        // via checkinIssueRow and can be cleared again with its ×).
+        const issueCellHtml = s.hasIssue
+          ? `<div class="checkinIssueFlagPill" title="Flagged — click × to clear"><span>⚠ Flagged</span><button type="button" class="checkinClearIssueBtn" aria-label="Clear issue flag">×</button></div>`
+          : `<button type="button" class="tinyBtn danger checkinAddIssueBtn">⚠ Add Issue</button>`;
+        tr.innerHTML = `<td><input type="checkbox" class="poChk" ${s.checked ? "checked" : ""}>${issueCellHtml}</td>${bodyCells}`;
         const chk = tr.querySelector(".poChk");
         const notesEl = tr.querySelector(".poNotes");
         const persist = () => {
           const obj = checkinStateForWeek(wk);
-          obj[r.key] = { checked: chk.checked, notes: notesEl ? notesEl.value : (obj[r.key]?.notes || "") };
+          const prevEntry = obj[r.key] || {};
+          obj[r.key] = { checked: chk.checked, notes: notesEl ? notesEl.value : (prevEntry.notes || ""), hasIssue: !!prevEntry.hasIssue };
           setCheckinStateForWeek(wk, obj);
         };
         chk.addEventListener("change", () => {
           tr.classList.toggle("poChecked", chk.checked);
           persist();
-          note.innerHTML = checkinSummaryHTML(imp, allRows, checkinStateForWeek(wk));
+          note.innerHTML = checkinSummaryHTML(imp, modeRows, checkinStateForWeek(wk));
           markTabChanged("checkin");
         });
         if(notesEl) notesEl.addEventListener("input", persist);
+        const addIssueBtn = tr.querySelector(".checkinAddIssueBtn");
+        if(addIssueBtn){
+          addIssueBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const obj = checkinStateForWeek(wk);
+            const prevEntry = obj[r.key] || {};
+            obj[r.key] = { checked: chk.checked, notes: notesEl ? notesEl.value : (prevEntry.notes || ""), hasIssue: true };
+            setCheckinStateForWeek(wk, obj);
+            markTabChanged("checkin");
+            renderCheckIn();
+            openIssueModal({ date: fmtDate(new Date()), status:"Open", type:"Shortage", vendor: r.vendor, item: r.item, notes: r.po ? `Flagged from Check-In — PO ${r.po}` : "Flagged from Check-In" });
+          });
+        }
+        const clearIssueBtn = tr.querySelector(".checkinClearIssueBtn");
+        if(clearIssueBtn){
+          clearIssueBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const obj = checkinStateForWeek(wk);
+            const prevEntry = obj[r.key] || {};
+            obj[r.key] = { ...prevEntry, hasIssue: false };
+            setCheckinStateForWeek(wk, obj);
+            markTabChanged("checkin");
+            renderCheckIn();
+          });
+        }
         tb.appendChild(tr);
       });
       scroll.appendChild(table);
@@ -7193,7 +7328,8 @@
       LS.trainingKey, LS.availLinkKey, LS.catalogKey, LS.checkinKey,
       LS.availKey, LS.availOrdersKey, LS.availAmountsKey, LS.availSpecOverridesKey,
       LS.prebookKey,
-      LS.skipWeeksKey, LS.weekMetaKey
+      LS.skipWeeksKey, LS.weekMetaKey,
+      LS.lastBackupKey
     ];
     const MAX_SYNC_BYTES = 900000; // stay under Firestore's ~1MB document cap
     const PRESENCE_HEARTBEAT_MS = 25000; // how often we re-announce ourselves
@@ -7784,6 +7920,11 @@
         try {
           if(key === LS.skipWeeksKey && weekPickModal && weekPickModal.classList.contains("active")) renderWeekPick();
         } catch(e){}
+        // The "last backed up by" note lives in the sidebar, visible on
+        // every page — not gated to whichever page is currently open.
+        try {
+          if(key === LS.lastBackupKey && typeof refreshBackupReminder === "function") refreshBackupReminder();
+        } catch(e){}
       },
       async changeTeam(){
         const cur = this.teamCode();
@@ -7884,7 +8025,10 @@
           statusChip.textContent = `Backed up ${n} section(s)`;
           setTimeout(() => { statusChip.textContent = "Ready"; }, 3500);
           const by = (typeof getUser === "function" && getUser()?.name) || (window.HPASync && window.HPASync.user) || "Someone";
-          try { localStorage.setItem(LS.lastBackupKey, JSON.stringify({ by, at: Date.now() })); } catch(_){}
+          // LS.set (not a raw localStorage write) so this pushes to the team
+          // the same way every other tracked key does — everyone using the
+          // app sees who backed up last, not just this device.
+          try { LS.set(LS.lastBackupKey, { by, at: Date.now() }); } catch(_){}
           refreshBackupReminder();
         } catch(e){
           console.error("[Backup] export failed", e);
