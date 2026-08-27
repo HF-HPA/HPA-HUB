@@ -340,6 +340,10 @@
     #page-prebook[data-season="winter"]{ --seasonA:#3f7dbf; --seasonB:#2f5233; --seasonSoft:#eef5fb; }
     #page-prebook{ transition:background .25s ease, box-shadow .25s ease; }
     #page-prebook[data-season]{ background:var(--seasonSoft); border-radius:var(--radius-sm); box-shadow:inset 0 3px 0 0 var(--seasonA); padding:16px 16px 4px; }
+    .prebookYearBar{ display:flex; align-items:center; justify-content:center; gap:14px; margin:0 0 12px; }
+    .prebookYearArrow{ width:32px; height:32px; border-radius:50%; border:1px solid var(--line); background:var(--paper-2); color:var(--ink); cursor:pointer; font-size:15px; display:flex; align-items:center; justify-content:center; transition:background .15s; }
+    .prebookYearArrow:hover{ background:var(--rowHover); }
+    .prebookYearLabel{ font-family:var(--display); font-weight:700; font-size:17px; color:var(--ink); min-width:56px; text-align:center; }
     .prebookToolbar{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:2px 0 12px; }
     .prebookToolbar input{ max-width:360px; flex:1 1 220px; }
     .prebookSeasonSection{ border:1px solid var(--line); background:var(--paper-2); border-radius:var(--radius-sm); margin-bottom:16px; box-shadow:var(--shadow-sm); overflow:hidden; }
@@ -1442,6 +1446,11 @@
         </div>
 
         <div id="page-prebook" class="page" style="display:none;">
+          <div class="prebookYearBar">
+            <button type="button" class="prebookYearArrow" id="prebookYearPrev" aria-label="Previous year">‹</button>
+            <span class="prebookYearLabel" id="prebookYearLabel">Year</span>
+            <button type="button" class="prebookYearArrow" id="prebookYearNext" aria-label="Next year">›</button>
+          </div>
           <div class="prebookToolbar">
             <input id="prebookSearch" placeholder="Search vendor or item..." />
             <button id="prebookAddBtn" class="btn" type="button"><span data-icon="plus" aria-hidden="true"></span> Add Pre-Book</button>
@@ -6260,10 +6269,17 @@
       return (Number(entry.qty) || 0) - prebookClaimedTotal(entry);
     }
 
-    // Which season tab is showing. No more month/year calendar nav — the
-    // page just lists every pre-book in that season as neat lines, grouped
-    // by month, oldest ready date first.
+    // Which season tab is showing. No more month calendar nav — the page
+    // just lists every pre-book in that season (and year — see
+    // prebookYear) as neat lines, grouped by month, oldest ready date
+    // first.
     let prebookSeasonKey = seasonForDate(fmtDate(new Date())).key;
+    // Year shown at the very top, with arrows to step through years. Every
+    // pre-book line is filtered to its ready date's calendar year matching
+    // this.
+    let prebookYear = new Date().getFullYear();
+    document.getElementById("prebookYearPrev").addEventListener("click", () => { prebookYear--; renderPrebook(); });
+    document.getElementById("prebookYearNext").addEventListener("click", () => { prebookYear++; renderPrebook(); });
 
     const prebookModal = document.getElementById("prebookModal");
     let editingPrebookId = null;
@@ -6453,12 +6469,18 @@
       const tabsEl = document.getElementById("prebookSeasonTabs");
       if(!wrap || !tabsEl) return;
 
+      const yearLabelEl = document.getElementById("prebookYearLabel");
+      if(yearLabelEl) yearLabelEl.textContent = String(prebookYear);
+
       const search = (document.getElementById("prebookSearch").value || "").trim().toLowerCase();
       let items = loadPrebook();
       if(search) items = items.filter(p => (p.vendor||"").toLowerCase().includes(search) || (p.item||"").toLowerCase().includes(search));
+      // The year arrows at the top filter every line down to its ready
+      // date's calendar year — the season tabs' counts below reflect that.
+      items = items.filter(p => { const d = parseDate(p.readyDate); return d && d.getFullYear() === prebookYear; });
 
       // Seasons always show, whether or not anything's booked in them yet —
-      // the counts on each tab reflect the current search.
+      // the counts on each tab reflect the current search + year.
       const countBySeason = new Map(SEASONS.map(s => [s.key, 0]));
       items.forEach(p => { const s = seasonForDate(p.readyDate); countBySeason.set(s.key, countBySeason.get(s.key) + 1); });
       tabsEl.innerHTML = SEASONS.map(season => `
@@ -6477,7 +6499,7 @@
 
       wrap.innerHTML = "";
       if(seasonItems.length === 0){
-        wrap.innerHTML = emptyStateHtml(`No ${escapeHtml(season.name)} pre-books yet. Click <strong>+ Add Pre-Book</strong> to reserve stock ahead of a date or holiday.`, "pin");
+        wrap.innerHTML = emptyStateHtml(`No ${escapeHtml(season.name)} pre-books in ${prebookYear} yet. Click <strong>+ Add Pre-Book</strong> to reserve stock ahead of a date or holiday.`, "pin");
         return;
       }
 
