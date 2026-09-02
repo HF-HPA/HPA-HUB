@@ -97,6 +97,9 @@
     .btnGhost:hover{ background:var(--rowHover); border-color:var(--fern); }
     .btnGhost:active{ transform:translateY(1px); }
     .tinyBtn{ padding:7px 11px; border-radius:8px; border:1px solid var(--line); background:var(--paper-2); color:var(--moss); cursor:pointer; white-space:nowrap; font-family:var(--sans); font-weight:600; font-size:12.5px; transition:background .15s, border-color .15s; }
+    /* Icon-only variant of .tinyBtn — square, centered, no label (e.g. the
+       Order Tracker card's History button). */
+    .tinyBtnIcon{ padding:7px 9px; font-size:13.5px; line-height:1; display:inline-flex; align-items:center; justify-content:center; }
     .tinyBtn:hover{ background:var(--rowHover); }
     .tinyBtn.danger{ border-color:rgba(224,86,63,.4); background:rgba(224,86,63,.1); color:#a8341f; }
     .tinyBtn.danger:hover{ background:rgba(224,86,63,.16); }
@@ -275,7 +278,10 @@
     .availVendorNameWrap{ display:flex; align-items:center; gap:8px; }
     .availVendorToggle{ font-size:11px; color:var(--moss); opacity:.7; transition:transform .15s; flex:none; display:inline-block; }
     .availVendor.expanded .availVendorToggle{ transform:rotate(90deg); }
-    .availNotesBadge{ margin-left:6px; font-size:12px; cursor:help; }
+    /* Small presence indicator next to a plant name when it has notes on
+       file — no preview text, since the notes themselves only live in the
+       item detail popup now (see openAvailItemDetail). */
+    .availNotesIcon{ margin-left:5px; font-size:11px; vertical-align:1px; cursor:help; }
     .availItemGroupHead{ padding:9px 13px 3px; font-family:var(--display); font-weight:600; font-size:13.5px; color:var(--moss); border-top:1px solid var(--line-soft); }
     .availVendorHead + .availItemGroupHead, .availColHead + .availItemGroupHead{ border-top:none; }
     .availVendorScroll{ overflow-x:auto; display:none; }
@@ -974,13 +980,11 @@
     /* =====================================================================
        NEXT-LEVEL v3 — dashboard, command palette, global search
        ===================================================================== */
-    /* Dashboard v2 — everything (stats, arriving trucks, activity feed)
-       lives inside one unified, stylized card instead of each piece being
-       its own separate boxed panel; internal dividers replace the old
-       per-section borders/shadows so it still reads as organized. */
-    .dashUnified{ background:linear-gradient(165deg,#fffdf6,#f2efe0); border:1px solid var(--line); border-radius:var(--radius-md, 18px); box-shadow:0 14px 34px rgba(8,29,22,.10); padding:20px 20px 8px; margin:14px 0 18px; }
+    /* Dashboard v2 — the stat tiles live inside one unified, stylized card
+       instead of each being its own separate boxed card; "Arriving this
+       week" and "Recent activity" have been removed entirely. */
+    .dashUnified{ background:linear-gradient(165deg,#fffdf6,#f2efe0); border:1px solid var(--line); border-radius:var(--radius-md, 18px); box-shadow:0 14px 34px rgba(8,29,22,.10); padding:20px 20px 14px; margin:14px 0 18px; }
     html[data-theme="dark"] .dashUnified{ background:linear-gradient(165deg,#25392c,#1b2a21); box-shadow:0 14px 34px rgba(0,0,0,.35); }
-    .dashUnifiedDivider{ height:1px; background:var(--line); margin:6px 0 18px; }
     .dashGrid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(150px,1fr)); gap:0; }
     .statCard{ background:none; border:none; box-shadow:none; padding:6px 18px 14px; position:relative; overflow:visible; border-right:1px solid var(--line-soft); }
     .statCard:last-child{ border-right:none; }
@@ -993,24 +997,6 @@
     .statNum{ font-family:var(--display); font-weight:600; font-size:28px; line-height:1; color:var(--ink); font-variant-numeric:tabular-nums; }
     .statLbl{ margin-top:6px; font-size:12px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-2); }
     .statSub{ margin-top:4px; font-size:12px; color:var(--moss); font-weight:600; }
-    .dashRow{ display:grid; grid-template-columns:1fr 1fr; gap:0; padding-bottom:14px; }
-    @media (max-width:900px){ .dashRow{ grid-template-columns:1fr; } }
-    .dashPanel{ background:none; border:none; box-shadow:none; border-radius:0; overflow:visible; display:flex; flex-direction:column; max-height:440px; padding:0 20px; }
-    .dashRow .dashPanel + .dashPanel{ border-left:1px solid var(--line-soft); }
-    @media (max-width:900px){ .dashRow .dashPanel + .dashPanel{ border-left:none; border-top:1px solid var(--line-soft); padding-top:14px; margin-top:4px; } }
-    .dashPanelHead{ display:flex; align-items:center; justify-content:space-between; padding:0 0 10px; border-bottom:1px solid var(--line-soft); margin-bottom:6px; }
-    .dashPanelTitle{ font-family:var(--display); font-weight:600; font-size:15px; color:var(--ink); }
-    .dashPanelBody{ padding:0 0 8px; overflow:auto; }
-    .dashItem{ display:flex; align-items:center; gap:10px; padding:9px 6px; border-bottom:1px solid var(--line-soft); font-size:13.5px; }
-    .dashActivityAvatar{ width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:var(--display); font-weight:700; font-size:9.5px; color:#04231a; flex:none; }
-    .dashItem:last-child{ border-bottom:none; }
-    .dashItem .di_main{ flex:1; min-width:0; }
-    .dashItem .di_title{ font-weight:600; color:var(--ink); }
-    .dashItem .di_sub{ font-size:12px; color:var(--ink-2); }
-    .dashItem .di_when{ font-size:11.5px; color:var(--moss); white-space:nowrap; font-weight:600; text-align:right; }
-    .di_bar{ margin-top:6px; height:4px; border-radius:2px; background:var(--line-soft); overflow:hidden; max-width:220px; }
-    .di_bar span{ display:block; height:100%; background:var(--mint-deep); border-radius:2px; }
-    .di_qty{ font-size:10.5px; color:var(--ink-2); font-weight:600; margin-top:2px; }
     /* Illustrated empty states — an icon-in-a-circle standing in for the
        plain "No X yet" text notes on the main content pages. */
     .emptyState{ display:flex; flex-direction:column; align-items:center; text-align:center; gap:12px; padding:36px 20px; border:1.5px dashed var(--line); border-radius:var(--radius); background:linear-gradient(180deg, var(--paper-2), var(--paper-3)); color:var(--ink-2); margin-top:12px; }
@@ -1018,8 +1004,6 @@
     .emptyStateIcon .iconSvg{ width:26px; height:26px; margin-right:0; }
     .emptyStateMsg{ font-weight:600; max-width:380px; line-height:1.5; }
     .emptyStateMsg strong{ color:var(--ink); }
-    .dashItem.clickable{ cursor:pointer; border-radius:8px; }
-    .dashItem.clickable:hover{ background:var(--rowHover); }
 
     .paletteOverlay{ position:fixed; inset:0; z-index:60; display:none; align-items:flex-start; justify-content:center; padding-top:12vh; background:rgba(6,20,14,.55); backdrop-filter:blur(4px); }
     .paletteOverlay.active{ display:flex; animation:palFade .14s ease; }
@@ -1307,17 +1291,6 @@
           </div>
           <div class="dashUnified">
             <div class="dashGrid" id="dashStats"></div>
-            <div class="dashUnifiedDivider"></div>
-            <div class="dashRow">
-              <div class="dashPanel" id="dashTodayPanel">
-                <div class="dashPanelHead"><span class="dashPanelTitle" id="dashTodayTitle"><span data-icon="truck" aria-hidden="true"></span> Arriving this week</span></div>
-                <div class="dashPanelBody" id="dashToday"></div>
-              </div>
-              <div class="dashPanel" id="dashActivityPanel">
-                <div class="dashPanelHead"><span class="dashPanelTitle"><span data-icon="receipt" aria-hidden="true"></span> Recent activity</span><button id="dashClearLog" class="tinyBtn">Clear</button></div>
-                <div class="dashPanelBody" id="dashActivity"></div>
-              </div>
-            </div>
           </div>
         </div>
         <div id="page-order" class="page">
@@ -1506,20 +1479,14 @@
               <button id="checkinPrevWeek" class="btnGhost" title="Previous week">‹</button>
               <div class="chip" id="checkinWeekLabel">Week</div>
               <button id="checkinNextWeek" class="btnGhost" title="Next week">›</button>
-              <input id="checkinVendorFilter" placeholder="Vendor filter (optional)" />
-              <input id="checkinItemFilter" placeholder="Item filter (optional)" />
+              <input id="checkinSearch" placeholder="🔍 Search vendor, item, PO..." />
               <button id="checkinImportBtn" class="btnGhost">Import PO Analysis</button>
               <input id="checkinImportFile" type="file" accept=".xlsx,.xls" style="display:none;">
-              <select id="checkinStatusFilter" title="Filter">
-                <option value="">All lines</option>
-                <option value="unchecked">Not checked in</option>
-                <option value="checked">Checked in</option>
-                <option value="flagged">Flagged (issue)</option>
-              </select>
               <select id="checkinSort" title="Sort">
                 <option value="default">Sort: as imported</option>
                 <option value="vendor">Sort: Vendor (A–Z)</option>
                 <option value="item">Sort: Item (A–Z)</option>
+                <option value="po">Sort: PO (A–Z)</option>
                 <option value="status">Sort: Status (unchecked first)</option>
               </select>
               <button id="checkinResetWeekBtn" class="btnGhost" style="border-color:rgba(224,86,63,.3); color:#a8341f;">Reset Check-In</button>
@@ -1962,6 +1929,7 @@
       availAmountsKey:"hpa_avail_amounts_v1",
       availSpecOverridesKey:"hpa_avail_spec_overrides_v1",
       prebookKey:"hpa_prebook_v1",
+      tagKey:"hpa_tag_v1",
       ccRulesKey:"hpa_cc_component_rules_v1",
       catalogKey:"hpa_plant_catalog_v1",
       thumbKey:  "hpa_plant_thumbs_v1",
@@ -3420,16 +3388,29 @@
     // are left alone. Clearing the Book column on a line just stops future
     // syncing; it never deletes the Booking entry that was already made.
     function syncOrderLinesToBooking(datas){
-      const list = loadPrebook();
+      // Pre Book and Tag are separate lists (separate localStorage keys),
+      // so a line's linked entry has to be written into whichever list
+      // matches its current Book dropdown value.
+      const prebookList = loadPrebookList("prebook");
+      const tagList = loadPrebookList("tag");
       let changed = false;
       datas.forEach(d => {
         (d.vendorBlocks || []).forEach(vb => {
           (vb.items || []).forEach(it => {
             if(it.bookType !== "prebook" && it.bookType !== "tag") return;
-            let rec = it.bookId ? list.find(x => x.id === it.bookId) : null;
+            const targetList = it.bookType === "tag" ? tagList : prebookList;
+            let rec = it.bookId ? targetList.find(x => x.id === it.bookId) : null;
+            if(!rec && it.bookId){
+              // The line's Book dropdown was switched (Pre Book ↔ Tag)
+              // since the last save — move its entry across to the new
+              // list instead of leaving a stray duplicate behind.
+              const otherList = targetList === tagList ? prebookList : tagList;
+              const idx = otherList.findIndex(x => x.id === it.bookId);
+              if(idx >= 0){ rec = otherList.splice(idx, 1)[0]; targetList.push(rec); }
+            }
             if(!rec){
               rec = { id: cryptoRandomId(), claims: [], location: "", holidayKey: "", createdAt: new Date().toISOString() };
-              list.push(rec);
+              targetList.push(rec);
               it.bookId = rec.id;
             }
             rec.type = it.bookType;
@@ -3442,7 +3423,11 @@
           });
         });
       });
-      if(changed){ savePrebook(list); markTabChanged("prebook"); }
+      if(changed){
+        savePrebookList("prebook", prebookList);
+        savePrebookList("tag", tagList);
+        markTabChanged("prebook");
+      }
     }
     document.getElementById("saveTruckBtn").addEventListener("click", () => {
       const blocks = Array.from(truckBlocksWrap.querySelectorAll(".truckBlock"));
@@ -4092,7 +4077,7 @@
               <div class="pickupRight">
                 <button type="button" class="${t.invoicePaid ? "statusPill statusConfirmed" : "statusPill statusOpen"} statusToggle" data-action="toggleInvoicePaid" title="Click to toggle whether this truck's invoice has been paid">${t.invoicePaid ? "✅ Invoice Paid" : "💲 Invoice Unpaid"}</button>
                 <button class="tinyBtn" data-action="togglePickup" aria-expanded="true">Collapse</button>
-                <button class="tinyBtn" data-action="history" title="Date, change, and user for this order">History</button>
+                <button class="tinyBtn tinyBtnIcon" data-action="history" title="History — date, change, and user for this order" aria-label="History"><span aria-hidden="true">🕘</span></button>
                 <button class="tinyBtn" data-action="duplicate">Duplicate</button>
                 <button class="tinyBtn" data-action="edit">Edit</button>
               </div>
@@ -6164,8 +6149,13 @@
                   <input class="availAmtInput" type="text" placeholder="Amt" value="${escapeHtml(wd.amount || "")}" title="This week's amount — saves automatically"/>
                 </div>`;
             }).join("");
+            // A small dot marks that this entry has notes on file — it's
+            // just a presence indicator (no preview text), since the notes
+            // themselves only live in the popup now (see openAvailItemDetail).
+            const hasNotes = !!(e.notes && e.notes.trim());
+            const notesIcon = hasNotes ? `<span class="availNotesIcon" aria-label="Has notes">📝</span>` : "";
             row.innerHTML = `
-              <button type="button" class="availItemName availItemNameBtn availItemNameOnly" title="Click for size, notes &amp; last order date">${escapeHtml(group.label)}</button>
+              <button type="button" class="availItemName availItemNameBtn availItemNameOnly" title="Click for size, notes &amp; last order date">${escapeHtml(group.label)}${notesIcon}</button>
               ${weekCellsHtml}
               <div class="availRowActions">${actionsHtml}</div>
             `;
@@ -6421,8 +6411,22 @@
       return d;
     }
 
-    function loadPrebook(){ return LS.get(LS.prebookKey, []); }
-    function savePrebook(list){ LS.set(LS.prebookKey, list); }
+    // Pre Book and Tag are two completely separate lists — each has its own
+    // localStorage key/sync collection, not just a shared list filtered by
+    // a `type` field. loadPrebookList("tag") / savePrebookList("tag", …)
+    // touch hpa_tag_v1; anything else touches hpa_prebook_v1.
+    function loadPrebookList(type){ return LS.get(type === "tag" ? LS.tagKey : LS.prebookKey, []); }
+    function savePrebookList(type, list){ LS.set(type === "tag" ? LS.tagKey : LS.prebookKey, list); }
+    // One-time migration: these used to live mixed together in hpa_prebook_v1,
+    // told apart only by that `type` field. Split any tag entries still
+    // sitting in the old combined list out into hpa_tag_v1, once.
+    (function migratePrebookTagSplit(){
+      const combined = LS.get(LS.prebookKey, []);
+      const strayTags = combined.filter(p => p.type === "tag");
+      if(!strayTags.length) return;
+      LS.set(LS.prebookKey, combined.filter(p => p.type !== "tag"));
+      LS.set(LS.tagKey, LS.get(LS.tagKey, []).concat(strayTags));
+    })();
 
     // How much of an entry's Quantity has been claimed so far (summed from
     // its claims log) and how much is left. Remaining can go negative if
@@ -6463,6 +6467,7 @@
 
     const prebookModal = document.getElementById("prebookModal");
     let editingPrebookId = null;
+    let editingPrebookType = "prebook";
     document.getElementById("prebookCloseBtn").addEventListener("click", closePrebookModal);
     prebookModal.addEventListener("click", (e) => { if(e.target === prebookModal) closePrebookModal(); });
     document.getElementById("prebookSearch").addEventListener("input", renderPrebook);
@@ -6490,6 +6495,7 @@
       // (or command) opened the modal, defaulting to Pre Book.
       const type = entry?.type || (mode === "tag" ? "tag" : "prebook");
       const isTag = type === "tag";
+      editingPrebookType = type;
       prebookModal.dataset.type = type;
       document.getElementById("prebookModalTitle").textContent = editingPrebookId ? (isTag ? "Edit Tag" : "Edit Pre-Book") : (isTag ? "Tag Item" : "Pre-book Item");
       document.getElementById("pb_vendor").value = entry?.vendor || "";
@@ -6513,9 +6519,9 @@
     }
     document.getElementById("prebookDeleteBtn").addEventListener("click", () => {
       if(!editingPrebookId) return;
-      const entry = loadPrebook().find(x => x.id === editingPrebookId);
-      if(!confirm(`Delete pre-booked "${entry?.item||"item"}" from ${entry?.vendor||"—"}?`)) return;
-      savePrebook(loadPrebook().filter(x => x.id !== editingPrebookId));
+      const entry = loadPrebookList(editingPrebookType).find(x => x.id === editingPrebookId);
+      if(!confirm(`Delete ${editingPrebookType === "tag" ? "tagged" : "pre-booked"} "${entry?.item||"item"}" from ${entry?.vendor||"—"}?`)) return;
+      savePrebookList(editingPrebookType, loadPrebookList(editingPrebookType).filter(x => x.id !== editingPrebookId));
       markTabChanged("prebook");
       closePrebookModal();
       renderPrebook();
@@ -6529,15 +6535,19 @@
       const holidayKey = document.getElementById("pb_holiday").value || "";
       if(!vendor || !item){ alert("Vendor and Item are required."); return; }
       if(!readyDate){ alert("Pick a ready date."); return; }
-      const list = loadPrebook();
+      // Pre Book and Tag are separate lists — editing an existing entry
+      // always writes back to the list it already lives in (its type can't
+      // change from this modal); a new entry goes into whichever list the
+      // chooser button/mode it was opened from targets.
+      const type = editingPrebookId ? editingPrebookType : (prebookModal.dataset.type === "tag" ? "tag" : "prebook");
+      const list = loadPrebookList(type);
       if(editingPrebookId){
         const idx = list.findIndex(x => x.id === editingPrebookId);
         if(idx >= 0) list[idx] = { ...list[idx], vendor, item, qty, readyDate, location, holidayKey };
       } else {
-        const type = prebookModal.dataset.type === "tag" ? "tag" : "prebook";
         list.push({ id: cryptoRandomId(), type, vendor, item, qty, readyDate, location, holidayKey, claims: [], createdAt: new Date().toISOString() });
       }
-      savePrebook(list);
+      savePrebookList(type, list);
       markTabChanged("prebook");
       closePrebookModal();
       renderPrebook();
@@ -6548,6 +6558,7 @@
     // text on a line.
     const prebookClaimModal = document.getElementById("prebookClaimModal");
     let openClaimEntryId = null;
+    let openClaimEntryType = "prebook";
     document.getElementById("prebookClaimCloseBtn").addEventListener("click", closePrebookClaimModal);
     prebookClaimModal.addEventListener("click", (e) => { if(e.target === prebookClaimModal) closePrebookClaimModal(); });
     function closePrebookClaimModal(){
@@ -6557,12 +6568,13 @@
     }
     function openPrebookClaimHistory(entry){
       openClaimEntryId = entry.id;
+      openClaimEntryType = entry.type === "tag" ? "tag" : "prebook";
       renderPrebookClaimList();
       prebookClaimModal.classList.add("active");
       prebookClaimModal.setAttribute("aria-hidden","false");
     }
     function renderPrebookClaimList(){
-      const entry = loadPrebook().find(x => x.id === openClaimEntryId);
+      const entry = loadPrebookList(openClaimEntryType).find(x => x.id === openClaimEntryId);
       const listEl = document.getElementById("prebookClaimList");
       if(!entry || !listEl){ closePrebookClaimModal(); return; }
       const titleEl = document.getElementById("prebookClaimModalTitle");
@@ -6585,11 +6597,11 @@
       listEl.querySelectorAll(".prebookClaimRowRemove").forEach(btn => {
         btn.addEventListener("click", () => {
           const cid = btn.closest(".prebookClaimRow").dataset.id;
-          const list = loadPrebook();
+          const list = loadPrebookList(openClaimEntryType);
           const rec = list.find(x => x.id === openClaimEntryId);
           if(!rec) return;
           rec.claims = (rec.claims || []).filter(c => c.id !== cid);
-          savePrebook(list);
+          savePrebookList(openClaimEntryType, list);
           markTabChanged("prebook");
           renderPrebookClaimList();
           renderPrebook();
@@ -6645,12 +6657,13 @@
         const po = poInput.value.trim();
         if(!qty || qty <= 0){ alert("Enter a quantity greater than 0 to claim."); return; }
         if(!po){ alert("Enter a PO number for this pickup."); return; }
-        const list = loadPrebook();
+        const type = p.type === "tag" ? "tag" : "prebook";
+        const list = loadPrebookList(type);
         const rec = list.find(x => x.id === p.id);
         if(!rec) return;
         rec.claims = rec.claims || [];
         rec.claims.push({ id: cryptoRandomId(), qty, po, by: getUser()?.name || "—", at: new Date().toISOString() });
-        savePrebook(list);
+        savePrebookList(type, list);
         markTabChanged("prebook");
         renderPrebook();
       });
@@ -6686,7 +6699,7 @@
 
       const search = (document.getElementById("prebookSearch").value || "").trim().toLowerCase();
       const statusFilter = document.getElementById("prebookStatusFilter").value;
-      let items = loadPrebook().filter(p => (p.type || "prebook") === prebookViewMode);
+      let items = loadPrebookList(prebookViewMode).slice();
       if(search){
         items = items.filter(p => (p.vendor||"").toLowerCase().includes(search) || (p.item||"").toLowerCase().includes(search) || (p.location||"").toLowerCase().includes(search));
       }
@@ -7217,8 +7230,7 @@
     document.getElementById("checkinSwitchModeBtn").addEventListener("click", () => setCheckinViewMode(null));
     document.getElementById("checkinPrevWeek").addEventListener("click", () => { weekAnchor = addDays(weekAnchor, -7); renderCheckIn(); });
     document.getElementById("checkinNextWeek").addEventListener("click", () => { weekAnchor = addDays(weekAnchor,  7); renderCheckIn(); });
-    document.getElementById("checkinVendorFilter").addEventListener("input", renderCheckIn);
-    document.getElementById("checkinItemFilter").addEventListener("input", renderCheckIn);
+    document.getElementById("checkinSearch").addEventListener("input", renderCheckIn);
     document.getElementById("checkinResetWeekBtn").addEventListener("click", () => {
       const wk = weekKeyFromDate(weekAnchor);
       const all = loadCheckinAll();
@@ -7228,7 +7240,6 @@
       saveCheckinAll(all);
       renderCheckIn();
     });
-    document.getElementById("checkinStatusFilter").addEventListener("change", renderCheckIn);
     document.getElementById("checkinSort").addEventListener("change", renderCheckIn);
     function diffPoImport(oldRows, newRows){
       const oldMap = new Map((oldRows||[]).map(r => [r.key, r]));
@@ -7351,22 +7362,15 @@
         checkinWrap.innerHTML = emptyStateHtml(`No ${checkinViewMode === "homestead" ? "Homestead" : "Hampshire"} lines in this week's PO Analysis import.`, "checkCircle");
         return;
       }
-      const vFilter = (document.getElementById("checkinVendorFilter").value || "").trim().toLowerCase();
-      const iFilter = (document.getElementById("checkinItemFilter").value || "").trim().toLowerCase();
-      const statusFilter = document.getElementById("checkinStatusFilter").value;
+      // Single general search box in place of the old separate vendor/item
+      // filters — matches against vendor, item, comment, and PO together.
+      const search = (document.getElementById("checkinSearch").value || "").trim().toLowerCase();
       const sortMode = document.getElementById("checkinSort").value;
       let rows = modeRows.slice();
-      if(vFilter) rows = rows.filter(r => r.vendor.toLowerCase().includes(vFilter));
-      if(iFilter) rows = rows.filter(r => (r.item + " " + r.comment + " " + r.po).toLowerCase().includes(iFilter));
-      if(statusFilter) rows = rows.filter(r => {
-        const s = state[r.key] || {};
-        if(statusFilter === "checked") return !!s.checked;
-        if(statusFilter === "unchecked") return !s.checked;
-        if(statusFilter === "flagged") return !!s.hasIssue;
-        return true;
-      });
+      if(search) rows = rows.filter(r => (r.vendor + " " + r.item + " " + r.comment + " " + r.po).toLowerCase().includes(search));
       if(sortMode === "vendor") rows.sort((a,b) => (a.vendor||"").localeCompare(b.vendor||"") || (a.item||"").localeCompare(b.item||""));
       else if(sortMode === "item") rows.sort((a,b) => (a.item||"").localeCompare(b.item||""));
+      else if(sortMode === "po") rows.sort((a,b) => (a.po||"").localeCompare(b.po||"", undefined, {numeric:true}));
       else if(sortMode === "status") rows.sort((a,b) => {
         const sa = state[a.key] || {}, sb = state[b.key] || {};
         const av = sa.checked ? 1 : 0, bv = sb.checked ? 1 : 0;
@@ -7659,7 +7663,7 @@
       LS.trucksKey, LS.issuesKey,
       LS.trainingKey, LS.availLinkKey, LS.catalogKey, LS.checkinKey,
       LS.availKey, LS.availOrdersKey, LS.availAmountsKey, LS.availSpecOverridesKey,
-      LS.prebookKey,
+      LS.prebookKey, LS.tagKey,
       LS.skipWeeksKey, LS.weekMetaKey,
       LS.lastBackupKey
     ];
@@ -8152,6 +8156,7 @@
           (key === LS.checkinKey    && currentPage === "checkin") ||
           (key === LS.trainingKey   && currentPage === "training") ||
           (key === LS.prebookKey    && currentPage === "prebook") ||
+          (key === LS.tagKey        && currentPage === "prebook") ||
           ((key === LS.availKey || key === LS.availOrdersKey || key === LS.availAmountsKey || key === LS.availSpecOverridesKey) && currentPage === "avail");
         if(!rawStorageSet(key, incoming)) return; // direct write: no re-push
         this.lastReceived = Date.now(); this.applies++;
@@ -8247,7 +8252,7 @@
           else if(k === "training" && key === LS.trainingKey) renderTraining();
           else if(k === "photos" && key === LS.catalogKey) renderPhotosTab();
           else if(k === "avail" && (key === LS.availKey || key === LS.availOrdersKey || key === LS.availAmountsKey || key === LS.availSpecOverridesKey)) renderAvailability();
-          else if(k === "prebook" && key === LS.prebookKey) renderPrebook();
+          else if(k === "prebook" && (key === LS.prebookKey || key === LS.tagKey)) renderPrebook();
         } catch(e){}
         try {
           if(key === LS.skipWeeksKey && weekPickModal && weekPickModal.classList.contains("active")) renderWeekPick();
@@ -8446,7 +8451,7 @@
           [LS.trainingKey]:"Training docs", [LS.availLinkKey]:"Availability link", [LS.catalogKey]:"Plant catalog",
           [LS.availKey]:"Availability", [LS.availOrdersKey]:"Availability orders",
           [LS.availAmountsKey]:"Availability amounts", [LS.availSpecOverridesKey]:"Availability spec edits",
-          [LS.prebookKey]:"Booking"
+          [LS.prebookKey]:"Booking", [LS.tagKey]:"Booking (Tags)"
         };
         return map[key] || null;  // null = not worth logging (ui state, notifs, etc.)
       },
@@ -8573,32 +8578,12 @@
           </div>`
         ).join("");
 
-        // arriving this week
-        const todayTitle = document.getElementById("dashTodayTitle");
-        if(todayTitle) todayTitle.innerHTML = icon("truck") + (isCurrentWeek ? " Arriving this week" : " Arriving " + escapeHtml(weekLabel(dashWeekAnchor).split(" · ")[0]));
-        const today = document.getElementById("dashToday");
-        if(today){
-          const sorted = trucks.slice().sort((a,b)=>(a.pickupDate||"").localeCompare(b.pickupDate||""));
-          const maxQty = Math.max(1, ...sorted.map(t => Number(t.totals?.qty||0)));
-          today.innerHTML = sorted.length ? sorted.map(t => {
-            const vendors = (t.vendorBlocks||[]).map(v=>v.name).filter(Boolean).join(", ") || "—";
-            const qty = Number(t.totals?.qty||0);
-            const barPct = qty ? Math.max(4, Math.round(qty / maxQty * 100)) : 0;
-            return `<div class="dashItem clickable" data-tid="${t.id}">
-              <div class="di_main">
-                <div class="di_title">${escapeHtml(t.region||"—")} · ${escapeHtml(orderTypeLabel(t.orderType||"CC"))}</div>
-                <div class="di_sub">${escapeHtml(vendors)}</div>
-                ${qty ? `<div class="di_bar"><span style="width:${barPct}%"></span></div>` : ""}
-              </div>
-              <div class="di_when">${escapeHtml(t.pickupDate||"")}${qty ? `<div class="di_qty">${qty.toLocaleString()} plants</div>` : ""}</div>
-            </div>`;
-          }).join("") : `<div class="palEmpty">No orders scheduled this week.</div>`;
-          today.querySelectorAll(".dashItem[data-tid]").forEach(el => el.addEventListener("click", () => { showPage("order"); openTruckDetail(el.dataset.tid); }));
-        }
-
-        // activity feed
-        this.renderActivity();
       },
+      // "Arriving this week" and the "Recent activity" feed have been
+      // removed from the Dashboard. renderActivity() is kept as a safe
+      // no-op (it bails out the instant it can't find #dashActivity) since
+      // the team-sync engine still calls it whenever a teammate's change
+      // comes in — see Sync.pushActivity/HPASync below.
       renderActivity(){
         const box = document.getElementById("dashActivity");
         if(!box) return;
@@ -8669,8 +8654,8 @@
           if([i.vendor,i.item,i.notes,i.type,i.truckLabel].some(x => (x||"").toLowerCase().includes(q)))
             push("🐛", `${i.vendor||"Issue"} — ${i.type||""}`, `${i.status} · ${i.item||""}`, "Issue", ()=>{ showPage("issues"); });
         });
-        // pre-booked items
-        loadPrebook().forEach(p => {
+        // pre-booked items — Pre Book and Tag are two separate lists now, so search both
+        [...loadPrebookList("prebook"), ...loadPrebookList("tag")].forEach(p => {
           if([p.vendor,p.item].some(x => (x||"").toLowerCase().includes(q))){
             const h = p.holidayKey ? holidayByKey(p.holidayKey) : null;
             const type = p.type === "tag" ? "tag" : "prebook";
@@ -8750,7 +8735,6 @@
       window.HPAPalette = palette; window.HPASearch = search;
       document.getElementById("dashCmdBtn")?.addEventListener("click", ()=>palette&&palette.open());
       document.getElementById("dashSearchBtn")?.addEventListener("click", ()=>search&&search.open());
-      document.getElementById("dashClearLog")?.addEventListener("click", ()=>{ if(confirm("Clear the recent-activity feed on this device?")){ HPAActivity.clear(); HPAExtras.renderActivity(); } });
       // global keyboard shortcuts
       document.addEventListener("keydown",(e)=>{
         const k = e.key.toLowerCase();
