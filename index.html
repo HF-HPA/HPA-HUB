@@ -369,6 +369,8 @@
     .prebookClaimText.over{ color:#c0392b; font-weight:700; }
     .prebookClaimForm{ display:flex; gap:4px; align-items:center; }
     .prebookClaimForm input{ width:64px; padding:5px 7px; font-size:12.5px; }
+    .prebookClaimForm input.prebookClaimPoInput{ width:76px; }
+    .prebookLineLoc{ font-size:11px; color:var(--ink-2); font-weight:600; white-space:nowrap; }
     .prebookHolidayDot{ font-size:12px; }
     .prebookClaimRow{ display:flex; align-items:center; gap:10px; padding:9px 0; border-top:1px solid var(--line-soft); }
     .prebookClaimRow:first-child{ border-top:none; }
@@ -734,6 +736,15 @@
     .checkinAddIssueBtn{ display:block; margin-top:6px; white-space:nowrap; font-size:10.5px; padding:4px 7px; }
     .checkinIssueFlagPill{ display:inline-flex; align-items:center; gap:5px; margin-top:6px; padding:3px 7px; border-radius:999px; background:rgba(224,86,63,.15); color:#a8341f; font-size:10.5px; font-weight:700; border:1px solid rgba(224,86,63,.3); white-space:nowrap; }
     .checkinIssueFlagPill button{ background:none; border:none; color:inherit; cursor:pointer; font-weight:700; padding:0; line-height:1; font-size:13px; }
+    /* Issue Tracker — slightly larger notes column, stacked row actions,
+       and the History popup list (see renderIssues / openIssueHistory). */
+    #issueTable .issueNotesCell{ font-size:14.5px; line-height:1.45; max-width:340px; white-space:pre-wrap; }
+    #issueTable .issueActionsCell{ display:flex; flex-direction:column; align-items:stretch; gap:6px; min-width:120px; }
+    #issueTable .issueActionsCell .tinyBtn{ width:100%; text-align:center; }
+    .issueHistoryRow{ display:flex; align-items:center; gap:12px; padding:10px 4px; border-bottom:1px solid var(--line-soft); font-size:13.5px; }
+    .issueHistoryRow:last-child{ border-bottom:none; }
+    .issueHistoryRow .ihDate{ color:var(--ink-2); font-size:12px; width:92px; flex:none; }
+    .issueHistoryRow .ihUser{ margin-left:auto; color:var(--moss); font-weight:600; font-size:12.5px; white-space:nowrap; }
     /* Homestead / Hampshire chooser — shown before any check-in items */
     .checkinChooser{ display:flex; gap:20px; flex-wrap:wrap; justify-content:center; padding:36px 16px; }
     .checkinChooserBtn{ flex:1 1 260px; max-width:340px; min-height:170px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; padding:28px 22px; border-radius:var(--radius-md, 16px); border:1px solid var(--line); background:var(--paper-2); cursor:pointer; box-shadow:var(--shadow-sm); transition:transform .15s ease, box-shadow .15s ease, border-color .15s ease; text-align:center; font-family:var(--sans); }
@@ -913,10 +924,10 @@
 
     /* Hover-lift micro-interaction for card-like surfaces — a small nudge
        that makes the grid feel tactile without being distracting. */
-    .statCard, .photoTile, .plantTile, .trainingCard, .linkCard{
+    .photoTile, .plantTile, .trainingCard, .linkCard{
       transition:transform .15s ease, box-shadow .15s ease;
     }
-    .statCard:hover, .photoTile:hover, .plantTile:hover, .trainingCard:hover, .linkCard:hover{
+    .photoTile:hover, .plantTile:hover, .trainingCard:hover, .linkCard:hover{
       transform:translateY(-3px);
       box-shadow:0 14px 32px rgba(4,18,12,.16);
     }
@@ -939,8 +950,8 @@
       .sheetTable td, .poTable td{ transition:none !important; }
       .page.pageEnter{ animation:none !important; }
       .navBtn.hasChange .navDot{ animation:none !important; }
-      .statCard, .photoTile, .plantTile, .trainingCard, .linkCard{ transition:none !important; }
-      .statCard:hover, .photoTile:hover, .plantTile:hover, .trainingCard:hover, .linkCard:hover{ transform:none !important; }
+      .photoTile, .plantTile, .trainingCard, .linkCard{ transition:none !important; }
+      .photoTile:hover, .plantTile:hover, .trainingCard:hover, .linkCard:hover{ transform:none !important; }
       .toast{ animation:none !important; }
     }
 
@@ -963,22 +974,33 @@
     /* =====================================================================
        NEXT-LEVEL v3 — dashboard, command palette, global search
        ===================================================================== */
-    .dashGrid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(150px,1fr)); gap:12px; margin:14px 0 18px; }
-    .statCard{ background:linear-gradient(180deg,#fffdf6,#f4f0e2); border:1px solid var(--line); border-radius:var(--radius); padding:16px; box-shadow:var(--shadow-sm); position:relative; overflow:hidden; }
-    .statCard::after{ content:""; position:absolute; left:0; top:0; bottom:0; width:4px; background:var(--statAccent, var(--moss)); }
-    .statTop{ display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+    /* Dashboard v2 — everything (stats, arriving trucks, activity feed)
+       lives inside one unified, stylized card instead of each piece being
+       its own separate boxed panel; internal dividers replace the old
+       per-section borders/shadows so it still reads as organized. */
+    .dashUnified{ background:linear-gradient(165deg,#fffdf6,#f2efe0); border:1px solid var(--line); border-radius:var(--radius-md, 18px); box-shadow:0 14px 34px rgba(8,29,22,.10); padding:20px 20px 8px; margin:14px 0 18px; }
+    html[data-theme="dark"] .dashUnified{ background:linear-gradient(165deg,#25392c,#1b2a21); box-shadow:0 14px 34px rgba(0,0,0,.35); }
+    .dashUnifiedDivider{ height:1px; background:var(--line); margin:6px 0 18px; }
+    .dashGrid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(150px,1fr)); gap:0; }
+    .statCard{ background:none; border:none; box-shadow:none; padding:6px 18px 14px; position:relative; overflow:visible; border-right:1px solid var(--line-soft); }
+    .statCard:last-child{ border-right:none; }
+    .statCard::after{ content:""; position:absolute; left:18px; right:18px; top:0; height:3px; border-radius:0 0 3px 3px; background:var(--statAccent, var(--moss)); }
+    @media (max-width:640px){ .statCard{ border-right:none; border-bottom:1px solid var(--line-soft); } }
+    .statTop{ display:flex; align-items:center; justify-content:space-between; margin:10px 0 10px; }
     .statBadge{ width:30px; height:30px; border-radius:9px; display:flex; align-items:center; justify-content:center; background:color-mix(in srgb, var(--statAccent, var(--moss)) 16%, transparent); color:var(--statAccent, var(--moss)); }
     .statBadge .iconSvg{ width:16px; height:16px; margin-right:0; }
     .statRing{ width:30px; height:30px; flex:none; }
-    .statNum{ font-family:var(--display); font-weight:600; font-size:30px; line-height:1; color:var(--ink); font-variant-numeric:tabular-nums; }
+    .statNum{ font-family:var(--display); font-weight:600; font-size:28px; line-height:1; color:var(--ink); font-variant-numeric:tabular-nums; }
     .statLbl{ margin-top:6px; font-size:12px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-2); }
     .statSub{ margin-top:4px; font-size:12px; color:var(--moss); font-weight:600; }
-    .dashRow{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+    .dashRow{ display:grid; grid-template-columns:1fr 1fr; gap:0; padding-bottom:14px; }
     @media (max-width:900px){ .dashRow{ grid-template-columns:1fr; } }
-    .dashPanel{ background:var(--paper-2); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow-sm); overflow:hidden; display:flex; flex-direction:column; max-height:440px; }
-    .dashPanelHead{ display:flex; align-items:center; justify-content:space-between; padding:12px 14px; background:linear-gradient(180deg,#eef3ec,var(--paper-2)); border-bottom:1px solid var(--line); }
+    .dashPanel{ background:none; border:none; box-shadow:none; border-radius:0; overflow:visible; display:flex; flex-direction:column; max-height:440px; padding:0 20px; }
+    .dashRow .dashPanel + .dashPanel{ border-left:1px solid var(--line-soft); }
+    @media (max-width:900px){ .dashRow .dashPanel + .dashPanel{ border-left:none; border-top:1px solid var(--line-soft); padding-top:14px; margin-top:4px; } }
+    .dashPanelHead{ display:flex; align-items:center; justify-content:space-between; padding:0 0 10px; border-bottom:1px solid var(--line-soft); margin-bottom:6px; }
     .dashPanelTitle{ font-family:var(--display); font-weight:600; font-size:15px; color:var(--ink); }
-    .dashPanelBody{ padding:8px 12px 12px; overflow:auto; }
+    .dashPanelBody{ padding:0 0 8px; overflow:auto; }
     .dashItem{ display:flex; align-items:center; gap:10px; padding:9px 6px; border-bottom:1px solid var(--line-soft); font-size:13.5px; }
     .dashActivityAvatar{ width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:var(--display); font-weight:700; font-size:9.5px; color:#04231a; flex:none; }
     .dashItem:last-child{ border-bottom:none; }
@@ -1183,8 +1205,7 @@
     }
     html[data-theme="dark"] .vendorHeadXL,
     html[data-theme="dark"] .availVendorHead{ background:#23362b; }
-    html[data-theme="dark"] .statCard{ background:linear-gradient(180deg,#25392c,#1c2c22); }
-    html[data-theme="dark"] .dashPanelHead{ background:linear-gradient(180deg,#24382c,var(--paper-2)); }
+    html[data-theme="dark"] .statCard{ border-right-color:var(--line-soft); }
     html[data-theme="dark"] #availWrap > .note,
     html[data-theme="dark"] .photoGrid > .note,
     html[data-theme="dark"] .plantGrid > .note,
@@ -1249,7 +1270,7 @@
           <button class="navBtn active" data-page="order" aria-label="Order Tracker"><span class="navIcon" data-icon="truck" aria-hidden="true"></span><span class="navLabel"><span class="navLabelFull">Order Tracker</span><span class="navLabelShort">Orders</span></span></button>
           <button class="navBtn" data-page="photos" aria-label="Photo Library"><span class="navIcon" data-icon="plant" aria-hidden="true"></span><span class="navLabel"><span class="navLabelFull">Photo Library</span><span class="navLabelShort">Photos</span></span></button>
           <button class="navBtn" data-page="avail" aria-label="Availability"><span class="navIcon" data-icon="trending" aria-hidden="true"></span><span class="navLabel"><span class="navLabelFull">Availability</span><span class="navLabelShort">Avail</span></span></button>
-          <button class="navBtn" data-page="prebook" aria-label="Pre-Booking"><span class="navIcon" data-icon="pin" aria-hidden="true"></span><span class="navLabel"><span class="navLabelFull">Pre-Booking</span><span class="navLabelShort">Pre-Book</span></span></button>
+          <button class="navBtn" data-page="prebook" aria-label="Booking"><span class="navIcon" data-icon="pin" aria-hidden="true"></span><span class="navLabel"><span class="navLabelFull">Booking</span><span class="navLabelShort">Booking</span></span></button>
           <button class="navBtn" data-page="checkin" aria-label="Order Check-In"><span class="navIcon" data-icon="checkCircle" aria-hidden="true"></span><span class="navLabel"><span class="navLabelFull">Order Check-In</span><span class="navLabelShort">Check-In</span></span></button>
           <button class="navBtn" data-page="issues" aria-label="Issue Tracker"><span class="navIcon" data-icon="bug" aria-hidden="true"></span><span class="navLabel"><span class="navLabelFull">Issue Tracker</span><span class="navLabelShort">Issues</span></span></button>
           <button class="navBtn" data-page="training" aria-label="Training Documents"><span class="navIcon" data-icon="book" aria-hidden="true"></span><span class="navLabel"><span class="navLabelFull">Training Documents</span><span class="navLabelShort">Training</span></span></button>
@@ -1284,15 +1305,18 @@
               <button id="dashCmdBtn" class="btnGhost">⌘K Commands</button>
             </div>
           </div>
-          <div class="dashGrid" id="dashStats"></div>
-          <div class="dashRow">
-            <div class="dashPanel" id="dashTodayPanel">
-              <div class="dashPanelHead"><span class="dashPanelTitle" id="dashTodayTitle"><span data-icon="truck" aria-hidden="true"></span> Arriving this week</span></div>
-              <div class="dashPanelBody" id="dashToday"></div>
-            </div>
-            <div class="dashPanel" id="dashActivityPanel">
-              <div class="dashPanelHead"><span class="dashPanelTitle"><span data-icon="receipt" aria-hidden="true"></span> Recent activity</span><button id="dashClearLog" class="tinyBtn">Clear</button></div>
-              <div class="dashPanelBody" id="dashActivity"></div>
+          <div class="dashUnified">
+            <div class="dashGrid" id="dashStats"></div>
+            <div class="dashUnifiedDivider"></div>
+            <div class="dashRow">
+              <div class="dashPanel" id="dashTodayPanel">
+                <div class="dashPanelHead"><span class="dashPanelTitle" id="dashTodayTitle"><span data-icon="truck" aria-hidden="true"></span> Arriving this week</span></div>
+                <div class="dashPanelBody" id="dashToday"></div>
+              </div>
+              <div class="dashPanel" id="dashActivityPanel">
+                <div class="dashPanelHead"><span class="dashPanelTitle"><span data-icon="receipt" aria-hidden="true"></span> Recent activity</span><button id="dashClearLog" class="tinyBtn">Clear</button></div>
+                <div class="dashPanelBody" id="dashActivity"></div>
+              </div>
             </div>
           </div>
         </div>
@@ -1446,16 +1470,31 @@
         </div>
 
         <div id="page-prebook" class="page" style="display:none;">
-          <div class="prebookYearBar">
-            <button type="button" class="prebookYearArrow" id="prebookYearPrev" aria-label="Previous year">‹</button>
-            <span class="prebookYearLabel" id="prebookYearLabel">Year</span>
-            <button type="button" class="prebookYearArrow" id="prebookYearNext" aria-label="Next year">›</button>
+          <div class="orderHead"><h2>Booking <span class="chip" id="prebookModeChip" style="display:none;"></span></h2></div>
+          <div id="prebookChooser" class="checkinChooser">
+            <button type="button" class="checkinChooserBtn" data-mode="prebook">
+              <span class="checkinChooserIcon">📌</span>
+              <span class="checkinChooserLabel">Pre Book</span>
+              <span class="checkinChooserSub">Reserve stock ahead of a date or a holiday rush</span>
+            </button>
+            <button type="button" class="checkinChooserBtn" data-mode="tag">
+              <span class="checkinChooserIcon">🏷️</span>
+              <span class="checkinChooserLabel">Tag</span>
+              <span class="checkinChooserSub">Tag a specific item to hold for a customer or order</span>
+            </button>
           </div>
-          <div class="prebookToolbar">
+          <div class="prebookToolbar" id="prebookToolbarTools" style="display:none;">
+            <button id="prebookSwitchModeBtn" class="btnGhost" title="Choose a different Booking view">🔄 Switch View</button>
             <input id="prebookSearch" placeholder="Search vendor or item..." />
-            <button id="prebookAddBtn" class="btn" type="button"><span data-icon="plus" aria-hidden="true"></span> Add Pre-Book</button>
+            <select id="prebookStatusFilter" title="Filter">
+              <option value="">All statuses</option>
+              <option value="open">Open</option>
+              <option value="fulfilled">Taken</option>
+            </select>
+            <button id="prebookArchiveBtn" class="btnGhost" style="display:none;">📦 Archive</button>
+            <button id="prebookAddBtn" class="btn" type="button"><span data-icon="plus" aria-hidden="true"></span> Add</button>
           </div>
-          <div class="prebookSeasonTabs" id="prebookSeasonTabs"></div>
+          <div class="prebookSeasonTabs" id="prebookSeasonTabs" style="display:none;"></div>
           <div id="prebookWrap"></div>
         </div>
 
@@ -1471,7 +1510,18 @@
               <input id="checkinItemFilter" placeholder="Item filter (optional)" />
               <button id="checkinImportBtn" class="btnGhost">Import PO Analysis</button>
               <input id="checkinImportFile" type="file" accept=".xlsx,.xls" style="display:none;">
-              <button id="checkinShareBtn" class="btnGhost">Share Outstanding</button>
+              <select id="checkinStatusFilter" title="Filter">
+                <option value="">All lines</option>
+                <option value="unchecked">Not checked in</option>
+                <option value="checked">Checked in</option>
+                <option value="flagged">Flagged (issue)</option>
+              </select>
+              <select id="checkinSort" title="Sort">
+                <option value="default">Sort: as imported</option>
+                <option value="vendor">Sort: Vendor (A–Z)</option>
+                <option value="item">Sort: Item (A–Z)</option>
+                <option value="status">Sort: Status (unchecked first)</option>
+              </select>
               <button id="checkinResetWeekBtn" class="btnGhost" style="border-color:rgba(224,86,63,.3); color:#a8341f;">Reset Check-In</button>
             </div>
           </div>
@@ -1554,6 +1604,19 @@
     </div>
   </div>
 
+  <div id="truckHistoryModal" class="modal" aria-hidden="true">
+    <div class="modalCard">
+      <div class="modalHead">
+        <div>
+          <h3 id="truckHistoryTitle">Order History</h3>
+          <div class="note">Every change logged for this order, most recent first.</div>
+        </div>
+        <button id="truckHistoryCloseBtn" class="closeX">Close</button>
+      </div>
+      <div id="truckHistoryResults" style="margin-top:6px;"></div>
+    </div>
+  </div>
+
   <div id="photoModal" class="modal" aria-hidden="true">
     <div class="modalCard">
       <div class="modalHead">
@@ -1609,11 +1672,24 @@
         <label><span class="lbl">Truck (optional)</span><select id="i_truck"></select></label>
         <label><span class="lbl">Item</span><input id="i_item" placeholder="Item"/></label>
       </div>
-      <label><span class="lbl">Notes</span><textarea id="i_notes" placeholder="What happened? What do we need?"></textarea></label>
+      <label><span class="lbl">Notes</span><textarea id="i_notes" placeholder="What happened? What do we need?" style="min-height:120px;"></textarea></label>
       <label><span class="lbl">Attach existing Library photo (optional)</span><select id="i_photo"></select></label>
       <label><span class="lbl">Or upload a new photo (optional)</span><input id="i_photoUpload" type="file" accept="image/*" /></label>
       <div id="i_photoPreview" style="display:none; margin:6px 0;"></div>
       <button id="issueSaveBtn" class="btn">Save Issue</button>
+    </div>
+  </div>
+
+  <div id="issueHistoryModal" class="modal" aria-hidden="true">
+    <div class="modalCard">
+      <div class="modalHead">
+        <div>
+          <h3 id="issueHistoryTitle">Issue History</h3>
+          <div class="note">Every status change logged for this issue, most recent first.</div>
+        </div>
+        <button id="issueHistoryCloseBtn" class="closeX">Close</button>
+      </div>
+      <div id="issueHistoryResults" style="margin-top:6px;"></div>
     </div>
   </div>
 
@@ -1699,6 +1775,7 @@
         <label><span class="lbl">Ready Date</span><input id="pb_date" type="date" required/></label>
       </div>
       <div class="row">
+        <label><span class="lbl">Location</span><input id="pb_location" placeholder="e.g., Rack 3, Cooler B, Bay 12"/></label>
         <label><span class="lbl">Holiday theme (optional)</span><select id="pb_holiday"></select></label>
       </div>
       <div class="note" id="pb_holidayPreview"></div>
@@ -2463,7 +2540,7 @@
       if(key === "order") renderOrder();
       if(key === "photos") renderPhotosTab();
       if(key === "avail") renderAvailability();
-      if(key === "prebook") renderPrebook();
+      if(key === "prebook"){ prebookViewMode = null; prebookShowArchive = false; renderPrebook(); }
       if(key === "checkin"){ checkinViewMode = null; renderCheckIn(); }
       if(key === "issues") renderIssues();
       if(key === "training") renderTraining();
@@ -2493,7 +2570,7 @@
      *********************************************************/
     const PAGE_LABELS = {
       dashboard:"Dashboard", order:"Order Tracker", photos:"Photo Library",
-      avail:"Availability", prebook:"Pre-Booking", checkin:"Order Check-In", issues:"Issue Tracker", training:"Training Documents"
+      avail:"Availability", prebook:"Booking", checkin:"Order Check-In", issues:"Issue Tracker", training:"Training Documents"
     };
     function presenceInitials(name){
       const parts = (name || "").trim().split(/\s+/).filter(Boolean);
@@ -3100,7 +3177,7 @@
         ? `<th style="width:16%;">Unit / Count</th>`
         : `<th style="width:12%;">CC Rack Count</th>`;
       const shelvesCol = blockUsesShelves(block) ? `<th style="width:10%;">Shelves</th>` : ``;
-      return `<tr><th style="width:32%;">Item</th>${rackCol}${shelvesCol}<th style="width:11%;">Case Count</th><th style="width:11%;">Plant Qty</th><th>Notes</th><th style="width:1%;"></th></tr>`;
+      return `<tr><th style="width:32%;">Item</th>${rackCol}${shelvesCol}<th style="width:11%;">Case Count</th><th style="width:11%;">Plant Qty</th><th>Notes</th><th style="width:9%;">Book</th><th style="width:1%;"></th></tr>`;
     }
 
     function addVendorBlock(vendorWrapEl, block, vendorObj = { name:"", po:"", status:"Open", items:[{ item:"", racks:"", cases:"", qty:"", notes:"" }] }){
@@ -3165,6 +3242,9 @@
         const rec = { item, racks, cases, qty, notes: lineNotes, unit, shelves };
         if(tr.dataset.substituted === "1"){ rec.substituted = true; rec.subbedFrom = tr.dataset.subbedFrom || ""; }
         if(tr.dataset.checked === "1"){ rec.checked = true; }
+        const bookSel = tr.querySelector(".it_book");
+        if(bookSel && bookSel.value) rec.bookType = bookSel.value;
+        if(tr.dataset.bookId) rec.bookId = tr.dataset.bookId;
         items.push(rec);
       });
       return { name, po, status, items };
@@ -3184,6 +3264,7 @@
       if(blockUsesShelves(block)){
         shelvesCell = `<td><input class="it_shelves" type="number" step="1" placeholder="0" value="${escapeHtml(itemObj.shelves ?? "")}"><div class="autoPosts" style="font-size:11px; color:var(--ink-2); margin-top:3px;">Posts: 0</div></td>`;
       }
+      const bookType = itemObj.bookType || "";
       tr.innerHTML = `
         <td><input class="it_item" placeholder='e.g., 6" MONSTERA' value="${escapeHtml(itemObj.item ?? "")}"></td>
         ${rackCell}
@@ -3191,10 +3272,16 @@
         <td><input class="it_cases" type="number" step="1" placeholder="0" value="${escapeHtml(itemObj.cases ?? "")}"></td>
         <td><input class="it_qty" type="number" step="1" placeholder="0" value="${escapeHtml(itemObj.qty ?? "")}"></td>
         <td><input class="it_notes" placeholder="Line notes (optional)" value="${escapeHtml(itemObj.notes ?? "")}"></td>
+        <td><select class="it_book" title="Reserve this line on the Booking tab">
+          <option value="" ${bookType===""?"selected":""}>—</option>
+          <option value="prebook" ${bookType==="prebook"?"selected":""}>📌 Pre Book</option>
+          <option value="tag" ${bookType==="tag"?"selected":""}>🏷️ Tag</option>
+        </select></td>
         <td><button class="tinyBtn danger" type="button" title="Remove item">x</button></td>
       `;
       if(itemObj.substituted){ tr.dataset.substituted = "1"; tr.dataset.subbedFrom = itemObj.subbedFrom || ""; }
       if(itemObj.checked){ tr.dataset.checked = "1"; }
+      tr.dataset.bookId = itemObj.bookId || "";
       // Rack auto-calc bookkeeping — only active on rows created from
       // checked Availability items (those carry avCategory/avSpec).
       // "Auto" flags start on and flip off the instant a person types
@@ -3300,12 +3387,16 @@
           const unit = unitSel ? unitSel.value : "";
           const shelvesEl = tr.querySelector(".it_shelves");
           const shelves = shelvesEl ? Number(shelvesEl.value || 0) : undefined;
-          if(item || racks || cases || qty || lineNotes || shelves){
+          const bookSel = tr.querySelector(".it_book");
+          const bookType = bookSel ? bookSel.value : "";
+          if(item || racks || cases || qty || lineNotes || shelves || bookType){
             const rec = { item, racks, cases, qty, notes: lineNotes };
             if(unit) rec.unit = unit;
             if(shelves !== undefined) rec.shelves = shelves;
             if(tr.dataset.substituted === "1"){ rec.substituted = true; rec.subbedFrom = tr.dataset.subbedFrom || ""; }
             if(tr.dataset.checked === "1"){ rec.checked = true; }
+            if(bookType) rec.bookType = bookType;
+            if(tr.dataset.bookId) rec.bookId = tr.dataset.bookId;
             items.push(rec);
           }
         });
@@ -3321,6 +3412,38 @@
       }, { racks:0, cases:0, qty:0 });
     }
 
+    // An item line marked "📌 Pre Book" or "🏷️ Tag" in the order (see the
+    // Book column added to addItemRowToVendor) gets its own entry on the
+    // Booking tab, created the first time and kept in sync (vendor, item,
+    // qty, ready date) on every re-save afterward via the line's own
+    // bookId — claims/location/holiday theme set on the Booking tab itself
+    // are left alone. Clearing the Book column on a line just stops future
+    // syncing; it never deletes the Booking entry that was already made.
+    function syncOrderLinesToBooking(datas){
+      const list = loadPrebook();
+      let changed = false;
+      datas.forEach(d => {
+        (d.vendorBlocks || []).forEach(vb => {
+          (vb.items || []).forEach(it => {
+            if(it.bookType !== "prebook" && it.bookType !== "tag") return;
+            let rec = it.bookId ? list.find(x => x.id === it.bookId) : null;
+            if(!rec){
+              rec = { id: cryptoRandomId(), claims: [], location: "", holidayKey: "", createdAt: new Date().toISOString() };
+              list.push(rec);
+              it.bookId = rec.id;
+            }
+            rec.type = it.bookType;
+            rec.vendor = vb.name || rec.vendor || "";
+            rec.item = it.item || rec.item || "";
+            rec.qty = it.qty || rec.qty || "";
+            rec.readyDate = d.pickupDate || rec.readyDate || "";
+            rec.orderTruckId = d.id || rec.orderTruckId || "";
+            changed = true;
+          });
+        });
+      });
+      if(changed){ savePrebook(list); markTabChanged("prebook"); }
+    }
     document.getElementById("saveTruckBtn").addEventListener("click", () => {
       const blocks = Array.from(truckBlocksWrap.querySelectorAll(".truckBlock"));
       const datas = blocks.map(readTruckBlock);
@@ -3340,12 +3463,18 @@
         if(d.id){
           const idx = trucks.findIndex(t => t.id === d.id);
           if(idx >= 0){
-            trucks[idx] = { ...trucks[idx], pickupDate:d.pickupDate, requestDate:d.requestDate, weekKey:wk, region:d.region, orderType:d.orderType, trucking:d.trucking, price:Number(d.price||0), notes:d.notes, vendorBlocks:d.vendorBlocks, totals };
+            const prev = trucks[idx];
+            trucks[idx] = { ...prev, pickupDate:d.pickupDate, requestDate:d.requestDate, weekKey:wk, region:d.region, orderType:d.orderType, trucking:d.trucking, price:Number(d.price||0), notes:d.notes, vendorBlocks:d.vendorBlocks, totals };
+            pushTruckHistory(trucks[idx], "Order details updated");
           }
         } else {
-          trucks.push({ id:cryptoRandomId(), pickupDate:d.pickupDate, requestDate:d.requestDate, weekKey:wk, region:d.region, orderType:d.orderType, trucking:d.trucking, price:Number(d.price||0), notes:d.notes, vendorBlocks:d.vendorBlocks, totals });
+          d.id = cryptoRandomId();
+          const newTruck = { id:d.id, pickupDate:d.pickupDate, requestDate:d.requestDate, weekKey:wk, region:d.region, orderType:d.orderType, trucking:d.trucking, price:Number(d.price||0), notes:d.notes, vendorBlocks:d.vendorBlocks, totals };
+          pushTruckHistory(newTruck, "Order created");
+          trucks.push(newTruck);
         }
       }
+      syncOrderLinesToBooking(datas);
       saveTrucks(trucks);
       markTabChanged("order");
       showToast("Order saved");
@@ -3388,6 +3517,13 @@
       if(!rd){ alert("That date isn't valid — use YYYY-MM-DD."); return; }
       const clone = JSON.parse(JSON.stringify(t));
       clone.id = cryptoRandomId();
+      // A duplicate is a new order with its own history — and its item
+      // lines must not keep pointing at the same Booking entries as the
+      // original (see syncOrderLinesToBooking), or editing/re-saving the
+      // duplicate later would silently overwrite the original's booking.
+      (clone.vendorBlocks || []).forEach(vb => (vb.items || []).forEach(it => { delete it.bookId; }));
+      clone.history = [];
+      pushTruckHistory(clone, `Duplicated from the ${t.pickupDate || "—"} order`);
       // If the original pickup date was just the standard formula (request date
       // + region), regenerate it for the new request date. If it had been
       // manually customized, shift it by the same number of days the request
@@ -3455,6 +3591,40 @@
     });
 
     /*********************************************************
+     * Order history — a small log of Date / Change / User kept on every
+     * truck/order, shown via the "History" button on its card.
+     *********************************************************/
+    function pushTruckHistory(t, change){
+      const who = (getUser() && getUser().name) || "Unknown";
+      const history = Array.isArray(t.history) ? t.history : [];
+      history.push({ date: fmtDate(new Date()), change, user: who });
+      t.history = history;
+    }
+    const truckHistoryModal = document.getElementById("truckHistoryModal");
+    function openTruckHistory(truckId){
+      const t = loadTrucks().find(x => x.id === truckId);
+      if(!t) return;
+      document.getElementById("truckHistoryTitle").textContent = `Order History — ${dateBadgePrefix(t.region)} ${t.pickupDate || "—"}`;
+      const wrap = document.getElementById("truckHistoryResults");
+      const history = Array.isArray(t.history) ? t.history.slice().reverse() : [];
+      wrap.innerHTML = history.length ? history.map(h => `
+        <div class="issueHistoryRow">
+          <span class="ihDate">${escapeHtml(h.date || "—")}</span>
+          <span style="flex:1;">${escapeHtml(h.change || "—")}</span>
+          <span class="ihUser">${escapeHtml(h.user || "Unknown")}</span>
+        </div>`
+      ).join("") : emptyStateHtml("No history recorded for this order yet.", "truck");
+      truckHistoryModal.classList.add("active");
+      truckHistoryModal.setAttribute("aria-hidden","false");
+    }
+    function closeTruckHistory(){
+      truckHistoryModal.classList.remove("active");
+      truckHistoryModal.setAttribute("aria-hidden","true");
+    }
+    document.getElementById("truckHistoryCloseBtn").addEventListener("click", closeTruckHistory);
+    truckHistoryModal.addEventListener("click", (e) => { if(e.target === truckHistoryModal) closeTruckHistory(); });
+
+    /*********************************************************
      * Inline trucking / price editing on saved orders
      *********************************************************/
     function inlineEdit(el, tid, kind){
@@ -3473,8 +3643,15 @@
         const all = loadTrucks();
         const tt = all.find(x => x.id === tid);
         if(tt){
-          if(kind === "price") tt.price = Number(input.value || 0);
-          else tt.trucking = input.value.trim();
+          if(kind === "price"){
+            const val = Number(input.value || 0);
+            pushTruckHistory(tt, `Price changed to ${money(val)}`);
+            tt.price = val;
+          } else {
+            const val = input.value.trim();
+            pushTruckHistory(tt, `Trucking company changed to "${val || "—"}"`);
+            tt.trucking = val;
+          }
           saveTrucks(all);
           markTabChanged("order");
         }
@@ -3497,6 +3674,7 @@
       const cur = t.vendorBlocks[vIdx].status || "Open";
       const next = (cur === "Confirmed") ? "Open" : "Confirmed";
       t.vendorBlocks[vIdx].status = next;
+      pushTruckHistory(t, `Vendor "${t.vendorBlocks[vIdx].name || "—"}" status changed to ${next}`);
       saveTrucks(trucks);
       markTabChanged("order");
       // Update just this button in place rather than calling renderOrder(),
@@ -3517,6 +3695,7 @@
       const t = trucks.find(x => x.id === truckId);
       if(!t) return;
       t.invoicePaid = !t.invoicePaid;
+      pushTruckHistory(t, `Invoice marked ${t.invoicePaid ? "Paid" : "Unpaid"}`);
       saveTrucks(trucks);
       markTabChanged("order");
       // Update just this button in place rather than calling renderOrder(),
@@ -3913,6 +4092,7 @@
               <div class="pickupRight">
                 <button type="button" class="${t.invoicePaid ? "statusPill statusConfirmed" : "statusPill statusOpen"} statusToggle" data-action="toggleInvoicePaid" title="Click to toggle whether this truck's invoice has been paid">${t.invoicePaid ? "✅ Invoice Paid" : "💲 Invoice Unpaid"}</button>
                 <button class="tinyBtn" data-action="togglePickup" aria-expanded="true">Collapse</button>
+                <button class="tinyBtn" data-action="history" title="Date, change, and user for this order">History</button>
                 <button class="tinyBtn" data-action="duplicate">Duplicate</button>
                 <button class="tinyBtn" data-action="edit">Edit</button>
               </div>
@@ -3921,6 +4101,7 @@
           `;
 
           pickup.querySelector("[data-action='edit']").addEventListener("click", () => openTruckDetail(t.id));
+          pickup.querySelector("[data-action='history']").addEventListener("click", (e) => { e.stopPropagation(); openTruckHistory(t.id); });
           pickup.querySelector("[data-action='duplicate']").addEventListener("click", () => duplicateTruck(t.id));
           const editTruckingEl = pickup.querySelector("[data-action='editTrucking']");
           editTruckingEl.addEventListener("click", (e) => { e.stopPropagation(); inlineEdit(editTruckingEl, t.id, "trucking"); });
@@ -4290,7 +4471,7 @@
         group.forEach(t => {
           truckNum++;
           const fill = locationFill(t.region);
-          const headerText = `TRUCK ${truckNum}: ${(t.region||"").toUpperCase()} - ${weekdayShort(t.pickupDate)} - ${money(t.price||0)}`;
+          const headerText = `TRUCK ${truckNum}: ${(t.region||"").toUpperCase()} - ${weekdayShort(t.pickupDate)}`;
           const blockStart = r;
           ws.mergeCells(r, 1, r, 3);
           const hCell = ws.getCell(r, 1);
@@ -4555,12 +4736,12 @@
         const anyRacks = vendorBlocks.some(vb => (vb.items||[]).some(it => Number(it.racks||0) > 0));
         const cols = anyRacks ? (NUM_COLS - 1) : (NUM_COLS - 2); // table columns only; Status sits at cols+1
 
-        // Section bar: REGION - ORDER TYPE ... PU <date> ... TRUCKING - $PRICE
+        // Section bar: REGION - ORDER TYPE ... PU <date> ... TRUCKING
         ws.mergeCells(r,1,r,NUM_COLS);
         const bar = ws.getCell(r,1);
         const left = `${(t.region||"").toUpperCase()} - ${orderTypeLabel(normalizeOrderType(t)).toUpperCase()}`;
         const mid = `${dateBadgePrefix(t.region)} ${weekdayShort(t.pickupDate)}`;
-        const right = `${(t.trucking||"—").toUpperCase()} - ${money(t.price||0)}`;
+        const right = `${(t.trucking||"—").toUpperCase()}`;
         bar.value = { richText: [
           { text: left + "   ", font:{ bold:true } },
           { text: mid + "   ", font:{ italic:true } },
@@ -5961,13 +6142,10 @@
           // the single row itself carry the green styling; groups that do
           // have real distinguishing info (like size or price sub-rows)
           // still get the heading as before.
-          const singleUnlabeled = group.entries.length === 1 && availRowLabel(group.entries[0]) === group.label;
-          if(!singleUnlabeled){
-            const groupHead = document.createElement("div");
-            groupHead.className = "availItemGroupHead";
-            groupHead.textContent = group.label;
-            scrollEl.appendChild(groupHead);
-          }
+          // Spec (size) and notes used to show inline here — as of this
+          // revision they live entirely in the popup opened by clicking the
+          // item name, which always renders in the same green style whether
+          // this item has one row or several (see openAvailItemDetail).
           group.entries.forEach(e => {
             const anyChecked = weekKeys.some(wk => e.weekData[wk].checked);
             const row = document.createElement("div");
@@ -5986,20 +6164,8 @@
                   <input class="availAmtInput" type="text" placeholder="Amt" value="${escapeHtml(wd.amount || "")}" title="This week's amount — saves automatically"/>
                 </div>`;
             }).join("");
-            // For a merged single-row group (see singleUnlabeled above), show
-            // the item name itself here in the same green heading style
-            // instead of the normal dark spec styling — it's standing in for
-            // the group heading, not repeating it. Otherwise, in the rare
-            // case a specific row's label still happens to match the group
-            // heading text (e.g. one item in a multi-size group has no size
-            // on file), show a plain dash instead of the name a second time.
-            const rawLabel = availRowLabel(e);
-            const isDuplicateOfHeading = !singleUnlabeled && rawLabel === group.label;
-            const displayLabel = singleUnlabeled ? rawLabel : (isDuplicateOfHeading ? "—" : rawLabel);
-            const labelClass = "availItemName availItemNameBtn" + (singleUnlabeled ? " availItemNameOnly" : "");
-            const notesBadge = (e.notes && e.notes.trim()) ? `<span class="availNotesBadge" title="${escapeHtml(e.notes.trim())}">📝</span>` : "";
             row.innerHTML = `
-              <button type="button" class="${labelClass}" title="Click for order notes">${escapeHtml(displayLabel)}${notesBadge}</button>
+              <button type="button" class="availItemName availItemNameBtn availItemNameOnly" title="Click for size, notes &amp; last order date">${escapeHtml(group.label)}</button>
               ${weekCellsHtml}
               <div class="availRowActions">${actionsHtml}</div>
             `;
@@ -6269,24 +6435,38 @@
       return (Number(entry.qty) || 0) - prebookClaimedTotal(entry);
     }
 
-    // Which season tab is showing. No more month calendar nav — the page
-    // just lists every pre-book in that season (and year — see
-    // prebookYear) as neat lines, grouped by month, oldest ready date
-    // first.
+    // Which season tab is showing. Every pre-book/tag in that season is
+    // listed as one flat list, soonest ready date first — no year step and
+    // no month sub-grouping (a line's own Ready Date still shows its year).
     let prebookSeasonKey = seasonForDate(fmtDate(new Date())).key;
-    // Year shown at the very top, with arrows to step through years. Every
-    // pre-book line is filtered to its ready date's calendar year matching
-    // this.
-    let prebookYear = new Date().getFullYear();
-    document.getElementById("prebookYearPrev").addEventListener("click", () => { prebookYear--; renderPrebook(); });
-    document.getElementById("prebookYearNext").addEventListener("click", () => { prebookYear++; renderPrebook(); });
+    // Which flow is showing: null = the Pre Book/Tag chooser (nothing
+    // listed yet), "prebook" or "tag" once picked — mirrors Order Check-In's
+    // mode chooser. Reset to null every time the page is freshly navigated
+    // to (see showPage) so the chooser always comes up first; preserved
+    // across re-renders triggered from within the page itself so the choice
+    // sticks while you work.
+    let prebookViewMode = null;
+    function setPrebookViewMode(mode){
+      prebookViewMode = mode;
+      prebookShowArchive = false;
+      renderPrebook();
+    }
+    // Archive (Tag mode only): tags that have been fully taken, tucked out
+    // of the main season list until asked for — see prebookArchiveBtn.
+    let prebookShowArchive = false;
+    document.querySelectorAll("#prebookChooser .checkinChooserBtn").forEach(btn => {
+      btn.addEventListener("click", () => setPrebookViewMode(btn.dataset.mode));
+    });
+    document.getElementById("prebookSwitchModeBtn").addEventListener("click", () => setPrebookViewMode(null));
+    document.getElementById("prebookStatusFilter").addEventListener("change", renderPrebook);
+    document.getElementById("prebookArchiveBtn").addEventListener("click", () => { prebookShowArchive = !prebookShowArchive; renderPrebook(); });
 
     const prebookModal = document.getElementById("prebookModal");
     let editingPrebookId = null;
     document.getElementById("prebookCloseBtn").addEventListener("click", closePrebookModal);
     prebookModal.addEventListener("click", (e) => { if(e.target === prebookModal) closePrebookModal(); });
     document.getElementById("prebookSearch").addEventListener("input", renderPrebook);
-    document.getElementById("prebookAddBtn").addEventListener("click", () => openPrebookModal(null));
+    document.getElementById("prebookAddBtn").addEventListener("click", () => openPrebookModal(null, null, prebookViewMode));
 
     // The holiday picker is theming only now — it no longer decides the
     // ready date, so "None" is a real, first-class option.
@@ -6303,17 +6483,24 @@
       if(el) el.textContent = h ? `Themed to ${h.emoji} ${h.name} — the ready date above is unaffected.` : "";
     }
     document.getElementById("pb_holiday").addEventListener("change", updatePrebookHolidayPreview);
-    function openPrebookModal(entry, prefillDate){
+    function openPrebookModal(entry, prefillDate, mode){
       editingPrebookId = entry?.id ?? null;
-      document.getElementById("prebookModalTitle").textContent = editingPrebookId ? "Edit Pre-Book" : "Pre-book Item";
+      // Which kind (Pre Book vs Tag) this entry is/becomes — an existing
+      // entry keeps its own type; a new one takes whichever chooser button
+      // (or command) opened the modal, defaulting to Pre Book.
+      const type = entry?.type || (mode === "tag" ? "tag" : "prebook");
+      const isTag = type === "tag";
+      prebookModal.dataset.type = type;
+      document.getElementById("prebookModalTitle").textContent = editingPrebookId ? (isTag ? "Edit Tag" : "Edit Pre-Book") : (isTag ? "Tag Item" : "Pre-book Item");
       document.getElementById("pb_vendor").value = entry?.vendor || "";
       document.getElementById("pb_item").value = entry?.item || "";
       document.getElementById("pb_qty").value = entry?.qty ?? "";
       document.getElementById("pb_date").value = entry?.readyDate || prefillDate || fmtDate(new Date());
+      document.getElementById("pb_location").value = entry?.location || "";
       fillPrebookHolidayOptions(entry?.holidayKey || "");
       updatePrebookHolidayPreview();
       const saveBtn = document.getElementById("prebookSaveBtn");
-      if(saveBtn) saveBtn.textContent = editingPrebookId ? "Save Changes" : "Save Pre-Book";
+      if(saveBtn) saveBtn.textContent = editingPrebookId ? "Save Changes" : (isTag ? "Save Tag" : "Save Pre-Book");
       const delBtn = document.getElementById("prebookDeleteBtn");
       if(delBtn) delBtn.style.display = editingPrebookId ? "" : "none";
       prebookModal.classList.add("active");
@@ -6338,15 +6525,17 @@
       const item = document.getElementById("pb_item").value.trim();
       const qty = document.getElementById("pb_qty").value.trim();
       const readyDate = document.getElementById("pb_date").value;
+      const location = document.getElementById("pb_location").value.trim();
       const holidayKey = document.getElementById("pb_holiday").value || "";
       if(!vendor || !item){ alert("Vendor and Item are required."); return; }
       if(!readyDate){ alert("Pick a ready date."); return; }
       const list = loadPrebook();
       if(editingPrebookId){
         const idx = list.findIndex(x => x.id === editingPrebookId);
-        if(idx >= 0) list[idx] = { ...list[idx], vendor, item, qty, readyDate, holidayKey };
+        if(idx >= 0) list[idx] = { ...list[idx], vendor, item, qty, readyDate, location, holidayKey };
       } else {
-        list.push({ id: cryptoRandomId(), vendor, item, qty, readyDate, holidayKey, claims: [], createdAt: new Date().toISOString() });
+        const type = prebookModal.dataset.type === "tag" ? "tag" : "prebook";
+        list.push({ id: cryptoRandomId(), type, vendor, item, qty, readyDate, location, holidayKey, claims: [], createdAt: new Date().toISOString() });
       }
       savePrebook(list);
       markTabChanged("prebook");
@@ -6390,7 +6579,7 @@
       listEl.innerHTML = claims.map(c => `
         <div class="prebookClaimRow" data-id="${c.id}">
           <span class="prebookClaimRowQty">${escapeHtml(String(c.qty))}</span>
-          <span class="prebookClaimRowMeta">${escapeHtml(c.by || "—")}${c.at ? ` · ${escapeHtml(new Date(c.at).toLocaleString(undefined,{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}))}` : ""}</span>
+          <span class="prebookClaimRowMeta">${escapeHtml(c.by || "—")}${c.po ? ` · PO ${escapeHtml(c.po)}` : ""}${c.at ? ` · ${escapeHtml(new Date(c.at).toLocaleString(undefined,{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}))}` : ""}</span>
           <button type="button" class="tinyBtn danger prebookClaimRowRemove" title="Remove this claim">x</button>
         </div>`).join("");
       listEl.querySelectorAll(".prebookClaimRowRemove").forEach(btn => {
@@ -6428,9 +6617,10 @@
       const claimStatusText = totalQty > 0
         ? `${claimed} claimed · ${isOver ? `${Math.abs(remaining)} over` : `${remaining} left`}`
         : `${claimed} claimed`;
+      const takeLabel = p.type === "tag" ? "Take" : "Claim";
       row.innerHTML = `
         <div class="prebookLineVendor">${escapeHtml(p.vendor || "—")}</div>
-        <div class="prebookLineItem">${h ? `<span class="prebookHolidayDot" title="${escapeHtml(h.name)}">${h.emoji}</span>` : ""}${escapeHtml(p.item || "Item")}</div>
+        <div class="prebookLineItem">${h ? `<span class="prebookHolidayDot" title="${escapeHtml(h.name)}">${h.emoji}</span>` : ""}${escapeHtml(p.item || "Item")}${p.location ? `<span class="prebookLineLoc" title="Location">📍 ${escapeHtml(p.location)}</span>` : ""}</div>
         <div class="prebookLineQty">${totalQty || "—"}</div>
         <div class="prebookLineDate">${escapeHtml(dateLabel)}</div>
         <div class="prebookClaimWrap">
@@ -6438,7 +6628,8 @@
           <span class="prebookClaimText ${claimStatusClass}" title="Click to see claim history">${escapeHtml(claimStatusText)}</span>
           <form class="prebookClaimForm">
             <input type="number" min="0" step="1" placeholder="Qty" class="prebookClaimInput">
-            <button type="submit" class="tinyBtn">Claim</button>
+            <input type="text" placeholder="PO #" class="prebookClaimPoInput">
+            <button type="submit" class="tinyBtn">${takeLabel}</button>
           </form>
         </div>
         <div class="prebookLineActions">
@@ -6449,13 +6640,16 @@
       row.querySelector(".prebookClaimForm").addEventListener("submit", (e) => {
         e.preventDefault();
         const input = row.querySelector(".prebookClaimInput");
+        const poInput = row.querySelector(".prebookClaimPoInput");
         const qty = Number(input.value);
+        const po = poInput.value.trim();
         if(!qty || qty <= 0){ alert("Enter a quantity greater than 0 to claim."); return; }
+        if(!po){ alert("Enter a PO number for this pickup."); return; }
         const list = loadPrebook();
         const rec = list.find(x => x.id === p.id);
         if(!rec) return;
         rec.claims = rec.claims || [];
-        rec.claims.push({ id: cryptoRandomId(), qty, by: getUser()?.name || "—", at: new Date().toISOString() });
+        rec.claims.push({ id: cryptoRandomId(), qty, po, by: getUser()?.name || "—", at: new Date().toISOString() });
         savePrebook(list);
         markTabChanged("prebook");
         renderPrebook();
@@ -6467,20 +6661,72 @@
     function renderPrebook(){
       const wrap = document.getElementById("prebookWrap");
       const tabsEl = document.getElementById("prebookSeasonTabs");
+      const toolsEl = document.getElementById("prebookToolbarTools");
+      const chooserEl = document.getElementById("prebookChooser");
+      const modeChip = document.getElementById("prebookModeChip");
+      const archiveBtn = document.getElementById("prebookArchiveBtn");
       if(!wrap || !tabsEl) return;
 
-      const yearLabelEl = document.getElementById("prebookYearLabel");
-      if(yearLabelEl) yearLabelEl.textContent = String(prebookYear);
+      // Nothing renders until Pre Book or Tag is picked — same pattern as
+      // Order Check-In's Homestead/Hampshire chooser.
+      if(!prebookViewMode){
+        chooserEl.style.display = "";
+        toolsEl.style.display = "none";
+        tabsEl.style.display = "none";
+        modeChip.style.display = "none";
+        wrap.innerHTML = "";
+        return;
+      }
+      chooserEl.style.display = "none";
+      toolsEl.style.display = "";
+      modeChip.style.display = "";
+      modeChip.textContent = prebookViewMode === "tag" ? "🏷️ Tag" : "📌 Pre Book";
+      archiveBtn.style.display = prebookViewMode === "tag" ? "" : "none";
+      archiveBtn.textContent = prebookShowArchive ? "📌 Back to active" : "📦 Archive";
 
       const search = (document.getElementById("prebookSearch").value || "").trim().toLowerCase();
-      let items = loadPrebook();
-      if(search) items = items.filter(p => (p.vendor||"").toLowerCase().includes(search) || (p.item||"").toLowerCase().includes(search));
-      // The year arrows at the top filter every line down to its ready
-      // date's calendar year — the season tabs' counts below reflect that.
-      items = items.filter(p => { const d = parseDate(p.readyDate); return d && d.getFullYear() === prebookYear; });
+      const statusFilter = document.getElementById("prebookStatusFilter").value;
+      let items = loadPrebook().filter(p => (p.type || "prebook") === prebookViewMode);
+      if(search){
+        items = items.filter(p => (p.vendor||"").toLowerCase().includes(search) || (p.item||"").toLowerCase().includes(search) || (p.location||"").toLowerCase().includes(search));
+      }
+      const isTaken = (p) => { const r = prebookRemaining(p); return Number(p.qty) > 0 && r <= 0; };
+
+      // Archive (Tag mode only): every fully-taken tag, one flat list, most
+      // recently ready first — no season tabs here.
+      if(prebookViewMode === "tag" && prebookShowArchive){
+        tabsEl.style.display = "none";
+        const taken = items.filter(isTaken).sort((a,b) => (b.readyDate||"").localeCompare(a.readyDate||""));
+        wrap.innerHTML = "";
+        if(!taken.length){
+          wrap.innerHTML = emptyStateHtml("No tagged items have been fully taken yet.", "pin");
+          return;
+        }
+        const section = document.createElement("div");
+        section.className = "prebookSeasonSection";
+        section.innerHTML = `
+          <div class="prebookSeasonSectionHead">
+            <h3>📦 Archive — Taken Tags</h3>
+            <span class="sectionMeta"><span class="pillMini">${taken.length} item(s)</span></span>
+          </div>
+          <div class="prebookLineHead">
+            <span>Vendor</span><span>Product</span><span>Qty</span><span>Ready Date</span><span>Claimed</span><span></span>
+          </div>`;
+        const body = document.createElement("div");
+        body.className = "prebookLines";
+        section.appendChild(body);
+        taken.forEach(p => body.appendChild(prebookLineRow(p)));
+        wrap.appendChild(section);
+        return;
+      }
+
+      tabsEl.style.display = "";
+      if(statusFilter) items = items.filter(p => statusFilter === "fulfilled" ? isTaken(p) : !isTaken(p));
+      // Fully-taken tags live in the Archive, not the active season list.
+      if(prebookViewMode === "tag") items = items.filter(p => !isTaken(p));
 
       // Seasons always show, whether or not anything's booked in them yet —
-      // the counts on each tab reflect the current search + year.
+      // the counts on each tab reflect the current search + filter.
       const countBySeason = new Map(SEASONS.map(s => [s.key, 0]));
       items.forEach(p => { const s = seasonForDate(p.readyDate); countBySeason.set(s.key, countBySeason.get(s.key) + 1); });
       tabsEl.innerHTML = SEASONS.map(season => `
@@ -6494,12 +6740,16 @@
       const season = SEASONS.find(s => s.key === prebookSeasonKey) || SEASONS[0];
       document.getElementById("page-prebook").dataset.season = season.key;
 
+      // One flat list per season — every ready year together, soonest
+      // first. No year step and no month sub-grouping; each line's own
+      // Ready Date still carries its year so nothing's ambiguous.
       const seasonItems = items.filter(p => seasonForDate(p.readyDate).key === season.key)
         .sort((a,b) => (a.readyDate||"").localeCompare(b.readyDate||"") || (a.vendor||"").localeCompare(b.vendor||""));
 
       wrap.innerHTML = "";
       if(seasonItems.length === 0){
-        wrap.innerHTML = emptyStateHtml(`No ${escapeHtml(season.name)} pre-books in ${prebookYear} yet. Click <strong>+ Add Pre-Book</strong> to reserve stock ahead of a date or holiday.`, "pin");
+        const kind = prebookViewMode === "tag" ? "tags" : "pre-books";
+        wrap.innerHTML = emptyStateHtml(`No ${escapeHtml(season.name)} ${kind} yet. Click <strong>+ Add</strong> to reserve stock ahead of a date or holiday.`, "pin");
         return;
       }
 
@@ -6516,21 +6766,7 @@
       const body = document.createElement("div");
       body.className = "prebookLines";
       section.appendChild(body);
-
-      let lastMonthKey = null;
-      seasonItems.forEach(p => {
-        const d = parseDate(p.readyDate);
-        const monthKey = d ? `${d.getFullYear()}-${d.getMonth()}` : "unknown";
-        if(monthKey !== lastMonthKey){
-          lastMonthKey = monthKey;
-          const groupHead = document.createElement("div");
-          groupHead.className = "prebookMonthGroupHead";
-          groupHead.textContent = d ? d.toLocaleDateString(undefined, {month:"long", year:"numeric"}) : "No date set";
-          body.appendChild(groupHead);
-        }
-        body.appendChild(prebookLineRow(p));
-      });
-
+      seasonItems.forEach(p => body.appendChild(prebookLineRow(p)));
       wrap.appendChild(section);
     }
 
@@ -6581,8 +6817,14 @@
       prev.style.display = "block";
     });
 
-    function openIssueModal(issue){
+    // When an issue is opened from the Order Check-In "⚠ Add Issue" flag,
+    // this holds which week + PO Analysis row it came from, so saving the
+    // issue can also fold the note text into that row's own Notes field
+    // (see appendIssueNoteToCheckin) instead of leaving it only on the issue.
+    let checkinIssueLink = null;
+    function openIssueModal(issue, link){
       editingIssueId = issue?.id ?? null;
+      checkinIssueLink = link || null;
       refreshWeekSelectors();
       populateIssueTruckOptions();
       populateIssuePhotoOptions();
@@ -6612,6 +6854,7 @@
       issueModal.classList.remove("active");
       issueModal.setAttribute("aria-hidden","true");
       editingIssueId = null;
+      checkinIssueLink = null;
     }
     document.getElementById("issueSaveBtn").addEventListener("click", () => {
       const date = document.getElementById("i_date").value;
@@ -6626,15 +6869,26 @@
       const t = loadTrucks().find(x => x.id === truckId);
       const truckLabel = t ? `${dateBadgePrefix(t.region)} ${t.pickupDate} • ${t.region||"—"} • ${orderTypeLabel(t.orderType||"CC")}` : "";
       if(!date || !vendor || !item){ alert("Date, Vendor, and Item are required."); return; }
+      const who = (getUser() && getUser().name) || "Unknown";
       const issues = loadIssues();
       if(editingIssueId){
         const idx = issues.findIndex(x => x.id === editingIssueId);
         if(idx >= 0){
+          const prevStatus = issues[idx].status;
+          const history = Array.isArray(issues[idx].history) ? issues[idx].history.slice() : [];
+          // Log a history entry whenever the status actually changes via
+          // Save (the quick "Toggle Status" button logs its own entry too —
+          // see toggleBtn below); Date/Status/User is what the History
+          // button on each row shows.
+          if(prevStatus !== status){
+            history.push({ date: fmtDate(new Date()), status, user: who });
+          }
           issues[idx] = {
             ...issues[idx],
             date, status, type, vendor,
             truckId: truckId || "", truckLabel, item, notes,
-            photoId: photoId || "", photoDataUrl: uploadedUrl
+            photoId: photoId || "", photoDataUrl: uploadedUrl,
+            history
           };
         }
       } else {
@@ -6642,11 +6896,18 @@
           id: cryptoRandomId(), date, status, type, vendor,
           truckId: truckId || "", truckLabel, item, notes,
           photoId: photoId || "", photoDataUrl: uploadedUrl,
-          createdAt: new Date().toISOString()
+          createdAt: new Date().toISOString(),
+          history: [{ date: fmtDate(new Date()), status, user: who }]
         });
       }
       saveIssues(issues);
       markTabChanged("issues");
+      if(checkinIssueLink){
+        appendIssueNoteToCheckin(checkinIssueLink.checkinWeek, checkinIssueLink.checkinRowKey, notes);
+        checkinIssueLink = null;
+        markTabChanged("checkin");
+        if(typeof renderCheckIn === "function" && currentPage === "checkin") renderCheckIn();
+      }
       showToast("Issue saved");
       closeIssueModal();
       renderIssues();
@@ -6668,6 +6929,28 @@
       if(i.photoId){ const p = loadPhotos().find(x => x.id === i.photoId); return p?.dataUrl || ""; }
       return "";
     }
+    const issueHistoryModal = document.getElementById("issueHistoryModal");
+    function openIssueHistory(issue){
+      document.getElementById("issueHistoryTitle").textContent = `History — ${issue.item || "Issue"}`;
+      const wrap = document.getElementById("issueHistoryResults");
+      const history = Array.isArray(issue.history) ? issue.history.slice().reverse() : [];
+      wrap.innerHTML = history.length ? history.map(h => `
+        <div class="issueHistoryRow">
+          <span class="ihDate">${escapeHtml(h.date || "—")}</span>
+          <span class="${statusClass(h.status)}">${escapeHtml(h.status || "—")}</span>
+          <span class="ihUser">${escapeHtml(h.user || "Unknown")}</span>
+        </div>`
+      ).join("") : emptyStateHtml("No status history recorded for this issue yet.", "bug");
+      issueHistoryModal.classList.add("active");
+      issueHistoryModal.setAttribute("aria-hidden","false");
+    }
+    function closeIssueHistory(){
+      issueHistoryModal.classList.remove("active");
+      issueHistoryModal.setAttribute("aria-hidden","true");
+    }
+    document.getElementById("issueHistoryCloseBtn").addEventListener("click", closeIssueHistory);
+    issueHistoryModal.addEventListener("click", (e) => { if(e.target === issueHistoryModal) closeIssueHistory(); });
+
     function renderIssues(){
       const tbody = document.querySelector("#issueTable tbody");
       const issues = filteredIssues();
@@ -6686,11 +6969,12 @@
           <td>${escapeHtml(i.truckLabel || "—")}</td>
           <td>${escapeHtml(i.item)}</td>
           <td>${escapeHtml(i.type)}</td>
-          <td>${escapeHtml(i.notes || "—")}</td>
-          <td style="white-space:nowrap;">
+          <td class="issueNotesCell">${escapeHtml(i.notes || "—")}</td>
+          <td class="issueActionsCell">
             <button class="tinyBtn iv_edit">Edit</button>
             ${hasPhoto ? `<button class="tinyBtn iv_photo">Photo</button>` : ``}
             <button class="tinyBtn iv_toggle">Toggle Status</button>
+            <button class="tinyBtn iv_history">History</button>
             <button class="tinyBtn danger iv_del">Delete</button>
           </td>
         `;
@@ -6698,6 +6982,7 @@
         const toggleBtn = tr.querySelector(".iv_toggle");
         const delBtn = tr.querySelector(".iv_del");
         const photoBtn = tr.querySelector(".iv_photo");
+        const historyBtn = tr.querySelector(".iv_history");
         editBtn.addEventListener("click", () => {
           const fresh = loadIssues().find(x => x.id === i.id);
           openIssueModal(fresh || i);
@@ -6709,6 +6994,10 @@
             else alert("That photo is no longer available.");
           });
         }
+        historyBtn.addEventListener("click", () => {
+          const fresh = loadIssues().find(x => x.id === i.id);
+          openIssueHistory(fresh || i);
+        });
         toggleBtn.addEventListener("click", () => {
           const all = loadIssues();
           const idx = all.findIndex(x => x.id === i.id);
@@ -6716,6 +7005,10 @@
           const cur = all[idx].status;
           const next = cur === "Open" ? "Submitted" : (cur === "Submitted" ? "Resolved" : "Open");
           all[idx].status = next;
+          const history = Array.isArray(all[idx].history) ? all[idx].history.slice() : [];
+          const who = (getUser() && getUser().name) || "Unknown";
+          history.push({ date: fmtDate(new Date()), status: next, user: who });
+          all[idx].history = history;
           saveIssues(all);
           renderIssues();
         });
@@ -6738,6 +7031,24 @@
     function saveCheckinAll(o){ LS.set(LS.checkinKey, o); }
     function checkinStateForWeek(wk){ const all = loadCheckinAll(); return all[wk] || {}; }
     function setCheckinStateForWeek(wk, obj){ const all = loadCheckinAll(); all[wk] = obj; saveCheckinAll(all); }
+    // Folds an Issue's note text into the originating Check-In row's own
+    // Notes field (instead of the note living only on the issue record) —
+    // see openIssueModal/checkinIssueLink and the issueSaveBtn handler.
+    function appendIssueNoteToCheckin(weekKey, rowKey, issueNoteText){
+      if(!weekKey || !rowKey) return;
+      const obj = checkinStateForWeek(weekKey);
+      const prev = obj[rowKey] || { checked:false, notes:"", hasIssue:false };
+      const trimmed = (issueNoteText || "").trim();
+      if(trimmed){
+        const existing = (prev.notes || "").trim();
+        if(!existing.includes(trimmed)){
+          prev.notes = existing ? `${existing}\n[Issue] ${trimmed}` : `[Issue] ${trimmed}`;
+        }
+      }
+      prev.hasIssue = true;
+      obj[rowKey] = prev;
+      setCheckinStateForWeek(weekKey, obj);
+    }
 
     // Which view is showing: null = the Homestead/Hampshire chooser (nothing
     // imported is displayed yet), "homestead" or "hampshire" once picked.
@@ -6917,34 +7228,8 @@
       saveCheckinAll(all);
       renderCheckIn();
     });
-    document.getElementById("checkinShareBtn").addEventListener("click", async () => {
-      const wk = weekKeyFromDate(weekAnchor);
-      const rows = checkinRowsForWeek(wk);
-      if(!rows.length){ alert("No PO Analysis imported for this week yet."); return; }
-      const state = checkinStateForWeek(wk);
-      const outstanding = rows.filter(r => !(state[r.key] || {}).checked);
-      const title = `Outstanding — ${weekLabel(weekAnchor)}`;
-      let body;
-      if(!outstanding.length){
-        body = `${title}\nEverything is checked in — ${rows.length}/${rows.length} lines received. 🎉`;
-      } else {
-        body = `${title}\n${outstanding.length} of ${rows.length} line(s) still outstanding:\n` +
-          outstanding.map(r => `• ${r.vendor || "Vendor —"} — ${r.item || "Item —"}${r.po ? ` (PO ${r.po})` : ""}${r.qty ? ` — ${r.qty.toLocaleString ? r.qty.toLocaleString() : r.qty}` : ""}`).join("\n");
-      }
-      try {
-        if(navigator.share){
-          await navigator.share({ title, text: body });
-          return;
-        }
-      } catch(_){ /* share cancelled or unsupported — fall through to clipboard */ }
-      try {
-        await navigator.clipboard.writeText(body);
-        statusChip.textContent = "Outstanding summary copied to clipboard";
-        setTimeout(() => { statusChip.textContent = "Ready"; }, 4000);
-      } catch(_){
-        alert(body);
-      }
-    });
+    document.getElementById("checkinStatusFilter").addEventListener("change", renderCheckIn);
+    document.getElementById("checkinSort").addEventListener("change", renderCheckIn);
     function diffPoImport(oldRows, newRows){
       const oldMap = new Map((oldRows||[]).map(r => [r.key, r]));
       const newMap = new Map((newRows||[]).map(r => [r.key, r]));
@@ -7068,9 +7353,26 @@
       }
       const vFilter = (document.getElementById("checkinVendorFilter").value || "").trim().toLowerCase();
       const iFilter = (document.getElementById("checkinItemFilter").value || "").trim().toLowerCase();
+      const statusFilter = document.getElementById("checkinStatusFilter").value;
+      const sortMode = document.getElementById("checkinSort").value;
       let rows = modeRows.slice();
       if(vFilter) rows = rows.filter(r => r.vendor.toLowerCase().includes(vFilter));
       if(iFilter) rows = rows.filter(r => (r.item + " " + r.comment + " " + r.po).toLowerCase().includes(iFilter));
+      if(statusFilter) rows = rows.filter(r => {
+        const s = state[r.key] || {};
+        if(statusFilter === "checked") return !!s.checked;
+        if(statusFilter === "unchecked") return !s.checked;
+        if(statusFilter === "flagged") return !!s.hasIssue;
+        return true;
+      });
+      if(sortMode === "vendor") rows.sort((a,b) => (a.vendor||"").localeCompare(b.vendor||"") || (a.item||"").localeCompare(b.item||""));
+      else if(sortMode === "item") rows.sort((a,b) => (a.item||"").localeCompare(b.item||""));
+      else if(sortMode === "status") rows.sort((a,b) => {
+        const sa = state[a.key] || {}, sb = state[b.key] || {};
+        const av = sa.checked ? 1 : 0, bv = sb.checked ? 1 : 0;
+        if(av !== bv) return av - bv;
+        return (a.vendor||"").localeCompare(b.vendor||"");
+      });
 
       const scroll = document.createElement("div");
       scroll.className = "poTableScroll";
@@ -7130,11 +7432,19 @@
             e.stopPropagation();
             const obj = checkinStateForWeek(wk);
             const prevEntry = obj[r.key] || {};
-            obj[r.key] = { checked: chk.checked, notes: notesEl ? notesEl.value : (prevEntry.notes || ""), hasIssue: true };
+            const curNotes = notesEl ? notesEl.value : (prevEntry.notes || "");
+            obj[r.key] = { checked: chk.checked, notes: curNotes, hasIssue: true };
             setCheckinStateForWeek(wk, obj);
             markTabChanged("checkin");
             renderCheckIn();
-            openIssueModal({ date: fmtDate(new Date()), status:"Open", type:"Shortage", vendor: r.vendor, item: r.item, notes: r.po ? `Flagged from Check-In — PO ${r.po}` : "Flagged from Check-In" });
+            // Prefill from this line's own Notes if it already has some,
+            // otherwise start from the same default context text as before.
+            // Whatever ends up in the issue's Notes field on Save gets
+            // folded back into this row's Notes too (see checkinIssueLink).
+            openIssueModal(
+              { date: fmtDate(new Date()), status:"Open", type:"Shortage", vendor: r.vendor, item: r.item, notes: curNotes.trim() || (r.po ? `Flagged from Check-In — PO ${r.po}` : "Flagged from Check-In") },
+              { checkinWeek: wk, checkinRowKey: r.key }
+            );
           });
         }
         const clearIssueBtn = tr.querySelector(".checkinClearIssueBtn");
@@ -7308,7 +7618,7 @@
         const now = Date.now();
         if(now - _lastNotif < 4000) return;          // debounce batch saves
         _lastNotif = now;
-        const labels = { order:"Order Tracker", photos:"Photo Library", checkin:"Order Check-In", issues:"Issue Tracker", training:"Training Documents", avail:"Availability", prebook:"Pre-Booking" };
+        const labels = { order:"Order Tracker", photos:"Photo Library", checkin:"Order Check-In", issues:"Issue Tracker", training:"Training Documents", avail:"Availability", prebook:"Booking" };
         const icon = (document.querySelector('link[rel="apple-touch-icon"]') || {}).href;
         new Notification("HPA HUB 🦎", { body: "Saved a change in " + (labels[tabKey] || "the Hub") + ".", tag:"hpa-save", icon });
       } catch(e){}
@@ -8136,7 +8446,7 @@
           [LS.trainingKey]:"Training docs", [LS.availLinkKey]:"Availability link", [LS.catalogKey]:"Plant catalog",
           [LS.availKey]:"Availability", [LS.availOrdersKey]:"Availability orders",
           [LS.availAmountsKey]:"Availability amounts", [LS.availSpecOverridesKey]:"Availability spec edits",
-          [LS.prebookKey]:"Pre-Booking"
+          [LS.prebookKey]:"Booking"
         };
         return map[key] || null;  // null = not worth logging (ui state, notifs, etc.)
       },
@@ -8315,7 +8625,7 @@
           { icon:"🐛", title:"Go to Issue Tracker", tag:"Nav", run:()=>showPage("issues") },
           { icon:"📚", title:"Go to Training Documents", tag:"Nav", run:()=>showPage("training") },
           { icon:"📊", title:"Go to Availability", tag:"Nav", run:()=>showPage("avail") },
-          { icon:"📌", title:"Go to Pre-Booking", tag:"Nav", run:()=>showPage("prebook") },
+          { icon:"📌", title:"Go to Booking", tag:"Nav", run:()=>showPage("prebook") },
           { icon:"➕", title:"New order", sub:"Create a truck order", tag:"Action", run:()=>{ showPage("order"); document.getElementById("newTruckBtn")?.click(); } },
           { icon:"🐛", title:"Log an issue", tag:"Action", run:()=>{ showPage("issues"); document.getElementById("newIssueBtn")?.click(); } },
           { icon:"✅", title:"Open Order Check-In", tag:"Nav", run:()=>showPage("checkin") },
@@ -8326,7 +8636,8 @@
           { icon:"📄", title:"Export Truck Breakdown", tag:"Export", run:()=>{ showPage("order"); document.getElementById("exportTruckBreakdownBtn")?.click(); } },
           { icon:"📥", title:"Import PO Analysis", tag:"Import", run:()=>{ showPage("checkin"); document.getElementById("checkinImportBtn")?.click(); } },
           { icon:"➕", title:"Add Availability", sub:"Add an item to the current week", tag:"Action", run:()=>{ showPage("avail"); document.getElementById("availAddBtn")?.click(); } },
-          { icon:"📌", title:"Pre-book an item", sub:"Reserve stock ahead of a date or holiday", tag:"Action", run:()=>{ showPage("prebook"); openPrebookModal(null); } },
+          { icon:"📌", title:"Pre-book an item", sub:"Reserve stock ahead of a date or holiday", tag:"Action", run:()=>{ showPage("prebook"); prebookViewMode = "prebook"; renderPrebook(); openPrebookModal(null, null, "prebook"); } },
+          { icon:"🏷️", title:"Tag an item", sub:"Hold a specific item for a customer or order", tag:"Action", run:()=>{ showPage("prebook"); prebookViewMode = "tag"; renderPrebook(); openPrebookModal(null, null, "tag"); } },
           { icon:"💾", title:"Backup all data", tag:"Data", run:()=>window.HPABackup.export() },
           { icon:"↺", title:"Restore from backup", tag:"Data", run:()=>document.getElementById("restoreBtn")?.click() },
           { icon:"🟢", title:"Open Team Sync", tag:"Data", run:()=>window.HPASync.openModal() },
@@ -8362,7 +8673,8 @@
         loadPrebook().forEach(p => {
           if([p.vendor,p.item].some(x => (x||"").toLowerCase().includes(q))){
             const h = p.holidayKey ? holidayByKey(p.holidayKey) : null;
-            push("📌", `${p.item||"Item"} — ${p.vendor||""}`, `${seasonForDate(p.readyDate).name} · ${h ? h.emoji+" "+h.name : (p.readyDate||"")}`, "Pre-Book", ()=>{ showPage("prebook"); });
+            const type = p.type === "tag" ? "tag" : "prebook";
+            push(type === "tag" ? "🏷️" : "📌", `${p.item||"Item"} — ${p.vendor||""}`, `${seasonForDate(p.readyDate).name} · ${h ? h.emoji+" "+h.name : (p.readyDate||"")}`, type === "tag" ? "Tag" : "Pre-Book", ()=>{ showPage("prebook"); prebookViewMode = type; prebookSeasonKey = seasonForDate(p.readyDate).key; renderPrebook(); });
           }
         });
         // training
