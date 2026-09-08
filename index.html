@@ -794,6 +794,41 @@
     .trainingDesc{ color:var(--ink-2); font-size:12.5px; line-height:1.4; }
     .trainingActions{ display:flex; gap:6px; flex-wrap:wrap; margin-top:auto; }
 
+    /* ----- Ads ----- */
+    .adsList{ display:flex; flex-direction:column; gap:12px; margin-top:16px; }
+    .adCard{ display:flex; align-items:center; gap:14px; background:var(--paper-2); border:1px solid var(--line); border-radius:var(--radius-sm); padding:14px 16px; box-shadow:var(--shadow-sm); flex-wrap:wrap; }
+    .adCard.adCompleted{ opacity:.6; }
+    .adCard.adCompleted .adItem{ text-decoration:line-through; }
+    .adDateBadge{ display:flex; flex-direction:column; align-items:center; justify-content:center; flex:none; width:58px; height:58px; border-radius:12px; background:var(--paper); border:1px solid var(--line); font-family:var(--display); }
+    .adDateBadge .adDay{ font-size:19px; font-weight:700; line-height:1.1; color:var(--ink); }
+    .adDateBadge .adMon{ font-size:10.5px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-2); }
+    .adMain{ flex:1 1 220px; min-width:0; }
+    .adItem{ font-family:var(--display); font-weight:600; font-size:16px; color:var(--ink); word-break:break-word; }
+    .adPriceRow{ display:flex; align-items:baseline; gap:8px; margin-top:4px; flex-wrap:wrap; }
+    .adWas{ text-decoration:line-through; color:var(--ink-2); font-size:13px; }
+    .adNow{ font-weight:700; color:var(--moss); font-size:16px; }
+    .adEdlp{ font-weight:700; color:var(--moss); font-size:16px; }
+    .adEdlpTag{ font-size:10.5px; font-weight:700; letter-spacing:.03em; color:var(--ink-2); }
+    .adActions{ display:flex; gap:6px; flex-wrap:wrap; flex:none; margin-left:auto; }
+
+    /* ----- Label Tracker (Dashboard) ----- */
+    .labelTrackerCard{ background:linear-gradient(165deg,#fffdf6,#f2efe0); border:1px solid var(--line); border-radius:var(--radius-md, 18px); box-shadow:0 14px 34px rgba(8,29,22,.10); padding:18px 20px 20px; margin:0 0 18px; }
+    html[data-theme="dark"] .labelTrackerCard{ background:linear-gradient(165deg,#25392c,#1b2a21); box-shadow:0 14px 34px rgba(0,0,0,.35); }
+    .labelTrackerHead{ display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+    .labelTrackerTitle{ display:flex; align-items:center; gap:10px; }
+    .labelTrackerTitle h3{ margin:0; font-family:var(--display); font-weight:600; font-size:16px; color:var(--ink); }
+    .labelTrackerIcon{ width:30px; height:30px; border-radius:9px; display:flex; align-items:center; justify-content:center; background:color-mix(in srgb, var(--gold) 18%, transparent); color:var(--gold); flex:none; }
+    .labelTrackerIcon .iconSvg{ width:16px; height:16px; }
+    .labelTrackerActions{ display:flex; gap:6px; flex-wrap:wrap; }
+    .labelTrackerBarTrack{ width:100%; height:20px; border-radius:999px; background:var(--paper-2); border:1px solid var(--line); overflow:hidden; margin-top:14px; }
+    .labelTrackerBarFill{ height:100%; border-radius:999px; transition:width .3s ease, background .3s ease; }
+    .labelTrackerMeta{ display:flex; justify-content:space-between; align-items:baseline; margin-top:9px; gap:10px; flex-wrap:wrap; }
+    .labelTrackerQty{ font-family:var(--display); font-weight:600; font-size:20px; color:var(--ink); font-variant-numeric:tabular-nums; }
+    .labelTrackerQty small{ font-weight:600; font-size:12px; color:var(--ink-2); margin-left:4px; }
+    .labelTrackerNote{ font-size:12px; font-weight:700; color:var(--state-ok-fg); }
+    .labelTrackerNote.warn{ color:var(--state-warn-fg); }
+    .labelTrackerNote.low{ color:var(--state-danger-fg); }
+
     /* ----- Sync diagnostics ----- */
     .diagRow{ display:flex; justify-content:space-between; gap:14px; padding:8px 2px; border-bottom:1px solid var(--line-soft); }
     .diagRow span{ color:var(--ink-2); }
@@ -1258,6 +1293,7 @@
           <button class="navBtn" data-page="checkin" aria-label="Order Check-In"><span class="navIcon" data-icon="checkCircle" aria-hidden="true"></span><span class="navLabel"><span class="navLabelFull">Order Check-In</span><span class="navLabelShort">Check-In</span></span></button>
           <button class="navBtn" data-page="issues" aria-label="Issue Tracker"><span class="navIcon" data-icon="bug" aria-hidden="true"></span><span class="navLabel"><span class="navLabelFull">Issue Tracker</span><span class="navLabelShort">Issues</span></span></button>
           <button class="navBtn" data-page="training" aria-label="Training Documents"><span class="navIcon" data-icon="book" aria-hidden="true"></span><span class="navLabel"><span class="navLabelFull">Training Documents</span><span class="navLabelShort">Training</span></span></button>
+          <button class="navBtn" data-page="ads" aria-label="Ads"><span class="navIcon" data-icon="dollar" aria-hidden="true"></span><span class="navLabel"><span class="navLabelFull">Ads</span><span class="navLabelShort">Ads</span></span></button>
         </nav>
         <button id="navMoreBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="More options"><span class="navIcon" data-icon="more" aria-hidden="true"></span><span class="navLabel">More</span></button>
         <div class="navSpacer"></div>
@@ -1292,6 +1328,7 @@
           <div class="dashUnified">
             <div class="dashGrid" id="dashStats"></div>
           </div>
+          <div id="dashLabelTracker"></div>
         </div>
         <div id="page-order" class="page">
           <div class="orderHead"><h2>Order Tracker</h2></div>
@@ -1544,6 +1581,17 @@
           </div>
           <div class="note">A shared library of training guides, SOPs, and reference docs. Add links to online files (OneDrive, Google Docs, PDFs) or upload small files to keep in this browser.</div>
           <div class="trainingGrid" id="trainingGrid"></div>
+        </div>
+
+        <div id="page-ads" class="page" style="display:none;">
+          <div class="toolbar">
+            <h2>Ads</h2>
+            <div class="tools">
+              <button id="newAdBtn" class="btnGhost"><span data-icon="plus" aria-hidden="true"></span> Add Ad</button>
+            </div>
+          </div>
+          <div class="note">Items on ad, listed by ad date. Price each one as a Was/Now markdown or an EDLP (everyday low price).</div>
+          <div class="adsList" id="adsList"></div>
         </div>
       </main>
     </div>
@@ -1798,6 +1846,81 @@
     </div>
   </div>
 
+  <div id="adModal" class="modal" aria-hidden="true">
+    <div class="modalCard" style="width:min(480px,96vw);">
+      <div class="modalHead">
+        <div>
+          <h3 id="adModalTitle">New Ad</h3>
+          <div class="note">Log an item going on ad, its price, and the date the ad is active.</div>
+        </div>
+        <button id="adCloseBtn" class="closeX">Close</button>
+      </div>
+      <label><span class="lbl">Item on Ad</span><input id="ad_item" placeholder="e.g., 3gal Hydrangea"/></label>
+      <label><span class="lbl">Pricing</span>
+        <select id="ad_pricingMode">
+          <option value="wasnow">Was / Now</option>
+          <option value="edlp">EDLP</option>
+        </select>
+      </label>
+      <div id="ad_wasNowWrap" class="row">
+        <label><span class="lbl">Was Price</span><input id="ad_wasPrice" type="number" step="0.01" min="0" placeholder="0.00"/></label>
+        <label><span class="lbl">Now Price</span><input id="ad_nowPrice" type="number" step="0.01" min="0" placeholder="0.00"/></label>
+      </div>
+      <div id="ad_edlpWrap" class="row" style="display:none;">
+        <label><span class="lbl">EDLP Price</span><input id="ad_edlpPrice" type="number" step="0.01" min="0" placeholder="0.00"/></label>
+      </div>
+      <label><span class="lbl">Ad Active Date</span><input id="ad_date" type="date"/></label>
+      <button id="adSaveBtn" class="btn">Save Ad</button>
+    </div>
+  </div>
+
+  <div id="labelUseModal" class="modal" aria-hidden="true">
+    <div class="modalCard" style="width:min(480px,96vw);">
+      <div class="modalHead">
+        <div>
+          <h3>Log Label Usage</h3>
+          <div class="note">Pick what just got potted &amp; labeled and how many — it comes off the label count.</div>
+        </div>
+        <button id="labelUseCloseBtn" class="closeX">Close</button>
+      </div>
+      <label><span class="lbl">Item</span>
+        <select id="lu_item"></select>
+      </label>
+      <label><span class="lbl">Quantity Labeled</span><input id="lu_qty" type="number" min="1" step="1" placeholder="e.g., 24"/></label>
+      <button id="labelUseSaveBtn" class="btn">Log Usage</button>
+    </div>
+  </div>
+
+  <div id="labelRestockModal" class="modal" aria-hidden="true">
+    <div class="modalCard" style="width:min(420px,96vw);">
+      <div class="modalHead">
+        <div>
+          <h3>Restock Labels</h3>
+          <div class="note">Add the quantity received — a new roll or box of Vigoro labels.</div>
+        </div>
+        <button id="labelRestockCloseBtn" class="closeX">Close</button>
+      </div>
+      <label><span class="lbl">Labels Received</span><input id="lr_qty" type="number" min="1" step="1" placeholder="e.g., 1000"/></label>
+      <button id="labelRestockSaveBtn" class="btn">Add to Count</button>
+    </div>
+  </div>
+
+  <div id="labelSettingsModal" class="modal" aria-hidden="true">
+    <div class="modalCard" style="width:min(420px,96vw);">
+      <div class="modalHead">
+        <div>
+          <h3>Label Tracker Settings</h3>
+          <div class="note">Set what "full" looks like, the low-stock alert point, and correct the count after a physical recount.</div>
+        </div>
+        <button id="labelSettingsCloseBtn" class="closeX">Close</button>
+      </div>
+      <label><span class="lbl">Full Count (bar's 100%)</span><input id="ls_capacity" type="number" min="1" step="1"/></label>
+      <label><span class="lbl">Low-Stock Alert At</span><input id="ls_reorder" type="number" min="0" step="1"/></label>
+      <label><span class="lbl">Correct Current Count (optional)</span><input id="ls_current" type="number" min="0" step="1" placeholder="Leave blank to keep as-is"/></label>
+      <button id="labelSettingsSaveBtn" class="btn">Save Settings</button>
+    </div>
+  </div>
+
   <div id="poFileModal" class="modal" aria-hidden="true">
     <div class="modalCard" style="width:min(480px,96vw);">
       <div class="modalHead">
@@ -1938,6 +2061,8 @@
       poHistKey:"hpa_po_history_v1",
       poActiveKey:"hpa_po_active_v1",
       trainingKey:"hpa_training_v1",
+      adsKey:"hpa_ads_v1",
+      labelsKey:"hpa_labels_v1",
       availLinkKey:"hpa_avail_link_v1",
       teamKey:"hpa_team_v1",
       lastBackupKey:"hpa_last_backup_v1",
@@ -1957,6 +2082,157 @@
         try { if(window.HPASync && window.HPASync.onLocalSet) window.HPASync.onLocalSet(key); } catch(_){}
       }
     };
+
+    // Items that require a Vigoro label at the register: every 6" Foliage SKU
+    // priced $12.98 and up, plus every Hanging Basket SKU (any price). Pulled from
+    // Homestead's SKU/Cost workbook (Foliage + Baskets tabs) — used to populate the
+    // item picker in the Dashboard's Label Tracker (see Log Usage below).
+    const VIGORO_LABEL_ITEMS = [
+      {sku:"1006807139",item:"6\" Vigoro Anthurium",cont:"60VG",retail:14.98,cat:"6\" Foliage"},
+      {sku:"1006807152",item:"6\" Vigoro Aralia Stump",cont:"60VG",retail:14.98,cat:"6\" Foliage"},
+      {sku:"1006807141",item:"6\" Vigoro Coffee Plant",cont:"60VG",retail:12.98,cat:"6\" Foliage"},
+      {sku:"1006807148",item:"6\" Vigoro Money Tree",cont:"60VG",retail:14.98,cat:"6\" Foliage"},
+      {sku:"1006807144",item:"6\" Vigoro Philodendron Birkin",cont:"60VG",retail:14.98,cat:"6\" Foliage"},
+      {sku:"1006807147",item:"6\" Vigoro Ponytail Stump",cont:"60VG",retail:14.98,cat:"6\" Foliage"},
+      {sku:"1006807145",item:"6\" Vigoro Spathiphyllum",cont:"60VG",retail:14.98,cat:"6\" Foliage"},
+      {sku:"1006807143",item:"6\" Vigoro White Bird",cont:"60VG",retail:12.98,cat:"6\" Foliage"},
+      {sku:"1006807153",item:"6\"Vigoro Ficus Lyrata",cont:"60VG",retail:12.98,cat:"6\" Foliage"},
+      {sku:"1006110487",item:"Alocasia Green 6 Inch",cont:"60VG",retail:14.98,cat:"6\" Foliage"},
+      {sku:"1006110481",item:"Calathea Burl Marx 6 inch",cont:"60VG",retail:12.98,cat:"6\" Foliage"},
+      {sku:"1006110507",item:"Calathea Medallion 6 inch",cont:"60VG",retail:12.98,cat:"6\" Foliage"},
+      {sku:"1006110512",item:"Calathea Pinstripe 6 inch",cont:"60VG",retail:12.98,cat:"6\" Foliage"},
+      {sku:"1015077333",item:"CLEARLY ROOTED 6IN",cont:"60IN",retail:14.98,cat:"6\" Foliage"},
+      {sku:"1005837419",item:"Cordyline 6 inch",cont:"60IN",retail:12.98,cat:"6\" Foliage"},
+      {sku:"1006110509",item:"Cordyline Ruby 6 inch",cont:"60IN",retail:12.98,cat:"6\" Foliage"},
+      {sku:"456373",item:"Deluxe Foliage",cont:"60IN",retail:12.98,cat:"6\" Foliage"},
+      {sku:"246510",item:"Dieffenbachia",cont:"60IN",retail:12.98,cat:"6\" Foliage"},
+      {sku:"1006110466",item:"Dieffenbachia Camille 6 inch",cont:"60IN",retail:12.98,cat:"6\" Foliage"},
+      {sku:"1006110511",item:"Dracaena Cutback 6 inch",cont:"60IN",retail:12.98,cat:"6\" Foliage"},
+      {sku:"1006110479",item:"Ficus Altissma Variegated 6 inch",cont:"60IN",retail:12.98,cat:"6\" Foliage"},
+      {sku:"1006110510",item:"Ficus Audrey 6 inch",cont:"60IN",retail:12.98,cat:"6\" Foliage"},
+      {sku:"1006110468",item:"Foliage Combo 6 inch",cont:"60IN",retail:12.98,cat:"6\" Foliage"},
+      {sku:"1005847058",item:"Lemon Button Fern",cont:"60IN",retail:12.98,cat:"6\" Foliage"},
+      {sku:"248072",item:"Lipstick Plant",cont:"60IN",retail:12.98,cat:"6\" Foliage"},
+      {sku:"139320",item:"Mass Cane",cont:"60IN",retail:12.98,cat:"6\" Foliage"},
+      {sku:"1015077332",item:"NURSERY KNOCKOUTS 6IN",cont:"60IN",retail:24.98,cat:"6\" Foliage"},
+      {sku:"245080",item:"Palm",cont:"60IN",retail:12.98,cat:"6\" Foliage"},
+      {sku:"1006110467",item:"Philodendron Little Hope 6 inch",cont:"60VG",retail:12.98,cat:"6\" Foliage"},
+      {sku:"136513",item:"Rubber Tree",cont:"60IN",retail:12.98,cat:"6\" Foliage"},
+      {sku:"1006110485",item:"Silver Lace Fern 6 inch",cont:"60IN",retail:12.98,cat:"6\" Foliage"},
+      {sku:"1014933172",item:"VIG DND AGLAONEMA CRETA 6IN",cont:"60VD",retail:14.98,cat:"6\" Foliage"},
+      {sku:"1014933217",item:"VIG DND AGLAONEMA MARY ANN 6IN",cont:"60VD",retail:14.98,cat:"6\" Foliage"},
+      {sku:"1014933182",item:"VIG DND AGLAONEMA SILVER BAY 6IN",cont:"60VD",retail:14.98,cat:"6\" Foliage"},
+      {sku:"1014933200",item:"VIG DND AGLAONEMA WISHES 6IN",cont:"60VD",retail:14.98,cat:"6\" Foliage"},
+      {sku:"1014933232",item:"VIG DND ANTHURIUM 6IN",cont:"60VD",retail:14.98,cat:"6\" Foliage"},
+      {sku:"1014933176",item:"VIG DND ARALIA STUMP 6IN",cont:"60VD",retail:14.98,cat:"6\" Foliage"},
+      {sku:"1014951393",item:"VIG DND CALATHEA BEAUTY STAR 6IN",cont:"60VD",retail:12.98,cat:"6\" Foliage"},
+      {sku:"1014951397",item:"VIG DND CALATHEA FREDDIE 6IN",cont:"60VD",retail:12.98,cat:"6\" Foliage"},
+      {sku:"1014951363",item:"VIG DND CALATHEA MAUI QUEEN 6IN",cont:"60VD",retail:12.98,cat:"6\" Foliage"},
+      {sku:"1014951389",item:"VIG DND CALATHEA PEACOCK 6IN",cont:"60VD",retail:12.98,cat:"6\" Foliage"},
+      {sku:"1014951373",item:"VIG DND CALATHEA RATTLESNAKE 6IN",cont:"60VD",retail:12.98,cat:"6\" Foliage"},
+      {sku:"1014951377",item:"VIG DND CALATHEA ROYAL STANDARD 6IN",cont:"60VD",retail:12.98,cat:"6\" Foliage"},
+      {sku:"1014951374",item:"VIG DND CALATHEA RUFIBARBA 6IN",cont:"60VD",retail:12.98,cat:"6\" Foliage"},
+      {sku:"1014951360",item:"VIG DND CALATHEA ZEBRINA 6IN",cont:"60VD",retail:12.98,cat:"6\" Foliage"},
+      {sku:"1014951384",item:"VIG DND DIEFFENBACHIA CAMOUFLAGE 6IN",cont:"60VD",retail:12.98,cat:"6\" Foliage"},
+      {sku:"1014951369",item:"VIG DND DIEFFENBACHIA COMPACTA 6IN",cont:"60VD",retail:12.98,cat:"6\" Foliage"},
+      {sku:"1014951402",item:"VIG DND DIEFFENBACHIA MRYAnn 6IN",cont:"60VD",retail:12.98,cat:"6\" Foliage"},
+      {sku:"1014951376",item:"VIG DND DIEFFENBACHIA PANTHER 6IN",cont:"60VD",retail:12.98,cat:"6\" Foliage"},
+      {sku:"1014951347",item:"VIG DND DIEFFENBACHIA SNOW 6IN",cont:"60VD",retail:12.98,cat:"6\" Foliage"},
+      {sku:"1014951359",item:"VIG DND FICUS AUDREY",cont:"60VD",retail:12.98,cat:"6\" Foliage"},
+      {sku:"1014951390",item:"VIG DND FICUS BAMBINO 6IN",cont:"60VD",retail:12.98,cat:"6\" Foliage"},
+      {sku:"1014951366",item:"VIG DND FICUS BURGUNDY 6IN",cont:"60VD",retail:12.98,cat:"6\" Foliage"},
+      {sku:"1014933173",item:"VIG DND FICUS GINSENG BONSAI 6IN",cont:"60VD",retail:14.98,cat:"6\" Foliage"},
+      {sku:"1014951348",item:"VIG DND FICUS TINEKE 6IN",cont:"60VD",retail:12.98,cat:"6\" Foliage"},
+      {sku:"1014951401",item:"VIG DND HOYA ASSORTED 6IN",cont:"60VD",retail:12.98,cat:"6\" Foliage"},
+      {sku:"1014951394",item:"VIG DND MARANTA ASSORTED",cont:"60VD",retail:12.98,cat:"6\" Foliage"},
+      {sku:"1014933233",item:"VIG DND MARGINATA BRAID 6IN",cont:"60VD",retail:14.98,cat:"6\" Foliage"},
+      {sku:"1014933180",item:"VIG DND MONEY TREE 6IN",cont:"60VD",retail:14.98,cat:"6\" Foliage"},
+      {sku:"1014951386",item:"VIG DND MONSTERA SWISS 6IN",cont:"60VD",retail:12.98,cat:"6\" Foliage"},
+      {sku:"1014951368",item:"VIG DND PHILO PAINTED LADY 6IN",cont:"60VD",retail:12.98,cat:"6\" Foliage"},
+      {sku:"1014951382",item:"VIG DND PHILODENDRON TRAILING 6IN",cont:"60VD",retail:12.98,cat:"6\" Foliage"},
+      {sku:"1014933230",item:"VIG DND PONYTAIL 6IN",cont:"60VD",retail:14.98,cat:"6\" Foliage"},
+      {sku:"1014951407",item:"VIG DND PORTULACARIA TREE 6IN",cont:"60VD",retail:14.98,cat:"6\" Foliage"},
+      {sku:"1014951404",item:"VIG DND POTHOS CEBU BLUE 6IN",cont:"60VD",retail:12.98,cat:"6\" Foliage"},
+      {sku:"1014951370",item:"VIG DND POTHOS HAWAIIAN 6IN",cont:"60VD",retail:12.98,cat:"6\" Foliage"},
+      {sku:"1014951387",item:"VIG DND POTHOS MARBLE QUEEN 6IN",cont:"60VD",retail:12.98,cat:"6\" Foliage"},
+      {sku:"1014951372",item:"VIG DND POTHOS NEON 6IN",cont:"60VD",retail:12.98,cat:"6\" Foliage"},
+      {sku:"1014951354",item:"VIG DND POTHOS NEON QUEEN 6IN",cont:"60VD",retail:12.98,cat:"6\" Foliage"},
+      {sku:"1014951365",item:"VIG DND POTHOS SILVER STREAK 6IN",cont:"60VD",retail:12.98,cat:"6\" Foliage"},
+      {sku:"1014951398",item:"VIG DND POTHOS SILVERY ANNE 6IN",cont:"60VD",retail:12.98,cat:"6\" Foliage"},
+      {sku:"1014951378",item:"VIG DND SANSEVIERIA MOONSHINE 6IN",cont:"60VD",retail:12.98,cat:"6\" Foliage"},
+      {sku:"1014951361",item:"VIG DND SANSEVIERIA ROBUSTA 6IN",cont:"60VD",retail:12.98,cat:"6\" Foliage"},
+      {sku:"1014951349",item:"VIG DND SANSVRIA FUTURA SUPERBA 6IN",cont:"60VD",retail:12.98,cat:"6\" Foliage"},
+      {sku:"1014933190",item:"VIG DND SPATHIPHYLLUM 6IN",cont:"60VD",retail:14.98,cat:"6\" Foliage"},
+      {sku:"1014951380",item:"VIG DND SYNGONIUM ASSORTED 6IN",cont:"60VD",retail:12.98,cat:"6\" Foliage"},
+      {sku:"1014951375",item:"VIG DND TOTEM POLE 6IN",cont:"60VD",retail:14.98,cat:"6\" Foliage"},
+      {sku:"1014951405",item:"VIG DND YUCCA CANE 6IN",cont:"60VD",retail:12.98,cat:"6\" Foliage"},
+      {sku:"1014933226",item:"VIG DND ZZ 6IN",cont:"60VD",retail:14.98,cat:"6\" Foliage"},
+      {sku:"1008594498",item:"Vig Homalomena Purple Sword 6in",cont:"60VG",retail:14.98,cat:"6\" Foliage"},
+      {sku:"1008594505",item:"Vig Philodendron Fuzzy Petiole 6in",cont:"60VG",retail:14.98,cat:"6\" Foliage"},
+      {sku:"1008594516",item:"Vig Philodendron Jungle Fan 6in",cont:"60VG",retail:14.98,cat:"6\" Foliage"},
+      {sku:"1005837398",item:"Vigoro Aglaonema Maria 6\"",cont:"60VG",retail:14.98,cat:"6\" Foliage"},
+      {sku:"1005837416",item:"Vigoro Alocasia Regal Shield 6\"",cont:"60VG",retail:14.98,cat:"6\" Foliage"},
+      {sku:"1011387514",item:"Vigoro Aphelandra Zebra 6in",cont:"60VG",retail:14.98,cat:"6\" Foliage"},
+      {sku:"1006110475",item:"Vigoro Black Raven ZZ 6 inch",cont:"60VG",retail:14.98,cat:"6\" Foliage"},
+      {sku:"1005837406",item:"Vigoro Braided Marginata 6\"",cont:"60VG",retail:14.98,cat:"6\" Foliage"},
+      {sku:"1005837401",item:"Vigoro Calathea Rattlesnake 6\"",cont:"60VG",retail:12.98,cat:"6\" Foliage"},
+      {sku:"1006110500",item:"Vigoro Calathea Zabrina 6 inch",cont:"60VG",retail:12.98,cat:"6\" Foliage"},
+      {sku:"1011387512",item:"Vigoro Fatsia Japonica 6in",cont:"60VG",retail:14.98,cat:"6\" Foliage"},
+      {sku:"1005837415",item:"Vigoro Ficus Ginseng 6\"",cont:"60VG",retail:14.98,cat:"6\" Foliage"},
+      {sku:"1008594547",item:"Vigoro Ficus Triangularis 6in",cont:"60VG",retail:14.98,cat:"6\" Foliage"},
+      {sku:"1008594537",item:"Vigoro Homalomena Selby 6in",cont:"60VG",retail:14.98,cat:"6\" Foliage"},
+      {sku:"1005837384",item:"Vigoro Hybrid Moonshine 6\"",cont:"60VG",retail:12.98,cat:"6\" Foliage"},
+      {sku:"1005837373",item:"Vigoro Hybrid Prince of Orange 6\"",cont:"60VG",retail:14.98,cat:"6\" Foliage"},
+      {sku:"1011387511",item:"Vigoro Maranta 6in",cont:"60VG",retail:12.98,cat:"6\" Foliage"},
+      {sku:"1005837379",item:"Vigoro Monstera 6\"",cont:"60VG",retail:12.98,cat:"6\" Foliage"},
+      {sku:"1005837405",item:"Vigoro Neon Pothos 6\"",cont:"60VG",retail:12.98,cat:"6\" Foliage"},
+      {sku:"1008594496",item:"Vigoro Philodendron Brasil 6in",cont:"60VG",retail:12.98,cat:"6\" Foliage"},
+      {sku:"1008594563",item:"Vigoro Philodendron Cordatum 6in",cont:"60VG",retail:12.98,cat:"6\" Foliage"},
+      {sku:"1008594543",item:"Vigoro Philodendron Florida 6in",cont:"60VG",retail:12.98,cat:"6\" Foliage"},
+      {sku:"1008594511",item:"Vigoro Philodendron Micans 6in",cont:"60VG",retail:12.98,cat:"6\" Foliage"},
+      {sku:"1008594554",item:"Vigoro Rex Begonia 6in",cont:"60VG",retail:12.98,cat:"6\" Foliage"},
+      {sku:"1006110489",item:"Vigoro Sanseveria Black Dragon 6 inch",cont:"60VG",retail:12.98,cat:"6\" Foliage"},
+      {sku:"1005837400",item:"Vigoro Sanseveria Sayuri 6\"",cont:"60VG",retail:12.98,cat:"6\" Foliage"},
+      {sku:"1006110508",item:"Vigoro Sanseveria Silver Flame 6 inch",cont:"60VG",retail:12.98,cat:"6\" Foliage"},
+      {sku:"1006110486",item:"Vigoro Sansevieria Moonshine 6 inch",cont:"60VG",retail:12.98,cat:"6\" Foliage"},
+      {sku:"1005837408",item:"Vigoro Silver Satin Pothos 6\"",cont:"60VG",retail:12.98,cat:"6\" Foliage"},
+      {sku:"1011165453",item:"Vigoro Syngonium 6in",cont:"60VG",retail:12.98,cat:"6\" Foliage"},
+      {sku:"1006807149",item:"8\" Vigoro Fittonia HB",cont:"HBV8",retail:16.98,cat:"Hanging Basket"},
+      {sku:"1006807142",item:"8\" Vigoro Maranta HB",cont:"HBV8",retail:16.98,cat:"Hanging Basket"},
+      {sku:"1006807150",item:"8\" Vigoro Neon Philo HB",cont:"HBV8",retail:16.98,cat:"Hanging Basket"},
+      {sku:"1006807140",item:"8\" Vigoro Peperomia HB",cont:"HBV8",retail:16.98,cat:"Hanging Basket"},
+      {sku:"1006807146",item:"8\" Vigoro Philo Swiss Cheese HB",cont:"HBV8",retail:16.98,cat:"Hanging Basket"},
+      {sku:"1005837376",item:"8\" Vigoro Pothos Neon HB",cont:"HBV8",retail:16.98,cat:"Hanging Basket"},
+      {sku:"865545",item:"Hanging Basket",cont:"HB06",retail:6.98,cat:"Hanging Basket"},
+      {sku:"241821",item:"Hanging Basket",cont:"HB10",retail:10.98,cat:"Hanging Basket"},
+      {sku:"262774",item:"Hanging Basket",cont:"HB08",retail:16.98,cat:"Hanging Basket"},
+      {sku:"359584",item:"Philodendron HB",cont:"HB08",retail:16.98,cat:"Hanging Basket"},
+      {sku:"247374",item:"Philodendron Hybrid HB",cont:"HB06",retail:9.98,cat:"Hanging Basket"},
+      {sku:"931208",item:"Premium Hanging Basket",cont:"HB08",retail:19.98,cat:"Hanging Basket"},
+      {sku:"1008594512",item:"Vigoro Baby tear HB 8in",cont:"HBV8",retail:16.98,cat:"Hanging Basket"},
+      {sku:"1008594525",item:"Vigoro Cissus Discolor HB 8in",cont:"HBV8",retail:24.98,cat:"Hanging Basket"},
+      {sku:"359608",item:"Vigoro Fern HB 8 Inch",cont:"HB08",retail:16.98,cat:"Hanging Basket"},
+      {sku:"1005837390",item:"Vigoro Hoya Basket 8\"",cont:"HBV8",retail:16.98,cat:"Hanging Basket"},
+      {sku:"1008594534",item:"Vigoro Hoya HB 8in",cont:"HBV8",retail:24.98,cat:"Hanging Basket"},
+      {sku:"359637",item:"Vigoro Ivy HB",cont:"HB08",retail:16.98,cat:"Hanging Basket"},
+      {sku:"1005837388",item:"Vigoro Marble Queen Basket 8\"",cont:"HBV8",retail:16.98,cat:"Hanging Basket"},
+      {sku:"1005837391",item:"Vigoro Pearl & Jade Basket 8\"",cont:"HBV8",retail:16.98,cat:"Hanging Basket"},
+      {sku:"1008594499",item:"Vigoro Peperomia Cupid HB 8in",cont:"HBV8",retail:16.98,cat:"Hanging Basket"},
+      {sku:"1008594555",item:"Vigoro Peperomia Diamond HB 8in",cont:"HBV8",retail:16.98,cat:"Hanging Basket"},
+      {sku:"1008594536",item:"Vigoro Philo Dragontail HB 8in",cont:"HBV8",retail:16.98,cat:"Hanging Basket"},
+      {sku:"1008594561",item:"Vigoro Philo Micans HB 8in",cont:"HBV8",retail:16.98,cat:"Hanging Basket"},
+      {sku:"1008594560",item:"Vigoro Philo Silver Sword HB 8in",cont:"HBV8",retail:24.98,cat:"Hanging Basket"},
+      {sku:"1005837395",item:"Vigoro Philodendron Brasil Basket 8\"",cont:"HBV8",retail:16.98,cat:"Hanging Basket"},
+      {sku:"1013332799",item:"Vigoro Philodendron Cordatum HB 8in",cont:"HB08",retail:16.98,cat:"Hanging Basket"},
+      {sku:"359533",item:"Vigoro Pothos HB Hampshire 8\"",cont:"HB08",retail:16.98,cat:"Hanging Basket"},
+      {sku:"1008594517",item:"Vigoro Pothos N-Joy HB 8in",cont:"HBV8",retail:16.98,cat:"Hanging Basket"},
+      {sku:"1008594522",item:"Vigoro Scindapsus HB 8in",cont:"HBV8",retail:16.98,cat:"Hanging Basket"},
+      {sku:"1001199122",item:"Vigoro Spider HB",cont:"HB08",retail:16.98,cat:"Hanging Basket"},
+      {sku:"1008594530",item:"Vigoro Staghorn Fern HB 8in",cont:"HBV8",retail:16.98,cat:"Hanging Basket"},
+      {sku:"1008594500",item:"Vigoro Syngonium HB 8in",cont:"HBV8",retail:16.98,cat:"Hanging Basket"},
+      {sku:"1001199125",item:"Vigoro Tradescantia HB",cont:"HB08",retail:16.98,cat:"Hanging Basket"},
+      {sku:"1008594504",item:"Vigoro Waffle HB 8in",cont:"HBV8",retail:16.98,cat:"Hanging Basket"}
+    ];
     // Shared helper for the handful of "direct" writes (sync apply, restore) that
     // intentionally skip LS.set's activity/re-push side effects but should still
     // warn the user consistently if the device is out of storage.
@@ -2464,7 +2740,8 @@
       prebook:document.getElementById("page-prebook"),
       checkin:document.getElementById("page-checkin"),
       issues: document.getElementById("page-issues"),
-      training:document.getElementById("page-training")
+      training:document.getElementById("page-training"),
+      ads:    document.getElementById("page-ads")
     };
 
     const NOTIF_KEY = "hpa_tab_notifs_v1";
@@ -2505,6 +2782,7 @@
       navBtns.forEach(b => b.classList.toggle("active", b.dataset.page === key));
       clearTabNotif(key);
       if(key === "dashboard" && window.HPAExtras){ dashWeekAnchor = startOfWeek(new Date()); window.HPAExtras.renderDashboard(); }
+      if(key === "dashboard" && typeof renderLabelTracker === "function") renderLabelTracker();
       if(key === "order") renderOrder();
       if(key === "photos") renderPhotosTab();
       if(key === "avail") renderAvailability();
@@ -2512,6 +2790,7 @@
       if(key === "checkin"){ checkinViewMode = null; renderCheckIn(); }
       if(key === "issues") renderIssues();
       if(key === "training") renderTraining();
+      if(key === "ads") renderAds();
       // Presence: reflect the tab switch instantly (locally) and let the
       // background heartbeat carry it to the rest of the team.
       if(window.HPASync && window.HPASync.ready){
@@ -2538,7 +2817,7 @@
      *********************************************************/
     const PAGE_LABELS = {
       dashboard:"Dashboard", order:"Order Tracker", photos:"Photo Library",
-      avail:"Availability", prebook:"Booking", checkin:"Order Check-In", issues:"Issue Tracker", training:"Training Documents"
+      avail:"Availability", prebook:"Booking", checkin:"Order Check-In", issues:"Issue Tracker", training:"Training Documents", ads:"Ads"
     };
     function presenceInitials(name){
       const parts = (name || "").trim().split(/\s+/).filter(Boolean);
@@ -3440,27 +3719,32 @@
       }
       const trucks = loadTrucks();
       let lastWk = null;
+      let labelDelta = 0; // net change in Vigoro labels needed across every truck this Save touches
       for(const d of datas){
         const rd = parseDate(d.requestDate);
         const wk = rd ? weekKeyFromDate(weekAnchorForRequestDate(rd)) : weekKeyFromDate(parseDate(d.pickupDate));
         lastWk = wk;
         const totals = computeTotals(d.vendorBlocks);
+        const labelQty = computeOrderLabelQty(d.vendorBlocks);
         if(d.id){
           const idx = trucks.findIndex(t => t.id === d.id);
           if(idx >= 0){
             const prev = trucks[idx];
-            trucks[idx] = { ...prev, pickupDate:d.pickupDate, requestDate:d.requestDate, weekKey:wk, region:d.region, orderType:d.orderType, trucking:d.trucking, price:Number(d.price||0), notes:d.notes, vendorBlocks:d.vendorBlocks, totals };
+            labelDelta += labelQty - (prev.labelQty || 0);
+            trucks[idx] = { ...prev, pickupDate:d.pickupDate, requestDate:d.requestDate, weekKey:wk, region:d.region, orderType:d.orderType, trucking:d.trucking, price:Number(d.price||0), notes:d.notes, vendorBlocks:d.vendorBlocks, totals, labelQty };
             pushTruckHistory(trucks[idx], "Order details updated");
           }
         } else {
           d.id = cryptoRandomId();
-          const newTruck = { id:d.id, pickupDate:d.pickupDate, requestDate:d.requestDate, weekKey:wk, region:d.region, orderType:d.orderType, trucking:d.trucking, price:Number(d.price||0), notes:d.notes, vendorBlocks:d.vendorBlocks, totals };
+          labelDelta += labelQty;
+          const newTruck = { id:d.id, pickupDate:d.pickupDate, requestDate:d.requestDate, weekKey:wk, region:d.region, orderType:d.orderType, trucking:d.trucking, price:Number(d.price||0), notes:d.notes, vendorBlocks:d.vendorBlocks, totals, labelQty };
           pushTruckHistory(newTruck, "Order created");
           trucks.push(newTruck);
         }
       }
       syncOrderLinesToBooking(datas);
       saveTrucks(trucks);
+      if(labelDelta) applyOrderLabelDelta(labelDelta, "Order saved");
       markTabChanged("order");
       showToast("Order saved");
       closeTruckModal();
@@ -3474,7 +3758,9 @@
     truckDeleteBtn.addEventListener("click", () => {
       if(!editingTruckId) return;
       if(!confirm("Delete this order?")) return;
+      const removedTruck = loadTrucks().find(t => t.id === editingTruckId);
       saveTrucks(loadTrucks().filter(t => t.id !== editingTruckId));
+      if(removedTruck && removedTruck.labelQty) applyOrderLabelDelta(-removedTruck.labelQty, "Order deleted");
       markTabChanged("order");
       closeTruckModal();
       renderAll();
@@ -3520,8 +3806,10 @@
       clone.pickupDate = wasAutoPickupDate ? fmtDate(pickupDateForRequest(rd, t.region)) : fmtDate(addDays(oldPd || rd, daysShift));
       const targetWeek = weekAnchorForRequestDate(rd);
       clone.weekKey = weekKeyFromDate(targetWeek);
+      clone.labelQty = computeOrderLabelQty(clone.vendorBlocks);
       trucks.push(clone);
       saveTrucks(trucks);
+      if(clone.labelQty) applyOrderLabelDelta(clone.labelQty, "Order duplicated");
       markTabChanged("order");
       weekAnchor = startOfWeek(targetWeek);
       renderAll();
@@ -3565,7 +3853,10 @@
       it.substituted = true;
       it.item = newName;
       it.notes = it.notes ? `${it.notes} • ${note}` : note;
+      const prevLabelQty = t.labelQty || 0;
+      t.labelQty = computeOrderLabelQty(t.vendorBlocks);
       saveTrucks(trucks);
+      if(t.labelQty !== prevLabelQty) applyOrderLabelDelta(t.labelQty - prevLabelQty, "Item substituted");
       markTabChanged("order");
       showToast("Substitution saved");
       closeSubModal();
@@ -7602,6 +7893,378 @@
     }
 
     /*********************************************************
+     * Ads — a vertical list of items on ad, by ad date. Priced either as
+     * a Was/Now markdown or an EDLP (everyday low price). Follows the same
+     * load/save/modal/render shape as Issue Tracker & Training Documents.
+     *********************************************************/
+    function loadAds(){ return LS.get(LS.adsKey, []); }
+    function saveAds(list){ LS.set(LS.adsKey, list); }
+    const adModal = document.getElementById("adModal");
+    let editingAdId = null;
+    document.getElementById("newAdBtn").addEventListener("click", () => openAdModal(null));
+    document.getElementById("adCloseBtn").addEventListener("click", closeAdModal);
+    adModal.addEventListener("click", (e) => { if(e.target === adModal) closeAdModal(); });
+    document.getElementById("ad_pricingMode").addEventListener("change", syncAdPricingFields);
+    function syncAdPricingFields(){
+      const mode = document.getElementById("ad_pricingMode").value;
+      document.getElementById("ad_wasNowWrap").style.display = mode === "edlp" ? "none" : "flex";
+      document.getElementById("ad_edlpWrap").style.display = mode === "edlp" ? "flex" : "none";
+    }
+    function openAdModal(ad){
+      editingAdId = ad?.id ?? null;
+      document.getElementById("adModalTitle").textContent = editingAdId ? "Edit Ad" : "New Ad";
+      document.getElementById("ad_item").value = ad?.item || "";
+      document.getElementById("ad_pricingMode").value = ad?.pricingMode || "wasnow";
+      document.getElementById("ad_wasPrice").value = ad?.wasPrice ?? "";
+      document.getElementById("ad_nowPrice").value = ad?.nowPrice ?? "";
+      document.getElementById("ad_edlpPrice").value = ad?.edlpPrice ?? "";
+      document.getElementById("ad_date").value = ad?.activeDate || fmtDate(new Date());
+      syncAdPricingFields();
+      const saveBtn = document.getElementById("adSaveBtn");
+      if(saveBtn) saveBtn.textContent = editingAdId ? "Save Changes" : "Save Ad";
+      adModal.classList.add("active");
+      adModal.setAttribute("aria-hidden","false");
+      setTimeout(() => document.getElementById("ad_item").focus(), 50);
+    }
+    function closeAdModal(){
+      adModal.classList.remove("active");
+      adModal.setAttribute("aria-hidden","true");
+      editingAdId = null;
+    }
+    document.getElementById("adSaveBtn").addEventListener("click", () => {
+      const item = document.getElementById("ad_item").value.trim();
+      const pricingMode = document.getElementById("ad_pricingMode").value;
+      const activeDate = document.getElementById("ad_date").value;
+      const wasPrice = parseFloat(document.getElementById("ad_wasPrice").value);
+      const nowPrice = parseFloat(document.getElementById("ad_nowPrice").value);
+      const edlpPrice = parseFloat(document.getElementById("ad_edlpPrice").value);
+      if(!item){ alert("Give the ad an item name."); return; }
+      if(!activeDate){ alert("Set the ad active date."); return; }
+      if(pricingMode === "edlp"){
+        if(!(edlpPrice >= 0)){ alert("Enter an EDLP price."); return; }
+      } else {
+        if(!(wasPrice >= 0) || !(nowPrice >= 0)){ alert("Enter both a Was price and a Now price."); return; }
+      }
+      const ads = loadAds();
+      const data = {
+        item, pricingMode, activeDate,
+        wasPrice: pricingMode === "wasnow" ? wasPrice : null,
+        nowPrice: pricingMode === "wasnow" ? nowPrice : null,
+        edlpPrice: pricingMode === "edlp" ? edlpPrice : null
+      };
+      if(editingAdId){
+        const idx = ads.findIndex(x => x.id === editingAdId);
+        if(idx >= 0) ads[idx] = { ...ads[idx], ...data };
+      } else {
+        ads.push({ id:cryptoRandomId(), completed:false, createdAt:new Date().toISOString(), ...data });
+      }
+      saveAds(ads);
+      markTabChanged("ads");
+      showToast("Ad saved");
+      closeAdModal();
+      renderAds();
+    });
+    function adPriceHtml(ad){
+      if(ad.pricingMode === "edlp"){
+        return `<span class="adEdlp">${money(ad.edlpPrice)}</span> <span class="adEdlpTag">EDLP</span>`;
+      }
+      return `<span class="adWas">${money(ad.wasPrice)}</span> <span class="adNow">${money(ad.nowPrice)}</span>`;
+    }
+    function renderAds(){
+      const wrap = document.getElementById("adsList");
+      if(!wrap) return;
+      const ads = loadAds().slice().sort((a,b) => (a.activeDate||"").localeCompare(b.activeDate||"") || (a.createdAt||"").localeCompare(b.createdAt||""));
+      if(!ads.length){
+        wrap.innerHTML = emptyStateHtml(`No ads yet. Click <strong>+ Add Ad</strong> to log one.`, "dollar");
+        return;
+      }
+      wrap.innerHTML = "";
+      ads.forEach(ad => {
+        const card = document.createElement("div");
+        card.className = "adCard" + (ad.completed ? " adCompleted" : "");
+        let day = "--", mon = "---";
+        if(ad.activeDate){
+          const parts = ad.activeDate.split("-").map(Number);
+          if(parts.length === 3){
+            const dt = new Date(parts[0], parts[1]-1, parts[2]);
+            day = String(dt.getDate());
+            mon = dt.toLocaleString(undefined, { month:"short" }).toUpperCase();
+          }
+        }
+        card.innerHTML = `
+          <div class="adDateBadge"><span class="adDay">${day}</span><span class="adMon">${mon}</span></div>
+          <div class="adMain">
+            <div class="adItem">${escapeHtml(ad.item)}</div>
+            <div class="adPriceRow">${adPriceHtml(ad)}</div>
+          </div>
+          <div class="adActions">
+            <button type="button" class="${ad.completed ? "statusPill statusConfirmed" : "statusPill statusOpen"} statusToggle ad_complete">${ad.completed ? "✅ Completed" : "⬜ Mark Complete"}</button>
+            <button class="tinyBtn ad_edit">Edit</button>
+            <button class="tinyBtn danger ad_del">Delete</button>
+          </div>`;
+        card.querySelector(".ad_complete").addEventListener("click", () => {
+          const all = loadAds();
+          const idx = all.findIndex(x => x.id === ad.id);
+          if(idx < 0) return;
+          all[idx].completed = !all[idx].completed;
+          saveAds(all);
+          renderAds();
+        });
+        card.querySelector(".ad_edit").addEventListener("click", () => {
+          const fresh = loadAds().find(x => x.id === ad.id);
+          openAdModal(fresh || ad);
+        });
+        card.querySelector(".ad_del").addEventListener("click", () => {
+          if(!confirm(`Delete the ad for "${ad.item}"?`)) return;
+          saveAds(loadAds().filter(x => x.id !== ad.id));
+          renderAds();
+        });
+        wrap.appendChild(card);
+      });
+    }
+
+    /*********************************************************
+     * Label Tracker (Dashboard) — tracks the Vigoro label supply so the
+     * team knows when to reorder. VIGORO_LABEL_ITEMS (defined up near LS)
+     * is the fixed list of SKUs that get a Vigoro label — every 6" Foliage
+     * item priced $12.98+ and every Hanging Basket — pulled straight from
+     * Homestead's SKU/Cost workbook. Logging usage against one of those
+     * items is what empties the bar; Restock tops it back up when a new
+     * box of labels comes in.
+     *********************************************************/
+    function loadLabels(){
+      return LS.get(LS.labelsKey, { capacity:1000, remaining:1000, reorderAt:200, log:[] });
+    }
+    function saveLabels(state){ LS.set(LS.labelsKey, state); }
+
+    // --- Auto-detecting label usage straight from Order Tracker lines ---
+    // Order lines are free-typed ("6" MONSTERA", "Vigoro Ivy HB"), not
+    // picked from a catalog, so we can't match them to an exact SKU. Instead
+    // this guesses from the same rule the workbook encodes: every Hanging
+    // Basket gets a label; a 6" Foliage line gets one only if it's the
+    // $12.98+ (Vigoro-branded) version of that plant, not the plain one.
+    // Most genera in the workbook are ALL one price or the other, so a
+    // plain keyword match is safe — a handful (Aralia, Dracaena, Fern,
+    // Homalomena, Yucca) carry both a plain and a Vigoro version, so those
+    // only count when the typed text also has the word that marks the
+    // pricier one (e.g. "stump", "braid", "cutback"). Anything this can't
+    // confidently place is left uncounted rather than guessed — log it
+    // manually with the tracker's "Log Usage" button instead.
+    const HB_LABEL_RE = /hanging\s*basket|\bhb\b/;
+    const SIZE_6IN_RE = /6\s*(in\.?|inch)\b|6\s*"/;
+    const FOLIAGE_GENUS_RULES = [
+      { key:"aglaonema" }, { key:"alocasia" }, { key:"anthurium" }, { key:"aphelandra" },
+      { key:"aralia", needAny:["stump"] },
+      { key:"begonia" }, { key:"calathea" },
+      { key:"coffee plant" }, { key:"coffee" }, { key:"cordyline" }, { key:"dieffenbachia" },
+      { key:"dracaena", needAny:["cutback","braid"] },
+      { key:"marginata", needAny:["braid"] },
+      { key:"fatsia" },
+      { key:"fern", needAny:["lemon button","silver lace"] },
+      { key:"ficus" }, { key:"rubber tree" },
+      { key:"homalomena", needAny:["purple sword","selby"] },
+      { key:"hoya" }, { key:"lipstick plant" }, { key:"maranta" }, { key:"money tree" },
+      { key:"monstera" }, { key:"palm" }, { key:"ponytail" },
+      { key:"philodendron" }, { key:"philo" },
+      { key:"portulacaria" }, { key:"portucularia" },
+      { key:"pothos" }, { key:"sansevieria" }, { key:"sanseveria" },
+      { key:"spathiphyllum" }, { key:"strelitzia" }, { key:"white bird" },
+      { key:"syngonium" },
+      { key:"yucca", needAny:["cane"] }, { key:"mass cane" },
+      { key:"zamioculcas" }, { key:"zz plant" }
+    ];
+    function itemNeedsVigoroLabel(rawText){
+      const t = (rawText||"").toLowerCase().trim();
+      if(!t) return false;
+      if(HB_LABEL_RE.test(t)) return true; // every Hanging Basket qualifies, any price
+      if(!SIZE_6IN_RE.test(t)) return false;
+      for(const rule of FOLIAGE_GENUS_RULES){
+        if(t.includes(rule.key)){
+          return rule.needAny ? rule.needAny.some(w => t.includes(w)) : true;
+        }
+      }
+      return false;
+    }
+    function computeOrderLabelQty(vendorBlocks){
+      let total = 0;
+      (vendorBlocks||[]).forEach(vb => {
+        (vb.items||[]).forEach(it => {
+          const qty = Number(it.qty || 0);
+          if(qty > 0 && itemNeedsVigoroLabel(it.item)) total += qty;
+        });
+      });
+      return total;
+    }
+    // Applies a net change in labels-needed (positive = more used, negative
+    // = credit back, e.g. an order was deleted or shrunk) straight to the
+    // tracker, the same way a manual Log Usage / Restock does.
+    function applyOrderLabelDelta(delta, meta){
+      if(!delta) return;
+      const state = loadLabels();
+      state.remaining = Math.max(0, (state.remaining||0) - delta);
+      state.log = state.log || [];
+      const who = (getUser() && getUser().name) || "Unknown";
+      state.log.unshift({ id:cryptoRandomId(), at:new Date().toISOString(), type:"order", qty:delta, meta:meta||"", by:who });
+      state.log = state.log.slice(0, 200);
+      saveLabels(state);
+      markTabChanged("dashboard");
+      if(typeof currentPage !== "undefined" && currentPage === "dashboard" && typeof renderLabelTracker === "function") renderLabelTracker();
+    }
+
+    function populateLabelItemSelect(){
+      const sel = document.getElementById("lu_item");
+      if(!sel) return;
+      let html = "";
+      let curCat = null;
+      VIGORO_LABEL_ITEMS.forEach(it => {
+        if(it.cat !== curCat){
+          if(curCat !== null) html += `</optgroup>`;
+          html += `<optgroup label="${escapeHtml(it.cat)}">`;
+          curCat = it.cat;
+        }
+        html += `<option value="${escapeHtml(it.sku)}">${escapeHtml(it.item)} — ${money(it.retail)}</option>`;
+      });
+      if(curCat !== null) html += `</optgroup>`;
+      sel.innerHTML = html;
+    }
+
+    const labelUseModal = document.getElementById("labelUseModal");
+    const labelRestockModal = document.getElementById("labelRestockModal");
+    const labelSettingsModal = document.getElementById("labelSettingsModal");
+
+    function openLabelUseModal(){
+      populateLabelItemSelect();
+      document.getElementById("lu_qty").value = "";
+      labelUseModal.classList.add("active");
+      labelUseModal.setAttribute("aria-hidden","false");
+      setTimeout(() => document.getElementById("lu_item")?.focus(), 50);
+    }
+    function closeLabelUseModal(){ labelUseModal.classList.remove("active"); labelUseModal.setAttribute("aria-hidden","true"); }
+    document.getElementById("labelUseCloseBtn").addEventListener("click", closeLabelUseModal);
+    labelUseModal.addEventListener("click", (e) => { if(e.target === labelUseModal) closeLabelUseModal(); });
+    document.getElementById("labelUseSaveBtn").addEventListener("click", () => {
+      const sku = document.getElementById("lu_item").value;
+      const qty = parseInt(document.getElementById("lu_qty").value, 10);
+      const found = VIGORO_LABEL_ITEMS.find(x => x.sku === sku);
+      if(!found){ alert("Pick an item."); return; }
+      if(!(qty > 0)){ alert("Enter how many were labeled."); return; }
+      const state = loadLabels();
+      state.remaining = Math.max(0, (state.remaining||0) - qty);
+      state.log = state.log || [];
+      const who = (getUser() && getUser().name) || "Unknown";
+      state.log.unshift({ id:cryptoRandomId(), at:new Date().toISOString(), type:"use", item:found.item, qty, by:who });
+      state.log = state.log.slice(0, 200); // keep the log from growing forever
+      saveLabels(state);
+      markTabChanged("dashboard");
+      showToast(`Logged ${qty} label${qty===1?"":"s"} used`);
+      closeLabelUseModal();
+      renderLabelTracker();
+    });
+
+    function openLabelRestockModal(){
+      document.getElementById("lr_qty").value = "";
+      labelRestockModal.classList.add("active");
+      labelRestockModal.setAttribute("aria-hidden","false");
+      setTimeout(() => document.getElementById("lr_qty")?.focus(), 50);
+    }
+    function closeLabelRestockModal(){ labelRestockModal.classList.remove("active"); labelRestockModal.setAttribute("aria-hidden","true"); }
+    document.getElementById("labelRestockCloseBtn").addEventListener("click", closeLabelRestockModal);
+    labelRestockModal.addEventListener("click", (e) => { if(e.target === labelRestockModal) closeLabelRestockModal(); });
+    document.getElementById("labelRestockSaveBtn").addEventListener("click", () => {
+      const qty = parseInt(document.getElementById("lr_qty").value, 10);
+      if(!(qty > 0)){ alert("Enter how many labels were received."); return; }
+      const state = loadLabels();
+      state.remaining = (state.remaining||0) + qty;
+      if(state.remaining > state.capacity) state.capacity = state.remaining; // a bigger shipment than "full" resets what full means
+      state.log = state.log || [];
+      const who = (getUser() && getUser().name) || "Unknown";
+      state.log.unshift({ id:cryptoRandomId(), at:new Date().toISOString(), type:"restock", qty, by:who });
+      state.log = state.log.slice(0, 200);
+      saveLabels(state);
+      markTabChanged("dashboard");
+      showToast(`Added ${qty} labels to the count`);
+      closeLabelRestockModal();
+      renderLabelTracker();
+    });
+
+    function openLabelSettingsModal(){
+      const state = loadLabels();
+      document.getElementById("ls_capacity").value = state.capacity || 1000;
+      document.getElementById("ls_reorder").value = state.reorderAt || 0;
+      document.getElementById("ls_current").value = "";
+      labelSettingsModal.classList.add("active");
+      labelSettingsModal.setAttribute("aria-hidden","false");
+    }
+    function closeLabelSettingsModal(){ labelSettingsModal.classList.remove("active"); labelSettingsModal.setAttribute("aria-hidden","true"); }
+    document.getElementById("labelSettingsCloseBtn").addEventListener("click", closeLabelSettingsModal);
+    labelSettingsModal.addEventListener("click", (e) => { if(e.target === labelSettingsModal) closeLabelSettingsModal(); });
+    document.getElementById("labelSettingsSaveBtn").addEventListener("click", () => {
+      const capacity = parseInt(document.getElementById("ls_capacity").value, 10);
+      const reorderAt = parseInt(document.getElementById("ls_reorder").value, 10);
+      const currentRaw = document.getElementById("ls_current").value;
+      if(!(capacity > 0)){ alert("Enter a full count greater than 0."); return; }
+      const state = loadLabels();
+      state.capacity = capacity;
+      state.reorderAt = reorderAt >= 0 ? reorderAt : 0;
+      if(currentRaw !== ""){
+        const current = parseInt(currentRaw, 10);
+        if(!(current >= 0)){ alert("Corrected count must be 0 or more."); return; }
+        const who = (getUser() && getUser().name) || "Unknown";
+        state.log = state.log || [];
+        state.log.unshift({ id:cryptoRandomId(), at:new Date().toISOString(), type:"adjust", qty:current - (state.remaining||0), by:who });
+        state.log = state.log.slice(0, 200);
+        state.remaining = current;
+      }
+      saveLabels(state);
+      markTabChanged("dashboard");
+      showToast("Label tracker settings saved");
+      closeLabelSettingsModal();
+      renderLabelTracker();
+    });
+
+    function renderLabelTracker(){
+      const wrap = document.getElementById("dashLabelTracker");
+      if(!wrap) return;
+      const state = loadLabels();
+      const capacity = Math.max(1, state.capacity || 1000);
+      const remaining = Math.max(0, state.remaining || 0);
+      const reorderAt = state.reorderAt || 0;
+      const pct = Math.max(0, Math.min(100, Math.round(remaining / capacity * 100)));
+      let level = "ok", fillColor = "var(--state-ok-bd)";
+      if(remaining <= reorderAt){ level = "low"; fillColor = "var(--state-danger-bd)"; }
+      else if(remaining <= reorderAt * 2 || pct <= 30){ level = "warn"; fillColor = "var(--state-warn-bd)"; }
+      const noteText = level === "low"
+        ? `⚠ Time to order more Vigoro labels`
+        : level === "warn"
+          ? `Getting low — keep an eye on it`
+          : `Stock looks good`;
+      wrap.innerHTML = `
+        <div class="labelTrackerCard">
+          <div class="labelTrackerHead">
+            <div class="labelTrackerTitle">
+              <div class="labelTrackerIcon">${icon("receipt")}</div>
+              <h3>Vigoro Label Tracker</h3>
+            </div>
+            <div class="labelTrackerActions">
+              <button id="labelUseBtn" class="btnGhost" type="button">${icon("plus")} Log Usage</button>
+              <button id="labelRestockBtn" class="btnGhost" type="button">${icon("upload")} Restock</button>
+              <button id="labelSettingsBtn" class="tinyBtn" type="button">Settings</button>
+            </div>
+          </div>
+          <div class="labelTrackerBarTrack">
+            <div class="labelTrackerBarFill" style="width:${pct}%; background:${fillColor};"></div>
+          </div>
+          <div class="labelTrackerMeta">
+            <div class="labelTrackerQty">${remaining.toLocaleString()} <small>/ ${capacity.toLocaleString()} labels · ${pct}%</small></div>
+            <div class="labelTrackerNote ${level === "ok" ? "" : level}">${noteText}</div>
+          </div>
+        </div>`;
+      document.getElementById("labelUseBtn").addEventListener("click", openLabelUseModal);
+      document.getElementById("labelRestockBtn").addEventListener("click", openLabelRestockModal);
+      document.getElementById("labelSettingsBtn").addEventListener("click", openLabelSettingsModal);
+    }
+
+    /*********************************************************
      * PWA install + save notifications
      *********************************************************/
     function isStandalone(){
@@ -7622,7 +8285,7 @@
         const now = Date.now();
         if(now - _lastNotif < 4000) return;          // debounce batch saves
         _lastNotif = now;
-        const labels = { order:"Order Tracker", photos:"Photo Library", checkin:"Order Check-In", issues:"Issue Tracker", training:"Training Documents", avail:"Availability", prebook:"Booking" };
+        const labels = { order:"Order Tracker", photos:"Photo Library", checkin:"Order Check-In", issues:"Issue Tracker", training:"Training Documents", avail:"Availability", prebook:"Booking", ads:"Ads", dashboard:"Dashboard" };
         const icon = (document.querySelector('link[rel="apple-touch-icon"]') || {}).href;
         new Notification("HPA HUB 🦎", { body: "Saved a change in " + (labels[tabKey] || "the Hub") + ".", tag:"hpa-save", icon });
       } catch(e){}
@@ -7661,7 +8324,7 @@
     // list — one workbook can be too big to lump in with everything else here.
     const SYNC_KEYS = [
       LS.trucksKey, LS.issuesKey,
-      LS.trainingKey, LS.availLinkKey, LS.catalogKey, LS.checkinKey,
+      LS.trainingKey, LS.adsKey, LS.labelsKey, LS.availLinkKey, LS.catalogKey, LS.checkinKey,
       LS.availKey, LS.availOrdersKey, LS.availAmountsKey, LS.availSpecOverridesKey,
       LS.prebookKey, LS.tagKey,
       LS.skipWeeksKey, LS.weekMetaKey,
@@ -8253,6 +8916,8 @@
           else if(k === "photos" && key === LS.catalogKey) renderPhotosTab();
           else if(k === "avail" && (key === LS.availKey || key === LS.availOrdersKey || key === LS.availAmountsKey || key === LS.availSpecOverridesKey)) renderAvailability();
           else if(k === "prebook" && (key === LS.prebookKey || key === LS.tagKey)) renderPrebook();
+          else if(k === "ads" && key === LS.adsKey) renderAds();
+          if(key === LS.labelsKey && typeof renderLabelTracker === "function") renderLabelTracker();
         } catch(e){}
         try {
           if(key === LS.skipWeeksKey && weekPickModal && weekPickModal.classList.contains("active")) renderWeekPick();
@@ -8609,12 +9274,16 @@
           { icon:"✅", title:"Go to Order Check-In", tag:"Nav", run:()=>showPage("checkin") },
           { icon:"🐛", title:"Go to Issue Tracker", tag:"Nav", run:()=>showPage("issues") },
           { icon:"📚", title:"Go to Training Documents", tag:"Nav", run:()=>showPage("training") },
+          { icon:"💲", title:"Go to Ads", tag:"Nav", run:()=>showPage("ads") },
           { icon:"📊", title:"Go to Availability", tag:"Nav", run:()=>showPage("avail") },
           { icon:"📌", title:"Go to Booking", tag:"Nav", run:()=>showPage("prebook") },
           { icon:"➕", title:"New order", sub:"Create a truck order", tag:"Action", run:()=>{ showPage("order"); document.getElementById("newTruckBtn")?.click(); } },
           { icon:"🐛", title:"Log an issue", tag:"Action", run:()=>{ showPage("issues"); document.getElementById("newIssueBtn")?.click(); } },
           { icon:"✅", title:"Open Order Check-In", tag:"Nav", run:()=>showPage("checkin") },
           { icon:"🔗", title:"Add training link", tag:"Action", run:()=>{ showPage("training"); document.getElementById("trainingAddLinkBtn")?.click(); } },
+          { icon:"💲", title:"Add Ad", sub:"Log an item going on ad", tag:"Action", run:()=>{ showPage("ads"); document.getElementById("newAdBtn")?.click(); } },
+          { icon:"🏷️", title:"Log Label Usage", sub:"Track Vigoro labels used", tag:"Action", run:()=>{ showPage("dashboard"); openLabelUseModal(); } },
+          { icon:"🏷️", title:"Restock Labels", sub:"Add received labels to the count", tag:"Action", run:()=>{ showPage("dashboard"); openLabelRestockModal(); } },
           { icon:"📄", title:"Export Truck Order", tag:"Export", run:()=>{ showPage("order"); document.getElementById("exportTruckBtn")?.click(); } },
           { icon:"📄", title:"Export CC Order", tag:"Export", run:()=>{ showPage("order"); document.getElementById("exportCCBtn")?.click(); } },
           { icon:"📄", title:"Export Order Breakdown", tag:"Export", run:()=>{ showPage("order"); document.getElementById("exportBreakdownBtn")?.click(); } },
@@ -8666,6 +9335,11 @@
         loadTraining().forEach(d => {
           if([d.title,d.cat,d.desc].some(x => (x||"").toLowerCase().includes(q)))
             push("📚", d.title||"Document", d.cat||(d.type==="file"?"File":"Link"), "Training", ()=>{ showPage("training"); });
+        });
+        // ads
+        loadAds().forEach(a => {
+          if((a.item||"").toLowerCase().includes(q))
+            push("💲", a.item||"Ad", `${a.activeDate||""} · ${a.pricingMode==="edlp"?"EDLP "+money(a.edlpPrice):money(a.wasPrice)+" → "+money(a.nowPrice)}`, "Ad", ()=>{ showPage("ads"); });
         });
         // check-in lines
         try {
