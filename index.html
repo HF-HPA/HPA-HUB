@@ -804,6 +804,9 @@
     .adDateBadge .adMon{ font-size:10.5px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-2); }
     .adMain{ flex:1 1 220px; min-width:0; }
     .adItem{ font-family:var(--display); font-weight:600; font-size:16px; color:var(--ink); word-break:break-word; }
+    .adDateRange{ font-size:11.5px; font-weight:600; color:var(--ink-2); margin-top:2px; }
+    .adEndedTag{ color:var(--state-danger-fg); font-weight:700; }
+    .adCard.adEnded{ border-color:var(--state-danger-bd); }
     .adPriceRow{ display:flex; align-items:baseline; gap:8px; margin-top:4px; flex-wrap:wrap; }
     .adWas{ text-decoration:line-through; color:var(--ink-2); font-size:13px; }
     .adNow{ font-weight:700; color:var(--moss); font-size:16px; }
@@ -828,6 +831,17 @@
     .labelTrackerNote{ font-size:12px; font-weight:700; color:var(--state-ok-fg); }
     .labelTrackerNote.warn{ color:var(--state-warn-fg); }
     .labelTrackerNote.low{ color:var(--state-danger-fg); }
+    .labelTrackerVendorDetails{ margin-top:14px; border-top:1px solid var(--line-soft); padding-top:10px; }
+    .labelTrackerVendorDetails > summary{ list-style:none; cursor:pointer; font-size:12px; font-weight:700; letter-spacing:.03em; text-transform:uppercase; color:var(--ink-2); display:inline-flex; align-items:center; gap:5px; }
+    .labelTrackerVendorDetails > summary::-webkit-details-marker{ display:none; }
+    .labelTrackerVendorDetails > summary::after{ content:"▾"; font-size:10px; opacity:.7; transition:transform .15s ease; }
+    .labelTrackerVendorDetails[open] > summary::after{ transform:rotate(180deg); }
+    .labelTrackerVendors{ display:flex; flex-direction:column; gap:2px; margin-top:8px; }
+    .labelTrackerVendorRow{ display:flex; justify-content:space-between; gap:10px; padding:5px 2px; font-size:13px; border-bottom:1px solid var(--line-soft); }
+    .labelTrackerVendorRow:last-child{ border-bottom:none; }
+    .ltvName{ color:var(--ink); font-weight:600; }
+    .ltvQty{ color:var(--ink-2); font-weight:700; font-variant-numeric:tabular-nums; }
+    .labelTrackerVendorEmpty{ font-size:12px; color:var(--ink-2); margin-top:6px; }
 
     /* ----- Sync diagnostics ----- */
     .diagRow{ display:flex; justify-content:space-between; gap:14px; padding:8px 2px; border-bottom:1px solid var(--line-soft); }
@@ -1851,7 +1865,7 @@
       <div class="modalHead">
         <div>
           <h3 id="adModalTitle">New Ad</h3>
-          <div class="note">Log an item going on ad, its price, and the date the ad is active.</div>
+          <div class="note">Log an item going on ad, its price, and the dates the ad runs.</div>
         </div>
         <button id="adCloseBtn" class="closeX">Close</button>
       </div>
@@ -1869,7 +1883,10 @@
       <div id="ad_edlpWrap" class="row" style="display:none;">
         <label><span class="lbl">EDLP Price</span><input id="ad_edlpPrice" type="number" step="0.01" min="0" placeholder="0.00"/></label>
       </div>
-      <label><span class="lbl">Ad Active Date</span><input id="ad_date" type="date"/></label>
+      <div class="row">
+        <label><span class="lbl">Ad Start Date</span><input id="ad_date" type="date"/></label>
+        <label><span class="lbl">Ad End Date</span><input id="ad_endDate" type="date"/></label>
+      </div>
       <button id="adSaveBtn" class="btn">Save Ad</button>
     </div>
   </div>
@@ -1918,6 +1935,7 @@
       <label><span class="lbl">Low-Stock Alert At</span><input id="ls_reorder" type="number" min="0" step="1"/></label>
       <label><span class="lbl">Correct Current Count (optional)</span><input id="ls_current" type="number" min="0" step="1" placeholder="Leave blank to keep as-is"/></label>
       <button id="labelSettingsSaveBtn" class="btn">Save Settings</button>
+      <button id="labelResetVendorsBtn" class="tinyBtn danger" type="button" style="margin-top:10px;">Reset By-Vendor Counts to Zero</button>
     </div>
   </div>
 
@@ -3720,31 +3738,35 @@
       const trucks = loadTrucks();
       let lastWk = null;
       let labelDelta = 0; // net change in Vigoro labels needed across every truck this Save touches
+      const vendorDeltaTotal = {}; // same net change, broken down by vendor
       for(const d of datas){
         const rd = parseDate(d.requestDate);
         const wk = rd ? weekKeyFromDate(weekAnchorForRequestDate(rd)) : weekKeyFromDate(parseDate(d.pickupDate));
         lastWk = wk;
         const totals = computeTotals(d.vendorBlocks);
-        const labelQty = computeOrderLabelQty(d.vendorBlocks);
+        const labelBreakdown = computeOrderLabelBreakdown(d.vendorBlocks);
         if(d.id){
           const idx = trucks.findIndex(t => t.id === d.id);
           if(idx >= 0){
             const prev = trucks[idx];
-            labelDelta += labelQty - (prev.labelQty || 0);
-            trucks[idx] = { ...prev, pickupDate:d.pickupDate, requestDate:d.requestDate, weekKey:wk, region:d.region, orderType:d.orderType, trucking:d.trucking, price:Number(d.price||0), notes:d.notes, vendorBlocks:d.vendorBlocks, totals, labelQty };
+            labelDelta += labelBreakdown.total - (prev.labelQty || 0);
+            const vd = diffVendorBreakdown(labelBreakdown.byVendor, prev.labelQtyByVendor);
+            Object.entries(vd).forEach(([k,v]) => { vendorDeltaTotal[k] = (vendorDeltaTotal[k]||0) + v; });
+            trucks[idx] = { ...prev, pickupDate:d.pickupDate, requestDate:d.requestDate, weekKey:wk, region:d.region, orderType:d.orderType, trucking:d.trucking, price:Number(d.price||0), notes:d.notes, vendorBlocks:d.vendorBlocks, totals, labelQty:labelBreakdown.total, labelQtyByVendor:labelBreakdown.byVendor };
             pushTruckHistory(trucks[idx], "Order details updated");
           }
         } else {
           d.id = cryptoRandomId();
-          labelDelta += labelQty;
-          const newTruck = { id:d.id, pickupDate:d.pickupDate, requestDate:d.requestDate, weekKey:wk, region:d.region, orderType:d.orderType, trucking:d.trucking, price:Number(d.price||0), notes:d.notes, vendorBlocks:d.vendorBlocks, totals, labelQty };
+          labelDelta += labelBreakdown.total;
+          Object.entries(labelBreakdown.byVendor).forEach(([k,v]) => { vendorDeltaTotal[k] = (vendorDeltaTotal[k]||0) + v; });
+          const newTruck = { id:d.id, pickupDate:d.pickupDate, requestDate:d.requestDate, weekKey:wk, region:d.region, orderType:d.orderType, trucking:d.trucking, price:Number(d.price||0), notes:d.notes, vendorBlocks:d.vendorBlocks, totals, labelQty:labelBreakdown.total, labelQtyByVendor:labelBreakdown.byVendor };
           pushTruckHistory(newTruck, "Order created");
           trucks.push(newTruck);
         }
       }
       syncOrderLinesToBooking(datas);
       saveTrucks(trucks);
-      if(labelDelta) applyOrderLabelDelta(labelDelta, "Order saved");
+      if(labelDelta || Object.keys(vendorDeltaTotal).length) applyOrderLabelDelta(labelDelta, "Order saved", vendorDeltaTotal);
       markTabChanged("order");
       showToast("Order saved");
       closeTruckModal();
@@ -3760,7 +3782,11 @@
       if(!confirm("Delete this order?")) return;
       const removedTruck = loadTrucks().find(t => t.id === editingTruckId);
       saveTrucks(loadTrucks().filter(t => t.id !== editingTruckId));
-      if(removedTruck && removedTruck.labelQty) applyOrderLabelDelta(-removedTruck.labelQty, "Order deleted");
+      if(removedTruck && removedTruck.labelQty){
+        const vd = {};
+        Object.entries(removedTruck.labelQtyByVendor||{}).forEach(([k,v]) => { vd[k] = -v; });
+        applyOrderLabelDelta(-removedTruck.labelQty, "Order deleted", vd);
+      }
       markTabChanged("order");
       closeTruckModal();
       renderAll();
@@ -3806,10 +3832,12 @@
       clone.pickupDate = wasAutoPickupDate ? fmtDate(pickupDateForRequest(rd, t.region)) : fmtDate(addDays(oldPd || rd, daysShift));
       const targetWeek = weekAnchorForRequestDate(rd);
       clone.weekKey = weekKeyFromDate(targetWeek);
-      clone.labelQty = computeOrderLabelQty(clone.vendorBlocks);
+      const dupBreakdown = computeOrderLabelBreakdown(clone.vendorBlocks);
+      clone.labelQty = dupBreakdown.total;
+      clone.labelQtyByVendor = dupBreakdown.byVendor;
       trucks.push(clone);
       saveTrucks(trucks);
-      if(clone.labelQty) applyOrderLabelDelta(clone.labelQty, "Order duplicated");
+      if(dupBreakdown.total) applyOrderLabelDelta(dupBreakdown.total, "Order duplicated", dupBreakdown.byVendor);
       markTabChanged("order");
       weekAnchor = startOfWeek(targetWeek);
       renderAll();
@@ -3854,9 +3882,13 @@
       it.item = newName;
       it.notes = it.notes ? `${it.notes} • ${note}` : note;
       const prevLabelQty = t.labelQty || 0;
-      t.labelQty = computeOrderLabelQty(t.vendorBlocks);
+      const prevLabelQtyByVendor = t.labelQtyByVendor || {};
+      const subBreakdown = computeOrderLabelBreakdown(t.vendorBlocks);
+      t.labelQty = subBreakdown.total;
+      t.labelQtyByVendor = subBreakdown.byVendor;
       saveTrucks(trucks);
-      if(t.labelQty !== prevLabelQty) applyOrderLabelDelta(t.labelQty - prevLabelQty, "Item substituted");
+      const subVendorDelta = diffVendorBreakdown(subBreakdown.byVendor, prevLabelQtyByVendor);
+      if(t.labelQty !== prevLabelQty || Object.keys(subVendorDelta).length) applyOrderLabelDelta(t.labelQty - prevLabelQty, "Item substituted", subVendorDelta);
       markTabChanged("order");
       showToast("Substitution saved");
       closeSubModal();
@@ -7918,7 +7950,10 @@
       document.getElementById("ad_wasPrice").value = ad?.wasPrice ?? "";
       document.getElementById("ad_nowPrice").value = ad?.nowPrice ?? "";
       document.getElementById("ad_edlpPrice").value = ad?.edlpPrice ?? "";
-      document.getElementById("ad_date").value = ad?.activeDate || fmtDate(new Date());
+      const startDefault = ad?.activeDate || fmtDate(new Date());
+      document.getElementById("ad_date").value = startDefault;
+      // New ads default to a one-week run (typical ad cycle); editing shows whatever was saved.
+      document.getElementById("ad_endDate").value = ad?.endDate || (ad ? "" : fmtDate(addDays(parseDate(startDefault) || new Date(), 6)));
       syncAdPricingFields();
       const saveBtn = document.getElementById("adSaveBtn");
       if(saveBtn) saveBtn.textContent = editingAdId ? "Save Changes" : "Save Ad";
@@ -7935,11 +7970,14 @@
       const item = document.getElementById("ad_item").value.trim();
       const pricingMode = document.getElementById("ad_pricingMode").value;
       const activeDate = document.getElementById("ad_date").value;
+      const endDate = document.getElementById("ad_endDate").value;
       const wasPrice = parseFloat(document.getElementById("ad_wasPrice").value);
       const nowPrice = parseFloat(document.getElementById("ad_nowPrice").value);
       const edlpPrice = parseFloat(document.getElementById("ad_edlpPrice").value);
       if(!item){ alert("Give the ad an item name."); return; }
-      if(!activeDate){ alert("Set the ad active date."); return; }
+      if(!activeDate){ alert("Set the ad start date."); return; }
+      if(!endDate){ alert("Set the ad end date."); return; }
+      if(endDate < activeDate){ alert("The end date can't be before the start date."); return; }
       if(pricingMode === "edlp"){
         if(!(edlpPrice >= 0)){ alert("Enter an EDLP price."); return; }
       } else {
@@ -7947,7 +7985,7 @@
       }
       const ads = loadAds();
       const data = {
-        item, pricingMode, activeDate,
+        item, pricingMode, activeDate, endDate,
         wasPrice: pricingMode === "wasnow" ? wasPrice : null,
         nowPrice: pricingMode === "wasnow" ? nowPrice : null,
         edlpPrice: pricingMode === "edlp" ? edlpPrice : null
@@ -7970,6 +8008,16 @@
       }
       return `<span class="adWas">${money(ad.wasPrice)}</span> <span class="adNow">${money(ad.nowPrice)}</span>`;
     }
+    // Small "Sep 15" formatter for the ad's date-range line (the day/month
+    // badge on the left uses its own inline parsing since it splits day and
+    // month into separate stacked spans).
+    function fmtAdDateLabel(dateStr){
+      if(!dateStr) return "";
+      const parts = dateStr.split("-").map(Number);
+      if(parts.length !== 3) return dateStr;
+      const dt = new Date(parts[0], parts[1]-1, parts[2]);
+      return dt.toLocaleString(undefined, { month:"short", day:"numeric" });
+    }
     function renderAds(){
       const wrap = document.getElementById("adsList");
       if(!wrap) return;
@@ -7979,9 +8027,11 @@
         return;
       }
       wrap.innerHTML = "";
+      const todayStr = fmtDate(new Date());
       ads.forEach(ad => {
         const card = document.createElement("div");
-        card.className = "adCard" + (ad.completed ? " adCompleted" : "");
+        const ended = ad.endDate && ad.endDate < todayStr;
+        card.className = "adCard" + (ad.completed ? " adCompleted" : "") + (ended && !ad.completed ? " adEnded" : "");
         let day = "--", mon = "---";
         if(ad.activeDate){
           const parts = ad.activeDate.split("-").map(Number);
@@ -7991,10 +8041,12 @@
             mon = dt.toLocaleString(undefined, { month:"short" }).toUpperCase();
           }
         }
+        const rangeLabel = ad.endDate ? `${fmtAdDateLabel(ad.activeDate)} – ${fmtAdDateLabel(ad.endDate)}` : fmtAdDateLabel(ad.activeDate);
         card.innerHTML = `
           <div class="adDateBadge"><span class="adDay">${day}</span><span class="adMon">${mon}</span></div>
           <div class="adMain">
             <div class="adItem">${escapeHtml(ad.item)}</div>
+            <div class="adDateRange">${rangeLabel}${ended && !ad.completed ? ` <span class="adEndedTag">Ended</span>` : ""}</div>
             <div class="adPriceRow">${adPriceHtml(ad)}</div>
           </div>
           <div class="adActions">
@@ -8085,23 +8137,54 @@
       }
       return false;
     }
-    function computeOrderLabelQty(vendorBlocks){
+    // Returns both the order's total label count AND a per-vendor split of
+    // it (keyed by the vendor block's name) — the tracker keeps a running
+    // by-vendor tally the same way it keeps the overall remaining count.
+    function computeOrderLabelBreakdown(vendorBlocks){
+      const byVendor = {};
       let total = 0;
       (vendorBlocks||[]).forEach(vb => {
+        const vendorName = (vb.name || "").trim() || "Unspecified Vendor";
         (vb.items||[]).forEach(it => {
           const qty = Number(it.qty || 0);
-          if(qty > 0 && itemNeedsVigoroLabel(it.item)) total += qty;
+          if(qty > 0 && itemNeedsVigoroLabel(it.item)){
+            total += qty;
+            byVendor[vendorName] = (byVendor[vendorName] || 0) + qty;
+          }
         });
       });
-      return total;
+      return { total, byVendor };
+    }
+    // A truck's ".labelQty"/".labelQtyByVendor" fields (set whenever it's
+    // saved) record what was already applied to the tracker for that order,
+    // so editing/deleting/duplicating it only ever applies the DIFFERENCE —
+    // never double-counts or forgets to credit labels back.
+    function diffVendorBreakdown(nextByVendor, prevByVendor){
+      const out = {};
+      const keys = new Set([...Object.keys(nextByVendor||{}), ...Object.keys(prevByVendor||{})]);
+      keys.forEach(k => {
+        const d = (nextByVendor?.[k]||0) - (prevByVendor?.[k]||0);
+        if(d) out[k] = d;
+      });
+      return out;
     }
     // Applies a net change in labels-needed (positive = more used, negative
     // = credit back, e.g. an order was deleted or shrunk) straight to the
-    // tracker, the same way a manual Log Usage / Restock does.
-    function applyOrderLabelDelta(delta, meta){
-      if(!delta) return;
+    // tracker, the same way a manual Log Usage / Restock does. vendorDelta
+    // is an optional { vendorName: +/-qty } map to fold into the by-vendor
+    // breakdown alongside the overall total.
+    function applyOrderLabelDelta(delta, meta, vendorDelta){
+      const hasVendorChange = vendorDelta && Object.keys(vendorDelta).length;
+      if(!delta && !hasVendorChange) return;
       const state = loadLabels();
       state.remaining = Math.max(0, (state.remaining||0) - delta);
+      state.byVendor = state.byVendor || {};
+      if(hasVendorChange){
+        Object.entries(vendorDelta).forEach(([name, d]) => {
+          const next = (state.byVendor[name] || 0) + d;
+          if(next > 0) state.byVendor[name] = next; else delete state.byVendor[name];
+        });
+      }
       state.log = state.log || [];
       const who = (getUser() && getUser().name) || "Unknown";
       state.log.unshift({ id:cryptoRandomId(), at:new Date().toISOString(), type:"order", qty:delta, meta:meta||"", by:who });
@@ -8150,6 +8233,10 @@
       if(!(qty > 0)){ alert("Enter how many were labeled."); return; }
       const state = loadLabels();
       state.remaining = Math.max(0, (state.remaining||0) - qty);
+      // Manual logs aren't tied to a vendor block, so they land in a
+      // catch-all bucket alongside the per-vendor breakdown from orders.
+      state.byVendor = state.byVendor || {};
+      state.byVendor["Manual / Other"] = (state.byVendor["Manual / Other"] || 0) + qty;
       state.log = state.log || [];
       const who = (getUser() && getUser().name) || "Unknown";
       state.log.unshift({ id:cryptoRandomId(), at:new Date().toISOString(), type:"use", item:found.item, qty, by:who });
@@ -8221,6 +8308,16 @@
       closeLabelSettingsModal();
       renderLabelTracker();
     });
+    document.getElementById("labelResetVendorsBtn").addEventListener("click", () => {
+      if(!confirm("Reset the by-vendor label counts to zero? This doesn't change the overall label count.")) return;
+      const state = loadLabels();
+      state.byVendor = {};
+      saveLabels(state);
+      markTabChanged("dashboard");
+      showToast("By-vendor counts reset");
+      closeLabelSettingsModal();
+      renderLabelTracker();
+    });
 
     function renderLabelTracker(){
       const wrap = document.getElementById("dashLabelTracker");
@@ -8238,6 +8335,17 @@
         : level === "warn"
           ? `Getting low — keep an eye on it`
           : `Stock looks good`;
+      // By-vendor breakdown — a running tally of labels attributed to each
+      // vendor's order lines (plus a "Manual / Other" bucket for anything
+      // logged by hand), not itself a second depleting count.
+      const vendorRows = Object.entries(state.byVendor || {})
+        .filter(([, v]) => v > 0)
+        .sort((a, b) => b[1] - a[1]);
+      const vendorRowsHtml = vendorRows.length
+        ? vendorRows.map(([name, v]) => `
+            <div class="labelTrackerVendorRow"><span class="ltvName">${escapeHtml(name)}</span><span class="ltvQty">${v.toLocaleString()}</span></div>`
+          ).join("")
+        : `<div class="labelTrackerVendorEmpty">No vendor usage logged yet — this fills in as orders are saved.</div>`;
       wrap.innerHTML = `
         <div class="labelTrackerCard">
           <div class="labelTrackerHead">
@@ -8258,6 +8366,10 @@
             <div class="labelTrackerQty">${remaining.toLocaleString()} <small>/ ${capacity.toLocaleString()} labels · ${pct}%</small></div>
             <div class="labelTrackerNote ${level === "ok" ? "" : level}">${noteText}</div>
           </div>
+          <details class="labelTrackerVendorDetails">
+            <summary>By Vendor${vendorRows.length ? ` (${vendorRows.length})` : ""}</summary>
+            <div class="labelTrackerVendors">${vendorRowsHtml}</div>
+          </details>
         </div>`;
       document.getElementById("labelUseBtn").addEventListener("click", openLabelUseModal);
       document.getElementById("labelRestockBtn").addEventListener("click", openLabelRestockModal);
@@ -9171,17 +9283,25 @@
       const d = Math.round(h/24); return d + "d ago";
     }
 
+    // Note: the Label Tracker is intentionally NOT re-rendered off
+    // dashWeekAnchor — it's one running count across the whole app, not a
+    // per-week figure, so switching weeks here never changes it. It's
+    // still re-rendered on each click (from the same always-current data)
+    // just so it never looks stale sitting next to the week nav.
     document.getElementById("dashPrevWeek")?.addEventListener("click", () => {
       dashWeekAnchor = addDays(dashWeekAnchor, -7);
       if(window.HPAExtras) window.HPAExtras.renderDashboard();
+      if(typeof renderLabelTracker === "function") renderLabelTracker();
     });
     document.getElementById("dashNextWeek")?.addEventListener("click", () => {
       dashWeekAnchor = addDays(dashWeekAnchor, 7);
       if(window.HPAExtras) window.HPAExtras.renderDashboard();
+      if(typeof renderLabelTracker === "function") renderLabelTracker();
     });
     document.getElementById("dashThisWeek")?.addEventListener("click", () => {
       dashWeekAnchor = startOfWeek(new Date());
       if(window.HPAExtras) window.HPAExtras.renderDashboard();
+      if(typeof renderLabelTracker === "function") renderLabelTracker();
     });
 
     const HPAExtras = {
@@ -9339,7 +9459,7 @@
         // ads
         loadAds().forEach(a => {
           if((a.item||"").toLowerCase().includes(q))
-            push("💲", a.item||"Ad", `${a.activeDate||""} · ${a.pricingMode==="edlp"?"EDLP "+money(a.edlpPrice):money(a.wasPrice)+" → "+money(a.nowPrice)}`, "Ad", ()=>{ showPage("ads"); });
+            push("💲", a.item||"Ad", `${a.activeDate||""}${a.endDate?" – "+a.endDate:""} · ${a.pricingMode==="edlp"?"EDLP "+money(a.edlpPrice):money(a.wasPrice)+" → "+money(a.nowPrice)}`, "Ad", ()=>{ showPage("ads"); });
         });
         // check-in lines
         try {
