@@ -321,6 +321,19 @@
       .availEntryRow > .ai_notes{ grid-column:1 / -1; }
       .availEntryRow > .rmItem{ grid-column:2; justify-self:end; }
     }
+    /* ----- Import Availability PDF — review list before committing ----- */
+    .availImportBody{ max-height:min(50vh, 480px); overflow-y:auto; border:1px solid var(--line-soft); border-radius:12px; }
+    .availImportGroup{ border-bottom:1px solid var(--line-soft); }
+    .availImportGroup:last-child{ border-bottom:none; }
+    .availImportGroupHead{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:9px 13px; background:var(--thead); font-size:13px; }
+    .availImportGroupHead label{ display:flex; align-items:center; gap:8px; cursor:pointer; }
+    .availImportGroupHead input[type="checkbox"]{ width:17px; height:17px; accent-color:var(--mint-deep); cursor:pointer; }
+    .availImportItems{ display:flex; flex-direction:column; }
+    .availImportItemRow{ display:flex; align-items:center; gap:9px; padding:6px 13px 6px 26px; font-size:13px; border-top:1px solid var(--line-soft); cursor:pointer; }
+    .availImportItemRow:first-child{ border-top:none; }
+    .availImportItemRow input[type="checkbox"]{ width:16px; height:16px; accent-color:var(--mint-deep); cursor:pointer; flex:none; }
+    .availImportItemRow span:first-of-type{ flex:1 1 auto; color:var(--ink); }
+    .availImportItemCat{ color:var(--ink-2); font-size:11px; flex:none; }
     /* Pre-Booking — a season tab bar (always all 4, each with its own color
        theme) drives a month calendar; a month bar underneath lets you arrow
        or sub-tab through that season's 3 months. Items appear on their
@@ -831,17 +844,23 @@
     .labelTrackerNote{ font-size:12px; font-weight:700; color:var(--state-ok-fg); }
     .labelTrackerNote.warn{ color:var(--state-warn-fg); }
     .labelTrackerNote.low{ color:var(--state-danger-fg); }
-    .labelTrackerVendorDetails{ margin-top:14px; border-top:1px solid var(--line-soft); padding-top:10px; }
-    .labelTrackerVendorDetails > summary{ list-style:none; cursor:pointer; font-size:12px; font-weight:700; letter-spacing:.03em; text-transform:uppercase; color:var(--ink-2); display:inline-flex; align-items:center; gap:5px; }
-    .labelTrackerVendorDetails > summary::-webkit-details-marker{ display:none; }
-    .labelTrackerVendorDetails > summary::after{ content:"▾"; font-size:10px; opacity:.7; transition:transform .15s ease; }
-    .labelTrackerVendorDetails[open] > summary::after{ transform:rotate(180deg); }
-    .labelTrackerVendors{ display:flex; flex-direction:column; gap:2px; margin-top:8px; }
-    .labelTrackerVendorRow{ display:flex; justify-content:space-between; gap:10px; padding:5px 2px; font-size:13px; border-bottom:1px solid var(--line-soft); }
-    .labelTrackerVendorRow:last-child{ border-bottom:none; }
-    .ltvName{ color:var(--ink); font-weight:600; }
-    .ltvQty{ color:var(--ink-2); font-weight:700; font-variant-numeric:tabular-nums; }
-    .labelTrackerVendorEmpty{ font-size:12px; color:var(--ink-2); margin-top:6px; }
+    .labelTrackerEmpty{ font-size:13px; color:var(--ink-2); padding:10px 2px; }
+    /* one independent bar/count per vendor, each with its own Use/Restock/Settings */
+    .labelVendorGrid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(230px, 1fr)); gap:12px; margin-top:14px; }
+    .labelVendorCard{ background:var(--paper); border:1px solid var(--line-soft); border-radius:14px; padding:12px 14px; }
+    html[data-theme="dark"] .labelVendorCard{ background:rgba(0,0,0,.15); }
+    .labelVendorHead{ display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; margin-bottom:8px; }
+    .labelVendorName{ font-weight:700; font-size:13px; color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:100%; }
+    .labelVendorActions{ display:flex; gap:4px; flex-wrap:wrap; }
+    .labelVendorActions .tinyBtn{ padding:4px 8px; font-size:11px; }
+    .labelVendorBarTrack{ width:100%; height:14px; border-radius:999px; background:var(--paper-2); border:1px solid var(--line); overflow:hidden; }
+    .labelVendorBarFill{ height:100%; border-radius:999px; transition:width .3s ease, background .3s ease; }
+    .labelVendorMeta{ display:flex; justify-content:space-between; align-items:baseline; margin-top:7px; gap:8px; flex-wrap:wrap; }
+    .labelVendorQty{ font-family:var(--display); font-weight:600; font-size:15px; color:var(--ink); font-variant-numeric:tabular-nums; }
+    .labelVendorQty small{ font-weight:600; font-size:11px; color:var(--ink-2); margin-left:3px; }
+    .labelVendorNote{ font-size:11px; font-weight:700; color:var(--state-ok-fg); }
+    .labelVendorNote.warn{ color:var(--state-warn-fg); }
+    .labelVendorNote.low{ color:var(--state-danger-fg); }
 
     /* ----- Sync diagnostics ----- */
     .diagRow{ display:flex; justify-content:space-between; gap:14px; padding:8px 2px; border-bottom:1px solid var(--line-soft); }
@@ -1484,6 +1503,8 @@
                 </div>
                 <input id="availSearch" placeholder="Search vendor or item..." />
                 <button id="availAddBtn" class="btn"><span data-icon="plus" aria-hidden="true"></span> Add Availability</button>
+                <button id="availImportPdfBtn" class="btnGhost"><span data-icon="upload" aria-hidden="true"></span> Import PDF</button>
+                <input id="availImportPdfInput" type="file" accept="application/pdf,.pdf" style="display:none;" />
                 <button id="availExportBtn" class="btnGhost"><span data-icon="download" aria-hidden="true"></span> Export CSV</button>
               </div>
             </div>
@@ -1744,6 +1765,21 @@
     </div>
   </div>
 
+  <div id="availImportModal" class="modal" aria-hidden="true">
+    <div class="modalCard" style="width:min(640px,96vw);">
+      <div class="modalHead">
+        <div>
+          <h3>Import Availability PDF</h3>
+          <div class="note">Upload a vendor availability sheet — new items are grouped by vendor below so you can review before adding them. Amounts still get entered per week in the grid, same as always.</div>
+        </div>
+        <button id="availImportCloseBtn" class="closeX">Close</button>
+      </div>
+      <div id="availImportStatus" class="note" style="margin:6px 0 10px;"></div>
+      <div id="availImportBody" class="availImportBody"></div>
+      <button id="availImportConfirmBtn" class="btn" style="margin-top:12px;" disabled>Import Selected Items</button>
+    </div>
+  </div>
+
   <div id="availDetailModal" class="modal" aria-hidden="true">
     <div class="modalCard" style="width:min(440px,96vw);">
       <div class="modalHead">
@@ -1896,10 +1932,11 @@
       <div class="modalHead">
         <div>
           <h3>Log Label Usage</h3>
-          <div class="note">Pick what just got potted &amp; labeled and how many — it comes off the label count.</div>
+          <div class="note">Pick the vendor and item that just got potted &amp; labeled and how many — it comes off that vendor's own label count.</div>
         </div>
         <button id="labelUseCloseBtn" class="closeX">Close</button>
       </div>
+      <label><span class="lbl">Vendor</span><input id="lu_vendor" list="lu_vendorList" placeholder="e.g., ANCHOR"/><datalist id="lu_vendorList"></datalist></label>
       <label><span class="lbl">Item</span>
         <select id="lu_item"></select>
       </label>
@@ -1913,10 +1950,11 @@
       <div class="modalHead">
         <div>
           <h3>Restock Labels</h3>
-          <div class="note">Add the quantity received — a new roll or box of Vigoro labels.</div>
+          <div class="note">Add the quantity received for a vendor — a new roll or box of Vigoro labels for their shipments.</div>
         </div>
         <button id="labelRestockCloseBtn" class="closeX">Close</button>
       </div>
+      <label><span class="lbl">Vendor</span><input id="lr_vendor" list="lr_vendorList" placeholder="e.g., ANCHOR"/><datalist id="lr_vendorList"></datalist></label>
       <label><span class="lbl">Labels Received</span><input id="lr_qty" type="number" min="1" step="1" placeholder="e.g., 1000"/></label>
       <button id="labelRestockSaveBtn" class="btn">Add to Count</button>
     </div>
@@ -1926,8 +1964,8 @@
     <div class="modalCard" style="width:min(420px,96vw);">
       <div class="modalHead">
         <div>
-          <h3>Label Tracker Settings</h3>
-          <div class="note">Set what "full" looks like, the low-stock alert point, and correct the count after a physical recount.</div>
+          <h3 id="labelSettingsTitle">Vendor Label Settings</h3>
+          <div class="note">Set what "full" looks like for this vendor, its low-stock alert point, and correct the count after a physical recount.</div>
         </div>
         <button id="labelSettingsCloseBtn" class="closeX">Close</button>
       </div>
@@ -1935,7 +1973,7 @@
       <label><span class="lbl">Low-Stock Alert At</span><input id="ls_reorder" type="number" min="0" step="1"/></label>
       <label><span class="lbl">Correct Current Count (optional)</span><input id="ls_current" type="number" min="0" step="1" placeholder="Leave blank to keep as-is"/></label>
       <button id="labelSettingsSaveBtn" class="btn">Save Settings</button>
-      <button id="labelResetVendorsBtn" class="tinyBtn danger" type="button" style="margin-top:10px;">Reset By-Vendor Counts to Zero</button>
+      <button id="labelDeleteVendorBtn" class="tinyBtn danger" type="button" style="margin-top:10px;">Remove This Vendor's Tracker</button>
     </div>
   </div>
 
@@ -3766,7 +3804,7 @@
       }
       syncOrderLinesToBooking(datas);
       saveTrucks(trucks);
-      if(labelDelta || Object.keys(vendorDeltaTotal).length) applyOrderLabelDelta(labelDelta, "Order saved", vendorDeltaTotal);
+      if(Object.keys(vendorDeltaTotal).length) applyVendorLabelDeltas(vendorDeltaTotal, "Order saved");
       markTabChanged("order");
       showToast("Order saved");
       closeTruckModal();
@@ -3782,10 +3820,10 @@
       if(!confirm("Delete this order?")) return;
       const removedTruck = loadTrucks().find(t => t.id === editingTruckId);
       saveTrucks(loadTrucks().filter(t => t.id !== editingTruckId));
-      if(removedTruck && removedTruck.labelQty){
+      if(removedTruck && removedTruck.labelQtyByVendor && Object.keys(removedTruck.labelQtyByVendor).length){
         const vd = {};
         Object.entries(removedTruck.labelQtyByVendor||{}).forEach(([k,v]) => { vd[k] = -v; });
-        applyOrderLabelDelta(-removedTruck.labelQty, "Order deleted", vd);
+        applyVendorLabelDeltas(vd, "Order deleted");
       }
       markTabChanged("order");
       closeTruckModal();
@@ -3837,7 +3875,7 @@
       clone.labelQtyByVendor = dupBreakdown.byVendor;
       trucks.push(clone);
       saveTrucks(trucks);
-      if(dupBreakdown.total) applyOrderLabelDelta(dupBreakdown.total, "Order duplicated", dupBreakdown.byVendor);
+      if(Object.keys(dupBreakdown.byVendor).length) applyVendorLabelDeltas(dupBreakdown.byVendor, "Order duplicated");
       markTabChanged("order");
       weekAnchor = startOfWeek(targetWeek);
       renderAll();
@@ -3888,7 +3926,7 @@
       t.labelQtyByVendor = subBreakdown.byVendor;
       saveTrucks(trucks);
       const subVendorDelta = diffVendorBreakdown(subBreakdown.byVendor, prevLabelQtyByVendor);
-      if(t.labelQty !== prevLabelQty || Object.keys(subVendorDelta).length) applyOrderLabelDelta(t.labelQty - prevLabelQty, "Item substituted", subVendorDelta);
+      if(Object.keys(subVendorDelta).length) applyVendorLabelDeltas(subVendorDelta, "Item substituted");
       markTabChanged("order");
       showToast("Substitution saved");
       closeSubModal();
@@ -6201,6 +6239,227 @@
       return spec || e.item || "Details";
     }
 
+    /*********************************************************
+     * Import Availability from a vendor PDF
+     * Vendors export a weekly availability sheet as a PDF: a
+     * category heading (e.g. 6" Foliage), then one block per
+     * vendor (vendor name + a row of week-ending dates), then a
+     * plain list of item names under it (sometimes with a note or
+     * that week's quantity alongside — we only pull the item name;
+     * Amount stays a manual per-week entry same as everywhere else
+     * in this tab). The same vendor block often repeats further
+     * down the PDF for the next few weeks — we de-duplicate so an
+     * item already seen (in this import, or already saved) isn't
+     * added twice.
+     *********************************************************/
+    let _pdfjsPromise = null;
+    function loadPdfJs(){
+      if(window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+      if(_pdfjsPromise) return _pdfjsPromise;
+      _pdfjsPromise = new Promise((resolve, reject) => {
+        const s = document.createElement("script");
+        s.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js";
+        s.onload = () => {
+          if(window.pdfjsLib){
+            window.pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js";
+            resolve(window.pdfjsLib);
+          } else reject(new Error("PDF library loaded but pdfjsLib wasn't found."));
+        };
+        s.onerror = () => reject(new Error("Could not load the PDF reading library. Check your internet connection and try again."));
+        document.head.appendChild(s);
+      });
+      return _pdfjsPromise;
+    }
+    // Pulls every page's text into reading-order "lines" (clusters of text
+    // that share roughly the same vertical position), each line an array of
+    // {x, str} cells left-to-right — a lightweight table reconstruction
+    // since the PDF itself has no row/column structure, just positioned text.
+    async function extractPdfLines(pdfjsLib, arrayBuffer){
+      const doc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      const lines = [];
+      for(let p = 1; p <= doc.numPages; p++){
+        const page = await doc.getPage(p);
+        const content = await page.getTextContent();
+        const rowsByY = [];
+        content.items.forEach(it => {
+          const str = (it.str || "").trim();
+          if(!str) return;
+          const x = it.transform[4];
+          const y = it.transform[5];
+          let row = rowsByY.find(r => Math.abs(r.y - y) <= 3);
+          if(!row){ row = { y, cells:[] }; rowsByY.push(row); }
+          row.cells.push({ x, str });
+        });
+        rowsByY.sort((a, b) => b.y - a.y); // PDF y grows upward — top of page first
+        rowsByY.forEach(r => lines.push(r.cells.sort((a, b) => a.x - b.x)));
+      }
+      return lines;
+    }
+    const AVAIL_IMPORT_DATE_RE = /^\d{1,2}\/\d{1,2}$/;
+    // Matches this sheet's own category names (straight or curly quotes)
+    // against our AVAIL_CATEGORIES list.
+    function matchAvailCategoryHeading(text){
+      const norm = (text || "").replace(/[“”″]/g, '"').trim().toLowerCase();
+      return AVAIL_CATEGORIES.find(c => c.toLowerCase() === norm) || null;
+    }
+    // Maps an extracted vendor name onto our standard vendor list when it's
+    // a clear match (e.g. "Omega Farms" -> "Omega") so imported items line
+    // up with everything else already tracked for that vendor; otherwise
+    // keeps the sheet's own name as-is.
+    function normalizeImportedVendor(name){
+      const raw = (name || "").trim();
+      if(!raw) return raw;
+      const strip = s => s.toLowerCase().replace(/\b(farms?|nursery|nurseries|growers?|greenhouses?|inc\.?|llc\.?)\b/g, "").replace(/[^a-z0-9]+/g, "");
+      const key = strip(raw);
+      if(!key) return raw;
+      const match = HOMESTEAD_VENDORS.find(v => strip(v) === key);
+      return match || raw;
+    }
+    // Walks the reconstructed lines, tracking the current category/vendor
+    // heading, and pulls out every plausible item name under them. Returns
+    // a de-duplicated (by category+vendor+item) array in first-seen order —
+    // callers still check against what's already saved before adding.
+    function parseAvailabilityLines(lines){
+      let currentCategory = null;
+      let currentVendor = null;
+      const seen = new Set();
+      const out = [];
+      lines.forEach(cells => {
+        if(!cells.length) return;
+        const first = cells[0].str;
+        const cat = matchAvailCategoryHeading(cells.map(c => c.str).join(" ")) || matchAvailCategoryHeading(first);
+        if(cat){ currentCategory = cat; currentVendor = null; return; }
+        const hasDateCell = cells.some(c => AVAIL_IMPORT_DATE_RE.test(c.str));
+        const hasNotesCell = cells.some(c => /^notes$/i.test(c.str));
+        if((hasDateCell || hasNotesCell) && first && !/^\d+(\.\d+)?$/.test(first)){
+          currentVendor = first;
+          return;
+        }
+        if(!currentVendor || !first) return;
+        if(/^\d+(\.\d+)?$/.test(first)) return;          // stray quantity, no item name
+        if(/^we have\b/i.test(first)) return;             // freeform banner text, not an item
+        if(first.length > 60 || /,.*,/.test(first)) return; // real item names are short — a long, comma-heavy run is a note/description, not a plant
+        if(cells.length > 1 && AVAIL_IMPORT_DATE_RE.test(cells[1].str) === false && /,/.test(cells.slice(1).map(c=>c.str).join(" "))) return; // "3 items: X, Y, Z" style aside
+        const vendor = normalizeImportedVendor(currentVendor);
+        const key = `${currentCategory||""}${vendor.toLowerCase()}${first.toLowerCase()}`;
+        if(seen.has(key)) return;
+        seen.add(key);
+        out.push({ category: currentCategory || availActiveCat, vendor, item: first });
+      });
+      return out;
+    }
+
+    const availImportModal = document.getElementById("availImportModal");
+    let availImportRows = []; // the parsed+deduped rows currently shown for review
+    function closeAvailImportModal(){
+      availImportModal.classList.remove("active");
+      availImportModal.setAttribute("aria-hidden","true");
+      document.getElementById("availImportPdfInput").value = "";
+    }
+    document.getElementById("availImportCloseBtn").addEventListener("click", closeAvailImportModal);
+    availImportModal.addEventListener("click", (e) => { if(e.target === availImportModal) closeAvailImportModal(); });
+
+    function renderAvailImportReview(){
+      const body = document.getElementById("availImportBody");
+      const statusEl = document.getElementById("availImportStatus");
+      const confirmBtn = document.getElementById("availImportConfirmBtn");
+      if(!availImportRows.length){
+        statusEl.textContent = "No new items found — everything in this PDF already looks like it's on your list.";
+        body.innerHTML = "";
+        confirmBtn.disabled = true;
+        return;
+      }
+      const byVendor = new Map();
+      availImportRows.forEach(r => {
+        if(!byVendor.has(r.vendor)) byVendor.set(r.vendor, []);
+        byVendor.get(r.vendor).push(r);
+      });
+      const totalCount = availImportRows.length;
+      statusEl.textContent = `Found ${totalCount} new item${totalCount===1?"":"s"} across ${byVendor.size} vendor${byVendor.size===1?"":"s"}. Uncheck anything you don't want added.`;
+      let html = "";
+      let gi = 0;
+      byVendor.forEach((rows, vendor) => {
+        const groupIdx = gi++;
+        html += `<div class="availImportGroup">
+          <div class="availImportGroupHead">
+            <label><input type="checkbox" class="aig_all" data-group="${groupIdx}" checked> <strong>${escapeHtml(vendor)}</strong></label>
+            <span class="note">${rows.length} item${rows.length===1?"":"s"}</span>
+          </div>
+          <div class="availImportItems">`;
+        rows.forEach((r, ri) => {
+          html += `<label class="availImportItemRow">
+            <input type="checkbox" class="aii_check" data-group="${groupIdx}" data-idx="${ri}" checked>
+            <span>${escapeHtml(r.item)}</span>
+            <span class="availImportItemCat">${escapeHtml(r.category || "")}</span>
+          </label>`;
+        });
+        html += `</div></div>`;
+      });
+      body.innerHTML = html;
+      // stash the grouped rows on the DOM lookup structure used at import time
+      body._groups = Array.from(byVendor.entries());
+      body.querySelectorAll(".aig_all").forEach(cb => {
+        cb.addEventListener("change", () => {
+          body.querySelectorAll(`.aii_check[data-group="${cb.dataset.group}"]`).forEach(x => { x.checked = cb.checked; });
+        });
+      });
+      confirmBtn.disabled = false;
+    }
+    document.getElementById("availImportPdfBtn").addEventListener("click", () => {
+      document.getElementById("availImportPdfInput").click();
+    });
+    document.getElementById("availImportPdfInput").addEventListener("change", async (e) => {
+      const file = e.target.files && e.target.files[0];
+      if(!file) return;
+      availImportModal.classList.add("active");
+      availImportModal.setAttribute("aria-hidden","false");
+      const statusEl = document.getElementById("availImportStatus");
+      const body = document.getElementById("availImportBody");
+      const confirmBtn = document.getElementById("availImportConfirmBtn");
+      body.innerHTML = "";
+      confirmBtn.disabled = true;
+      statusEl.textContent = "Reading " + (file.name || "the PDF") + "…";
+      try {
+        const pdfjsLib = await loadPdfJs();
+        const buf = await file.arrayBuffer();
+        const lines = await extractPdfLines(pdfjsLib, buf);
+        const parsed = parseAvailabilityLines(lines);
+        // drop anything that already matches an existing saved item for
+        // that vendor+category (case-insensitive) so re-importing the same
+        // or an updated sheet never creates duplicates
+        const existing = loadAvail();
+        const existingKeys = new Set(existing.map(en => `${en.category||""}${(en.vendor||"").toLowerCase()}${(en.item||"").toLowerCase()}`));
+        availImportRows = parsed.filter(r => !existingKeys.has(`${r.category||""}${r.vendor.toLowerCase()}${r.item.toLowerCase()}`));
+        renderAvailImportReview();
+      } catch(err){
+        statusEl.textContent = "Couldn't read that PDF: " + (err && err.message ? err.message : "unknown error");
+        availImportRows = [];
+      }
+    });
+    document.getElementById("availImportConfirmBtn").addEventListener("click", () => {
+      const body = document.getElementById("availImportBody");
+      const groups = body._groups || [];
+      const list = loadAvail();
+      let addedCount = 0;
+      let lastCategory = null;
+      groups.forEach(([, rows], groupIdx) => {
+        rows.forEach((r, ri) => {
+          const cb = body.querySelector(`.aii_check[data-group="${groupIdx}"][data-idx="${ri}"]`);
+          if(!cb || !cb.checked) return;
+          list.push({ id: cryptoRandomId(), category: r.category, vendor: r.vendor, item: r.item, spec:"", notes:"", createdAt: new Date().toISOString() });
+          lastCategory = r.category;
+          addedCount++;
+        });
+      });
+      if(!addedCount){ closeAvailImportModal(); return; }
+      saveAvail(list);
+      if(lastCategory) availActiveCat = lastCategory;
+      markTabChanged("avail");
+      showToast(`Imported ${addedCount} item${addedCount===1?"":"s"} from the PDF`);
+      closeAvailImportModal();
+      renderAvailability();
+    });
+
     document.getElementById("availPrevMonth").addEventListener("click", () => { availMonthAnchor = addMonths(availMonthAnchor, -1); renderAvailability(); });
     document.getElementById("availNextMonth").addEventListener("click", () => { availMonthAnchor = addMonths(availMonthAnchor,  1); renderAvailability(); });
     document.getElementById("availThisMonth").addEventListener("click", () => { availMonthAnchor = startOfMonth(new Date()); renderAvailability(); });
@@ -8084,10 +8343,56 @@
      * items is what empties the bar; Restock tops it back up when a new
      * box of labels comes in.
      *********************************************************/
+    // Each vendor keeps its own label supply — its own capacity, remaining
+    // count and low-stock threshold — rather than sharing one pool. State
+    // shape: { vendors: { "<vendor name>": {capacity, remaining, reorderAt} },
+    // log: [...] }. "Manual / Other" is just a vendor like any other, created
+    // on demand the first time something is logged against it.
     function loadLabels(){
-      return LS.get(LS.labelsKey, { capacity:1000, remaining:1000, reorderAt:200, log:[] });
+      let state = LS.get(LS.labelsKey, null);
+      if(!state){
+        state = { vendors:{}, log:[] };
+        saveLabels(state);
+        return state;
+      }
+      if(!state.vendors){
+        state = migrateLegacyLabelState(state);
+        saveLabels(state);
+      }
+      return state;
     }
     function saveLabels(state){ LS.set(LS.labelsKey, state); }
+    // One-time migration from the old single shared-pool shape (a flat
+    // capacity/remaining/reorderAt, plus a "byVendor" usage tally) to
+    // per-vendor tracking. Any vendor already seen in that usage tally gets
+    // its own fresh tracker (default capacity, minus what it had already
+    // used); the old shared pool itself is kept as a "General Stock"
+    // vendor so its count isn't silently lost — split it out to the right
+    // vendors afterward via each tracker's Settings.
+    function migrateLegacyLabelState(old){
+      const vendors = {};
+      const usedByVendor = old.byVendor || {};
+      Object.keys(usedByVendor).forEach(name => {
+        const used = Number(usedByVendor[name]) || 0;
+        vendors[name] = { capacity:1000, remaining:Math.max(0, 1000 - used), reorderAt:200 };
+      });
+      if(old.capacity || old.remaining){
+        vendors["General Stock"] = { capacity:old.capacity || 1000, remaining:Math.max(0, old.remaining||0), reorderAt:old.reorderAt || 200 };
+      }
+      const log = Array.isArray(old.log) ? old.log.slice() : [];
+      log.unshift({ id:cryptoRandomId(), at:new Date().toISOString(), type:"migrate", qty:0, meta:"Switched to a separate label tracker per vendor", by:"System" });
+      return { vendors, log:log.slice(0,200) };
+    }
+    // Gets a vendor's tracker, creating it with defaults the first time
+    // it's referenced (a new vendor typed on an order, or a name typed
+    // into Log Usage / Restock). Returns the resolved (trimmed, defaulted)
+    // vendor name so callers key off the same string that got stored.
+    function ensureVendorLabelState(state, name){
+      const key = (name || "").trim() || "Manual / Other";
+      state.vendors = state.vendors || {};
+      if(!state.vendors[key]) state.vendors[key] = { capacity:1000, remaining:1000, reorderAt:200 };
+      return key;
+    }
 
     // --- Auto-detecting label usage straight from Order Tracker lines ---
     // Order lines are free-typed ("6" MONSTERA", "Vigoro Ivy HB"), not
@@ -8169,25 +8474,23 @@
       return out;
     }
     // Applies a net change in labels-needed (positive = more used, negative
-    // = credit back, e.g. an order was deleted or shrunk) straight to the
-    // tracker, the same way a manual Log Usage / Restock does. vendorDelta
-    // is an optional { vendorName: +/-qty } map to fold into the by-vendor
-    // breakdown alongside the overall total.
-    function applyOrderLabelDelta(delta, meta, vendorDelta){
-      const hasVendorChange = vendorDelta && Object.keys(vendorDelta).length;
-      if(!delta && !hasVendorChange) return;
+    // = credit back, e.g. an order was edited/deleted/duplicated) to each
+    // affected vendor's OWN tracker — vendorDeltaMap is a { vendorName:
+    // +/-qty } map; a vendor mentioned here that has no tracker yet gets
+    // one created automatically (defaults), same as typing a new vendor
+    // into Log Usage / Restock does.
+    function applyVendorLabelDeltas(vendorDeltaMap, meta){
+      const entries = Object.entries(vendorDeltaMap || {}).filter(([, d]) => d);
+      if(!entries.length) return;
       const state = loadLabels();
-      state.remaining = Math.max(0, (state.remaining||0) - delta);
-      state.byVendor = state.byVendor || {};
-      if(hasVendorChange){
-        Object.entries(vendorDelta).forEach(([name, d]) => {
-          const next = (state.byVendor[name] || 0) + d;
-          if(next > 0) state.byVendor[name] = next; else delete state.byVendor[name];
-        });
-      }
-      state.log = state.log || [];
       const who = (getUser() && getUser().name) || "Unknown";
-      state.log.unshift({ id:cryptoRandomId(), at:new Date().toISOString(), type:"order", qty:delta, meta:meta||"", by:who });
+      state.log = state.log || [];
+      entries.forEach(([name, delta]) => {
+        const key = ensureVendorLabelState(state, name);
+        const v = state.vendors[key];
+        v.remaining = Math.max(0, (v.remaining||0) - delta);
+        state.log.unshift({ id:cryptoRandomId(), at:new Date().toISOString(), type:"order", vendor:key, qty:delta, meta:meta||"", by:who });
+      });
       state.log = state.log.slice(0, 200);
       saveLabels(state);
       markTabChanged("dashboard");
@@ -8210,74 +8513,97 @@
       if(curCat !== null) html += `</optgroup>`;
       sel.innerHTML = html;
     }
+    // Keeps the Vendor field's autocomplete list on Log Usage / Restock in
+    // sync with whichever vendors already have a tracker.
+    function populateLabelVendorDatalists(){
+      const state = loadLabels();
+      const names = Object.keys(state.vendors || {}).sort((a,b) => a.localeCompare(b));
+      const optsHtml = names.map(n => `<option value="${escapeHtml(n)}"></option>`).join("");
+      const luList = document.getElementById("lu_vendorList");
+      const lrList = document.getElementById("lr_vendorList");
+      if(luList) luList.innerHTML = optsHtml;
+      if(lrList) lrList.innerHTML = optsHtml;
+    }
 
     const labelUseModal = document.getElementById("labelUseModal");
     const labelRestockModal = document.getElementById("labelRestockModal");
     const labelSettingsModal = document.getElementById("labelSettingsModal");
+    let settingsVendorTarget = null; // which vendor's tracker the Settings modal is currently open for
 
-    function openLabelUseModal(){
+    function openLabelUseModal(vendorName){
       populateLabelItemSelect();
+      populateLabelVendorDatalists();
+      document.getElementById("lu_vendor").value = vendorName || "";
       document.getElementById("lu_qty").value = "";
       labelUseModal.classList.add("active");
       labelUseModal.setAttribute("aria-hidden","false");
-      setTimeout(() => document.getElementById("lu_item")?.focus(), 50);
+      setTimeout(() => document.getElementById(vendorName ? "lu_item" : "lu_vendor")?.focus(), 50);
     }
     function closeLabelUseModal(){ labelUseModal.classList.remove("active"); labelUseModal.setAttribute("aria-hidden","true"); }
     document.getElementById("labelUseCloseBtn").addEventListener("click", closeLabelUseModal);
     labelUseModal.addEventListener("click", (e) => { if(e.target === labelUseModal) closeLabelUseModal(); });
     document.getElementById("labelUseSaveBtn").addEventListener("click", () => {
+      const vendorRaw = document.getElementById("lu_vendor").value;
       const sku = document.getElementById("lu_item").value;
       const qty = parseInt(document.getElementById("lu_qty").value, 10);
       const found = VIGORO_LABEL_ITEMS.find(x => x.sku === sku);
       if(!found){ alert("Pick an item."); return; }
       if(!(qty > 0)){ alert("Enter how many were labeled."); return; }
       const state = loadLabels();
-      state.remaining = Math.max(0, (state.remaining||0) - qty);
-      // Manual logs aren't tied to a vendor block, so they land in a
-      // catch-all bucket alongside the per-vendor breakdown from orders.
-      state.byVendor = state.byVendor || {};
-      state.byVendor["Manual / Other"] = (state.byVendor["Manual / Other"] || 0) + qty;
+      const key = ensureVendorLabelState(state, vendorRaw);
+      const v = state.vendors[key];
+      v.remaining = Math.max(0, (v.remaining||0) - qty);
       state.log = state.log || [];
       const who = (getUser() && getUser().name) || "Unknown";
-      state.log.unshift({ id:cryptoRandomId(), at:new Date().toISOString(), type:"use", item:found.item, qty, by:who });
+      state.log.unshift({ id:cryptoRandomId(), at:new Date().toISOString(), type:"use", vendor:key, item:found.item, qty, by:who });
       state.log = state.log.slice(0, 200); // keep the log from growing forever
       saveLabels(state);
       markTabChanged("dashboard");
-      showToast(`Logged ${qty} label${qty===1?"":"s"} used`);
+      showToast(`Logged ${qty} label${qty===1?"":"s"} used for ${key}`);
       closeLabelUseModal();
       renderLabelTracker();
     });
 
-    function openLabelRestockModal(){
+    function openLabelRestockModal(vendorName){
+      populateLabelVendorDatalists();
+      document.getElementById("lr_vendor").value = vendorName || "";
       document.getElementById("lr_qty").value = "";
       labelRestockModal.classList.add("active");
       labelRestockModal.setAttribute("aria-hidden","false");
-      setTimeout(() => document.getElementById("lr_qty")?.focus(), 50);
+      setTimeout(() => document.getElementById(vendorName ? "lr_qty" : "lr_vendor")?.focus(), 50);
     }
     function closeLabelRestockModal(){ labelRestockModal.classList.remove("active"); labelRestockModal.setAttribute("aria-hidden","true"); }
     document.getElementById("labelRestockCloseBtn").addEventListener("click", closeLabelRestockModal);
     labelRestockModal.addEventListener("click", (e) => { if(e.target === labelRestockModal) closeLabelRestockModal(); });
     document.getElementById("labelRestockSaveBtn").addEventListener("click", () => {
+      const vendorRaw = document.getElementById("lr_vendor").value;
       const qty = parseInt(document.getElementById("lr_qty").value, 10);
       if(!(qty > 0)){ alert("Enter how many labels were received."); return; }
       const state = loadLabels();
-      state.remaining = (state.remaining||0) + qty;
-      if(state.remaining > state.capacity) state.capacity = state.remaining; // a bigger shipment than "full" resets what full means
+      const key = ensureVendorLabelState(state, vendorRaw);
+      const v = state.vendors[key];
+      v.remaining = (v.remaining||0) + qty;
+      if(v.remaining > v.capacity) v.capacity = v.remaining; // a bigger shipment than "full" resets what full means
       state.log = state.log || [];
       const who = (getUser() && getUser().name) || "Unknown";
-      state.log.unshift({ id:cryptoRandomId(), at:new Date().toISOString(), type:"restock", qty, by:who });
+      state.log.unshift({ id:cryptoRandomId(), at:new Date().toISOString(), type:"restock", vendor:key, qty, by:who });
       state.log = state.log.slice(0, 200);
       saveLabels(state);
       markTabChanged("dashboard");
-      showToast(`Added ${qty} labels to the count`);
+      showToast(`Added ${qty} labels to ${key}'s count`);
       closeLabelRestockModal();
       renderLabelTracker();
     });
 
-    function openLabelSettingsModal(){
+    function openLabelSettingsModal(vendorName){
       const state = loadLabels();
-      document.getElementById("ls_capacity").value = state.capacity || 1000;
-      document.getElementById("ls_reorder").value = state.reorderAt || 0;
+      const key = ensureVendorLabelState(state, vendorName);
+      saveLabels(state);
+      settingsVendorTarget = key;
+      const v = state.vendors[key];
+      document.getElementById("labelSettingsTitle").textContent = `${key} — Label Settings`;
+      document.getElementById("ls_capacity").value = v.capacity || 1000;
+      document.getElementById("ls_reorder").value = v.reorderAt || 0;
       document.getElementById("ls_current").value = "";
       labelSettingsModal.classList.add("active");
       labelSettingsModal.setAttribute("aria-hidden","false");
@@ -8286,66 +8612,104 @@
     document.getElementById("labelSettingsCloseBtn").addEventListener("click", closeLabelSettingsModal);
     labelSettingsModal.addEventListener("click", (e) => { if(e.target === labelSettingsModal) closeLabelSettingsModal(); });
     document.getElementById("labelSettingsSaveBtn").addEventListener("click", () => {
+      if(!settingsVendorTarget){ closeLabelSettingsModal(); return; }
       const capacity = parseInt(document.getElementById("ls_capacity").value, 10);
       const reorderAt = parseInt(document.getElementById("ls_reorder").value, 10);
       const currentRaw = document.getElementById("ls_current").value;
       if(!(capacity > 0)){ alert("Enter a full count greater than 0."); return; }
       const state = loadLabels();
-      state.capacity = capacity;
-      state.reorderAt = reorderAt >= 0 ? reorderAt : 0;
+      const key = ensureVendorLabelState(state, settingsVendorTarget);
+      const v = state.vendors[key];
+      v.capacity = capacity;
+      v.reorderAt = reorderAt >= 0 ? reorderAt : 0;
       if(currentRaw !== ""){
         const current = parseInt(currentRaw, 10);
         if(!(current >= 0)){ alert("Corrected count must be 0 or more."); return; }
         const who = (getUser() && getUser().name) || "Unknown";
         state.log = state.log || [];
-        state.log.unshift({ id:cryptoRandomId(), at:new Date().toISOString(), type:"adjust", qty:current - (state.remaining||0), by:who });
+        state.log.unshift({ id:cryptoRandomId(), at:new Date().toISOString(), type:"adjust", vendor:key, qty:current - (v.remaining||0), by:who });
         state.log = state.log.slice(0, 200);
-        state.remaining = current;
+        v.remaining = current;
       }
       saveLabels(state);
       markTabChanged("dashboard");
-      showToast("Label tracker settings saved");
+      showToast(`Saved settings for ${key}`);
       closeLabelSettingsModal();
       renderLabelTracker();
     });
-    document.getElementById("labelResetVendorsBtn").addEventListener("click", () => {
-      if(!confirm("Reset the by-vendor label counts to zero? This doesn't change the overall label count.")) return;
+    document.getElementById("labelDeleteVendorBtn").addEventListener("click", () => {
+      if(!settingsVendorTarget) return;
+      const target = settingsVendorTarget;
+      if(!confirm(`Remove the label tracker for ${target}? This can't be undone.`)) return;
       const state = loadLabels();
-      state.byVendor = {};
+      delete state.vendors[target];
+      state.log = state.log || [];
+      state.log.unshift({ id:cryptoRandomId(), at:new Date().toISOString(), type:"remove", vendor:target, qty:0, by:(getUser() && getUser().name) || "Unknown" });
+      state.log = state.log.slice(0, 200);
       saveLabels(state);
       markTabChanged("dashboard");
-      showToast("By-vendor counts reset");
+      showToast(`Removed ${target}'s label tracker`);
+      settingsVendorTarget = null;
       closeLabelSettingsModal();
       renderLabelTracker();
     });
 
-    function renderLabelTracker(){
-      const wrap = document.getElementById("dashLabelTracker");
-      if(!wrap) return;
+    // Prompts for a brand-new vendor name and gives it its own tracker
+    // (defaults) right away, so it shows up before any order ever
+    // references it.
+    function addLabelVendorPrompt(){
+      const name = (prompt("Vendor name for the new label tracker:") || "").trim();
+      if(!name) return;
       const state = loadLabels();
-      const capacity = Math.max(1, state.capacity || 1000);
-      const remaining = Math.max(0, state.remaining || 0);
-      const reorderAt = state.reorderAt || 0;
+      const key = ensureVendorLabelState(state, name);
+      saveLabels(state);
+      markTabChanged("dashboard");
+      showToast(`Added a label tracker for ${key}`);
+      renderLabelTracker();
+    }
+
+    function renderLabelVendorCard(name, v){
+      const capacity = Math.max(1, v.capacity || 1000);
+      const remaining = Math.max(0, v.remaining || 0);
+      const reorderAt = v.reorderAt || 0;
       const pct = Math.max(0, Math.min(100, Math.round(remaining / capacity * 100)));
       let level = "ok", fillColor = "var(--state-ok-bd)";
       if(remaining <= reorderAt){ level = "low"; fillColor = "var(--state-danger-bd)"; }
       else if(remaining <= reorderAt * 2 || pct <= 30){ level = "warn"; fillColor = "var(--state-warn-bd)"; }
       const noteText = level === "low"
-        ? `⚠ Time to order more Vigoro labels`
+        ? `⚠ Time to order more`
         : level === "warn"
-          ? `Getting low — keep an eye on it`
+          ? `Getting low`
           : `Stock looks good`;
-      // By-vendor breakdown — a running tally of labels attributed to each
-      // vendor's order lines (plus a "Manual / Other" bucket for anything
-      // logged by hand), not itself a second depleting count.
-      const vendorRows = Object.entries(state.byVendor || {})
-        .filter(([, v]) => v > 0)
-        .sort((a, b) => b[1] - a[1]);
-      const vendorRowsHtml = vendorRows.length
-        ? vendorRows.map(([name, v]) => `
-            <div class="labelTrackerVendorRow"><span class="ltvName">${escapeHtml(name)}</span><span class="ltvQty">${v.toLocaleString()}</span></div>`
-          ).join("")
-        : `<div class="labelTrackerVendorEmpty">No vendor usage logged yet — this fills in as orders are saved.</div>`;
+      const safeName = escapeHtml(name);
+      return `
+        <div class="labelVendorCard">
+          <div class="labelVendorHead">
+            <div class="labelVendorName" title="${safeName}">${safeName}</div>
+            <div class="labelVendorActions">
+              <button class="tinyBtn" type="button" data-vendor-action="use" data-vendor="${safeName}">${icon("plus")} Use</button>
+              <button class="tinyBtn" type="button" data-vendor-action="restock" data-vendor="${safeName}">${icon("upload")} Restock</button>
+              <button class="tinyBtn" type="button" data-vendor-action="settings" data-vendor="${safeName}" aria-label="Settings for ${safeName}" title="Settings">⚙</button>
+            </div>
+          </div>
+          <div class="labelVendorBarTrack">
+            <div class="labelVendorBarFill" style="width:${pct}%; background:${fillColor};"></div>
+          </div>
+          <div class="labelVendorMeta">
+            <div class="labelVendorQty">${remaining.toLocaleString()} <small>/ ${capacity.toLocaleString()} · ${pct}%</small></div>
+            <div class="labelVendorNote ${level === "ok" ? "" : level}">${noteText}</div>
+          </div>
+        </div>`;
+    }
+
+    function renderLabelTracker(){
+      const wrap = document.getElementById("dashLabelTracker");
+      if(!wrap) return;
+      const state = loadLabels();
+      const vendorNames = Object.keys(state.vendors || {}).sort((a,b) => a.localeCompare(b));
+      const cardsHtml = vendorNames.length
+        ? vendorNames.map(name => renderLabelVendorCard(name, state.vendors[name])).join("")
+        : `<div class="labelTrackerEmpty">No vendor label trackers yet — add one to start tracking Vigoro labels by vendor.</div>`;
       wrap.innerHTML = `
         <div class="labelTrackerCard">
           <div class="labelTrackerHead">
@@ -8354,26 +8718,21 @@
               <h3>Vigoro Label Tracker</h3>
             </div>
             <div class="labelTrackerActions">
-              <button id="labelUseBtn" class="btnGhost" type="button">${icon("plus")} Log Usage</button>
-              <button id="labelRestockBtn" class="btnGhost" type="button">${icon("upload")} Restock</button>
-              <button id="labelSettingsBtn" class="tinyBtn" type="button">Settings</button>
+              <button id="labelAddVendorBtn" class="btnGhost" type="button">${icon("plus")} Add Vendor</button>
             </div>
           </div>
-          <div class="labelTrackerBarTrack">
-            <div class="labelTrackerBarFill" style="width:${pct}%; background:${fillColor};"></div>
-          </div>
-          <div class="labelTrackerMeta">
-            <div class="labelTrackerQty">${remaining.toLocaleString()} <small>/ ${capacity.toLocaleString()} labels · ${pct}%</small></div>
-            <div class="labelTrackerNote ${level === "ok" ? "" : level}">${noteText}</div>
-          </div>
-          <details class="labelTrackerVendorDetails">
-            <summary>By Vendor${vendorRows.length ? ` (${vendorRows.length})` : ""}</summary>
-            <div class="labelTrackerVendors">${vendorRowsHtml}</div>
-          </details>
+          <div class="labelVendorGrid">${cardsHtml}</div>
         </div>`;
-      document.getElementById("labelUseBtn").addEventListener("click", openLabelUseModal);
-      document.getElementById("labelRestockBtn").addEventListener("click", openLabelRestockModal);
-      document.getElementById("labelSettingsBtn").addEventListener("click", openLabelSettingsModal);
+      document.getElementById("labelAddVendorBtn").addEventListener("click", addLabelVendorPrompt);
+      wrap.querySelectorAll("[data-vendor-action]").forEach(btn => {
+        const name = btn.getAttribute("data-vendor");
+        const action = btn.getAttribute("data-vendor-action");
+        btn.addEventListener("click", () => {
+          if(action === "use") openLabelUseModal(name);
+          else if(action === "restock") openLabelRestockModal(name);
+          else if(action === "settings") openLabelSettingsModal(name);
+        });
+      });
     }
 
     /*********************************************************
