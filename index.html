@@ -303,7 +303,7 @@
     .availAmtInput:focus{ outline:none; border-bottom-color:var(--moss); }
     .availAmtInput::placeholder{ font-weight:400; color:var(--ink-2); opacity:.55; }
     .availRowActions{ display:flex; gap:6px; justify-content:flex-end; flex-wrap:wrap; }
-    .availColHead{ display:grid; grid-template-columns:1.5fr repeat(var(--availWeeks,4), minmax(84px,104px)) 70px; gap:6px; padding:7px 13px; color:var(--ink-2); font-size:10.5px; font-weight:600; text-transform:uppercase; letter-spacing:.03em; background:var(--thead); border-bottom:1px solid var(--line); }
+    .availColHead{ display:grid; grid-template-columns:1.5fr repeat(var(--availWeeks,4), minmax(84px,104px)) 70px; gap:6px; padding:7px 13px; color:var(--ink-2); font-size:10.5px; font-weight:600; text-transform:uppercase; letter-spacing:.03em; background:var(--thead); border-bottom:1px solid var(--line); position:sticky; top:var(--availColHeadStickyTop, 96px); z-index:4; }
     .availColHead .availAmt{ color:var(--moss); font-weight:600; }
     .availWeekCell{ display:flex; align-items:center; gap:4px; padding:3px 4px; border-radius:6px; transition:background .15s; }
     .availWeekCell.checked{ background:rgba(43,212,154,.14); }
@@ -496,6 +496,10 @@
     .weekChip.active .wcRange{ opacity:.92; }
 
     .weekZone{ display:block; }
+
+    /* Availability: keep the "Viewing Month" header pinned at the top of the
+       page while the vendor list scrolls underneath it. */
+    #page-avail .orderTitleCard{ position:sticky; top:0; z-index:6; }
 
     /* ===== Order Tracker: title card (week + request date + grades + actions) ===== */
     .orderTitleCard{
@@ -4486,7 +4490,7 @@
               <div class="vendorHeadXL">
                 <div class="vendorTitleXL">
                   <span>${escapeHtml(vendorName)}</span>
-                  ${vendorPO ? `<button type="button" class="pillMini editablePill poPill${vb.poFile ? " hasFile" : ""}" data-tid="${t.id}" data-vidx="${vIdx}" title="${vb.poFile ? "View or manage the PO PDF" : "Upload the PO PDF"}">${vb.poFile ? icon("receipt") + " " : ""}PO ${escapeHtml(vendorPO)}${vb.poFile ? "" : " · Upload"}</button>` : ``}
+                  ${vendorPO ? `<span class="pillMini">PO ${escapeHtml(vendorPO)}</span>` : ``}
                   <button class="${statusPillClass(vendorStatus)} statusToggle" data-tid="${t.id}" data-vidx="${vIdx}" type="button" title="Click to toggle Open / Confirmed">${escapeHtml(vendorStatus)}</button>
                 </div>
                 <div class="sectionMeta">
@@ -4532,9 +4536,6 @@
 
             const stBtn = v.querySelector(".statusToggle");
             if(stBtn) stBtn.addEventListener("click", (e) => { e.stopPropagation(); toggleVendorStatus(t.id, vIdx, stBtn); });
-
-            const poBtn = v.querySelector(".poPill");
-            if(poBtn) poBtn.addEventListener("click", (e) => { e.stopPropagation(); openPoFileModal(t.id, vIdx); });
 
             v.querySelectorAll(".itemRow").forEach(row => {
               const cell = row.querySelector(".itemNameCell");
@@ -6789,7 +6790,20 @@
         });
         wrap.appendChild(box);
       });
+      updateAvailStickyOffset();
     }
+
+    // Keeps the per-vendor week/date column header pinned directly under the
+    // sticky "Viewing Month" card as you scroll, instead of overlapping it.
+    // The card's height isn't fixed (it wraps onto more lines on narrow
+    // screens), so this measures it after each render/resize rather than
+    // hardcoding an offset.
+    function updateAvailStickyOffset(){
+      const header = document.querySelector("#page-avail .orderTitleCard");
+      if(!header) return;
+      document.documentElement.style.setProperty("--availColHeadStickyTop", header.offsetHeight + "px");
+    }
+    window.addEventListener("resize", () => { if(currentPage === "avail") updateAvailStickyOffset(); });
 
     /*********************************************************
      * Availability — item order notes popup (spec + last order
