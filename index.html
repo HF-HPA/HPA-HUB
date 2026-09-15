@@ -270,7 +270,7 @@
     .availTab.active{ background:var(--moss); border-color:var(--moss); color:#eafff5; }
     .availTab .count{ font-size:11px; font-weight:700; background:rgba(255,255,255,.22); color:inherit; padding:1px 7px; border-radius:999px; }
     .availTab:not(.active) .count{ background:var(--paper-3); color:var(--moss); }
-    .availVendor{ border:1px solid var(--line); background:var(--paper-2); border-radius:var(--radius-sm); margin-top:12px; box-shadow:var(--shadow-sm); overflow:hidden; }
+    .availVendor{ border:1px solid var(--line); background:var(--paper-2); border-radius:var(--radius-sm); margin-top:12px; box-shadow:var(--shadow-sm); overflow:clip; }
     .availVendorHead{ display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; padding:11px 13px; background:#edf4ec; border-bottom:1px solid var(--line-soft); cursor:pointer; user-select:none; transition:background .15s; }
     .availVendorHead:hover{ background:#e1efe4; }
     html[data-theme="dark"] .availVendorHead:hover{ background:#2a4033; }
@@ -284,7 +284,7 @@
     .availNotesIcon{ margin-left:5px; font-size:11px; vertical-align:1px; cursor:help; }
     .availItemGroupHead{ padding:9px 13px 3px; font-family:var(--display); font-weight:600; font-size:13.5px; color:var(--moss); border-top:1px solid var(--line-soft); }
     .availVendorHead + .availItemGroupHead, .availColHead + .availItemGroupHead{ border-top:none; }
-    .availVendorScroll{ overflow-x:auto; display:none; }
+    .availVendorScroll{ display:none; }
     .availVendor.expanded .availVendorScroll{ display:block; }
     .availRow{ display:grid; grid-template-columns:1.5fr repeat(var(--availWeeks,4), minmax(84px,104px)) 70px; gap:6px; align-items:center; padding:5px 13px 5px 20px; border-bottom:1px solid var(--line-soft); }
     .availRow:last-child{ border-bottom:none; }
@@ -303,7 +303,7 @@
     .availAmtInput:focus{ outline:none; border-bottom-color:var(--moss); }
     .availAmtInput::placeholder{ font-weight:400; color:var(--ink-2); opacity:.55; }
     .availRowActions{ display:flex; gap:6px; justify-content:flex-end; flex-wrap:wrap; }
-    .availColHead{ display:grid; grid-template-columns:1.5fr repeat(var(--availWeeks,4), minmax(84px,104px)) 70px; gap:6px; padding:7px 13px; color:var(--ink-2); font-size:10.5px; font-weight:600; text-transform:uppercase; letter-spacing:.03em; background:var(--thead); border-bottom:1px solid var(--line); }
+    .availColHead{ display:grid; grid-template-columns:1.5fr repeat(var(--availWeeks,4), minmax(84px,104px)) 70px; gap:6px; padding:7px 13px; color:var(--ink-2); font-size:10.5px; font-weight:600; text-transform:uppercase; letter-spacing:.03em; background:var(--thead); border-bottom:1px solid var(--line); position:sticky; top:0; z-index:4; }
     .availColHead .availAmt{ color:var(--moss); font-weight:600; }
     .availWeekCell{ display:flex; align-items:center; gap:4px; padding:3px 4px; border-radius:6px; transition:background .15s; }
     .availWeekCell.checked{ background:rgba(43,212,154,.14); }
@@ -442,6 +442,7 @@
       .filterInput{ min-width:0; width:100%; }
       .vendorBlockXL{ overflow-x:auto; -webkit-overflow-scrolling:touch; background:linear-gradient(to right, var(--paper-2) 30%, transparent), linear-gradient(to right, transparent, var(--paper-2) 70%) 100% 0, radial-gradient(farthest-side at 100% 50%, rgba(0,0,0,.10), transparent) 100% 0; background-repeat:no-repeat; background-size:40px 100%, 40px 100%, 14px 100%; background-attachment:local, local, scroll; }
       .vendorBlockXL .sheetTable{ min-width:520px; }
+      .availVendorScroll{ overflow-x:auto; -webkit-overflow-scrolling:touch; }
       .modalCard{ padding:14px; }
       .vendorBlock{ overflow-x:auto; }
       .itemsTable{ min-width:560px; }
@@ -496,16 +497,6 @@
     .weekChip.active .wcRange{ opacity:.92; }
 
     .weekZone{ display:block; }
-
-    /* Availability: keep the "Viewing Month" header pinned at the top of the
-       page while the vendor list scrolls underneath it. This has to be the
-       .weekZone wrapper (not .orderTitleCard itself) — a sticky element can
-       only stay stuck for as long as its own immediate parent's box is
-       within view, and .orderTitleCard's parent is .weekZone, which
-       (without this) is exactly the same height as the card, giving it no
-       room to stick. .weekZone's parent is the whole page, which is tall
-       enough. */
-    #page-avail .weekZone{ position:sticky; top:0; z-index:6; }
 
     /* ===== Order Tracker: title card (week + request date + grades + actions) ===== */
     .orderTitleCard{
