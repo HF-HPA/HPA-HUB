@@ -8389,6 +8389,10 @@
         state = migrateVendorsToStickerTypes(state);
         saveLabels(state);
       }
+      if(needsGeneralStockCleanup(state)){
+        state = cleanupGeneralStockVendor(state);
+        saveLabels(state);
+      }
       return state;
     }
     function saveLabels(state){ LS.set(LS.labelsKey, state); }
@@ -8396,9 +8400,11 @@
     // capacity/remaining/reorderAt, plus a "byVendor" usage tally) to
     // per-vendor tracking. Any vendor already seen in that usage tally gets
     // its own fresh tracker (default capacity, minus what it had already
-    // used); the old shared pool itself is kept as a "General Stock"
-    // vendor so its count isn't silently lost — split it out to the right
-    // vendors afterward via each tracker's Settings.
+    // used). There's no more catch-all "General Stock" vendor — every
+    // tracker belongs to a real, named vendor, so the old shared pool's
+    // combined count (if any) is left out of every vendor and only noted in
+    // the log for reference; use Restock to re-enter it against whichever
+    // vendor(s) it actually belonged to.
     function migrateLegacyLabelState(old){
       const vendors = {};
       const usedByVendor = old.byVendor || {};
@@ -8406,12 +8412,27 @@
         const used = Number(usedByVendor[name]) || 0;
         vendors[name] = { capacity:1000, remaining:Math.max(0, 1000 - used), reorderAt:200 };
       });
-      if(old.capacity || old.remaining){
-        vendors["General Stock"] = { capacity:old.capacity || 1000, remaining:Math.max(0, old.remaining||0), reorderAt:old.reorderAt || 200 };
-      }
       const log = Array.isArray(old.log) ? old.log.slice() : [];
+      if(old.capacity || old.remaining){
+        log.unshift({ id:cryptoRandomId(), at:new Date().toISOString(), type:"migrate", qty:0, meta:`Switched to a tracker per vendor — the old shared pool's combined count (${old.remaining||0}/${old.capacity||0}) wasn't assigned to any single vendor; re-enter it by vendor via Restock.`, by:"System" });
+      }
       log.unshift({ id:cryptoRandomId(), at:new Date().toISOString(), type:"migrate", qty:0, meta:"Switched to a separate label tracker per vendor", by:"System" });
       return { vendors, log:log.slice(0,200) };
+    }
+    // Drops a "General Stock" vendor if one is still sitting in saved state
+    // (from this old migration, back when it used to create one, or from
+    // anyone who added it by hand) — there's no longer a catch-all bucket;
+    // every tracker should belong to a real, named vendor.
+    function needsGeneralStockCleanup(state){
+      return !!(state.vendors && state.vendors["General Stock"]);
+    }
+    function cleanupGeneralStockVendor(state){
+      const v = state.vendors["General Stock"];
+      delete state.vendors["General Stock"];
+      state.log = state.log || [];
+      state.log.unshift({ id:cryptoRandomId(), at:new Date().toISOString(), type:"migrate", vendor:"General Stock", qty:0, meta:`Removed the "General Stock" catch-all vendor — every tracker now belongs to a real, named vendor. Re-enter any of its counts against the right vendor via Restock.`, by:"System" });
+      state.log = state.log.slice(0, 200);
+      return state;
     }
     // Second migration: a vendor still holding the OLD flat per-vendor shape
     // ({capacity, remaining, reorderAt} directly on the vendor, no .types)
@@ -8766,6 +8787,49 @@
       renderLabelTracker();
     }
 
+    // Renames a vendor's whole tracker (all 4 sticker types move with it).
+    // Refuses to silently merge into an existing vendor of the new name —
+    // that could combine two different nurseries' counts by accident.
+    function editLabelVendorPrompt(oldName){
+      const state = loadLabels();
+      if(!state.vendors[oldName]) return;
+      const input = prompt(`Rename "${oldName}" to:`, oldName);
+      if(input === null) return; // cancelled
+      const newName = input.trim();
+      if(!newName || newName === oldName) return;
+      if(state.vendors[newName]){
+        alert(`"${newName}" already has its own label tracker. Delete or rename that one first if you want to combine them.`);
+        return;
+      }
+      state.vendors[newName] = state.vendors[oldName];
+      delete state.vendors[oldName];
+      state.log = state.log || [];
+      const who = (getUser() && getUser().name) || "Unknown";
+      state.log.unshift({ id:cryptoRandomId(), at:new Date().toISOString(), type:"rename", vendor:newName, qty:0, meta:`Renamed from "${oldName}"`, by:who });
+      state.log = state.log.slice(0, 200);
+      saveLabels(state);
+      markTabChanged("dashboard");
+      showToast(`Renamed "${oldName}" to "${newName}"`);
+      renderLabelTracker();
+    }
+
+    // Deletes a vendor's ENTIRE tracker — all 4 sticker types at once, not
+    // just one category (that's what each row's own Settings gear resets).
+    function deleteLabelVendor(name){
+      const state = loadLabels();
+      if(!state.vendors[name]) return;
+      if(!confirm(`Delete ${name}'s entire label tracker — all 4 sticker types? This can't be undone.`)) return;
+      delete state.vendors[name];
+      state.log = state.log || [];
+      const who = (getUser() && getUser().name) || "Unknown";
+      state.log.unshift({ id:cryptoRandomId(), at:new Date().toISOString(), type:"removeVendor", vendor:name, qty:0, by:who });
+      state.log = state.log.slice(0, 200);
+      saveLabels(state);
+      markTabChanged("dashboard");
+      showToast(`Deleted ${name}'s label tracker`);
+      renderLabelTracker();
+    }
+
     function renderLabelTypeRow(vendorName, type, t){
       const info = t || { capacity:1000, remaining:0, reorderAt:200 };
       const capacity = Math.max(1, info.capacity || 1000);
@@ -8810,6 +8874,10 @@
         <div class="labelVendorCard">
           <div class="labelVendorHead">
             <div class="labelVendorName" title="${safeName}">${safeName}</div>
+            <div class="labelVendorActions">
+              <button class="tinyBtn" type="button" data-vendor-action="editVendor" data-vendor="${safeName}" title="Rename this vendor">Edit</button>
+              <button class="tinyBtn danger" type="button" data-vendor-action="deleteVendor" data-vendor="${safeName}" title="Delete this vendor and all its sticker counts">Delete</button>
+            </div>
           </div>
           <div class="labelTypeGrid">${rowsHtml}</div>
         </div>`;
@@ -8845,6 +8913,8 @@
           if(action === "use") openLabelUseModal(name, type);
           else if(action === "restock") openLabelRestockModal(name, type);
           else if(action === "settings") openLabelSettingsModal(name, type);
+          else if(action === "editVendor") editLabelVendorPrompt(name);
+          else if(action === "deleteVendor") deleteLabelVendor(name);
         });
       });
     }
