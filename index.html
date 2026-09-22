@@ -3800,8 +3800,8 @@
       }
       const trucks = loadTrucks();
       let lastWk = null;
-      let labelDelta = 0; // net change in Vigoro labels needed across every truck this Save touches
-      const vendorDeltaTotal = {}; // same net change, broken down by vendor
+      let labelDelta = 0; // net change in labels needed across every truck this Save touches
+      const vendorDeltaTotal = {}; // same net change, broken down by vendor and sticker type
       for(const d of datas){
         const rd = parseDate(d.requestDate);
         const wk = rd ? weekKeyFromDate(weekAnchorForRequestDate(rd)) : weekKeyFromDate(parseDate(d.pickupDate));
@@ -3814,14 +3814,14 @@
             const prev = trucks[idx];
             labelDelta += labelBreakdown.total - (prev.labelQty || 0);
             const vd = diffVendorBreakdown(labelBreakdown.byVendor, prev.labelQtyByVendor);
-            Object.entries(vd).forEach(([k,v]) => { vendorDeltaTotal[k] = (vendorDeltaTotal[k]||0) + v; });
+            mergeVendorTypeDeltas(vendorDeltaTotal, vd);
             trucks[idx] = { ...prev, pickupDate:d.pickupDate, requestDate:d.requestDate, weekKey:wk, region:d.region, orderType:d.orderType, trucking:d.trucking, price:Number(d.price||0), notes:d.notes, vendorBlocks:d.vendorBlocks, totals, labelQty:labelBreakdown.total, labelQtyByVendor:labelBreakdown.byVendor };
             pushTruckHistory(trucks[idx], "Order details updated");
           }
         } else {
           d.id = cryptoRandomId();
           labelDelta += labelBreakdown.total;
-          Object.entries(labelBreakdown.byVendor).forEach(([k,v]) => { vendorDeltaTotal[k] = (vendorDeltaTotal[k]||0) + v; });
+          mergeVendorTypeDeltas(vendorDeltaTotal, labelBreakdown.byVendor);
           const newTruck = { id:d.id, pickupDate:d.pickupDate, requestDate:d.requestDate, weekKey:wk, region:d.region, orderType:d.orderType, trucking:d.trucking, price:Number(d.price||0), notes:d.notes, vendorBlocks:d.vendorBlocks, totals, labelQty:labelBreakdown.total, labelQtyByVendor:labelBreakdown.byVendor };
           pushTruckHistory(newTruck, "Order created");
           trucks.push(newTruck);
@@ -3847,7 +3847,10 @@
       saveTrucks(loadTrucks().filter(t => t.id !== editingTruckId));
       if(removedTruck && removedTruck.labelQtyByVendor && Object.keys(removedTruck.labelQtyByVendor).length){
         const vd = {};
-        Object.entries(removedTruck.labelQtyByVendor||{}).forEach(([k,v]) => { vd[k] = -v; });
+        Object.entries(normalizeVendorBreakdown(removedTruck.labelQtyByVendor)).forEach(([vendor, types]) => {
+          vd[vendor] = {};
+          Object.entries(types).forEach(([type, qty]) => { vd[vendor][type] = -qty; });
+        });
         applyVendorLabelDeltas(vd, "Order deleted");
       }
       markTabChanged("order");
@@ -8492,105 +8495,134 @@
 
     // --- Auto-detecting label usage straight from Order Tracker lines ---
     // Order lines are free-typed ("6" MONSTERA", "Vigoro Ivy HB"), not
-    // picked from a catalog, so we can't match them to an exact SKU. Instead
-    // this guesses from the same rule the workbook encodes: every Hanging
-    // Basket gets a label; a 6" Foliage line gets one only if it's the
-    // $12.98+ (Vigoro-branded) version of that plant, not the plain one.
-    // Most genera in the workbook are ALL one price or the other, so a
-    // plain keyword match is safe — a handful (Aralia, Dracaena, Fern,
-    // Homalomena, Yucca) carry both a plain and a Vigoro version, so those
-    // only count when the typed text also has the word that marks the
-    // pricier one (e.g. "stump", "braid", "cutback"). Anything this can't
-    // confidently place is left uncounted rather than guessed — log it
-    // manually with the tracker's "Log Usage" button instead.
+    // picked from a catalog, so this classifies each line into one of the 4
+    // sticker types straight from its size and genus, per Hampshire's rule:
+    //   - Any Hanging Basket, any size -> Small Vigoro, no exceptions.
+    //   - A 6" line ("Small") is checked against the Small-Regular list
+    //     (China Doll, Ferns, Hypoestes, Ivy, Arboricola, Spider Plant) ->
+    //     Small Regular if it matches, else Small Vigoro.
+    //   - A 10" line's plant is checked against the Medium-Regular list
+    //     (Croton, Dracaena, Yucca) -> Medium Regular if it matches, else
+    //     Medium Vigoro.
+    //   - Anything that's neither a Hanging Basket nor a 6"/10" line isn't
+    //     one of the 4 tracked sticker types, so it's left uncounted — log
+    //     it manually with the tracker's "Log Usage" button instead.
     const HB_LABEL_RE = /hanging\s*basket|\bhb\b/;
     const SIZE_6IN_RE = /6\s*(in\.?|inch)\b|6\s*"/;
-    const FOLIAGE_GENUS_RULES = [
-      { key:"aglaonema" }, { key:"alocasia" }, { key:"anthurium" }, { key:"aphelandra" },
-      { key:"aralia", needAny:["stump"] },
-      { key:"begonia" }, { key:"calathea" },
-      { key:"coffee plant" }, { key:"coffee" }, { key:"cordyline" }, { key:"dieffenbachia" },
-      { key:"dracaena", needAny:["cutback","braid"] },
-      { key:"marginata", needAny:["braid"] },
-      { key:"fatsia" },
-      { key:"fern", needAny:["lemon button","silver lace"] },
-      { key:"ficus" }, { key:"rubber tree" },
-      { key:"homalomena", needAny:["purple sword","selby"] },
-      { key:"hoya" }, { key:"lipstick plant" }, { key:"maranta" }, { key:"money tree" },
-      { key:"monstera" }, { key:"palm" }, { key:"ponytail" },
-      { key:"philodendron" }, { key:"philo" },
-      { key:"portulacaria" }, { key:"portucularia" },
-      { key:"pothos" }, { key:"sansevieria" }, { key:"sanseveria" },
-      { key:"spathiphyllum" }, { key:"strelitzia" }, { key:"white bird" },
-      { key:"syngonium" },
-      { key:"yucca", needAny:["cane"] }, { key:"mass cane" },
-      { key:"zamioculcas" }, { key:"zz plant" }
-    ];
-    function itemNeedsVigoroLabel(rawText){
+    const SIZE_10IN_RE = /10\s*(in\.?|inch)\b|10\s*"/;
+    const SMALL_REGULAR_KEYWORDS = ["china doll", "fern", "hypoestes", "hyposestes", "ivy", "arboricola", "spider plant", "spiderplant"];
+    const MEDIUM_REGULAR_KEYWORDS = ["croton", "dracaena", "yucca"];
+    function classifyStickerType(rawText){
       const t = (rawText||"").toLowerCase().trim();
-      if(!t) return false;
-      if(HB_LABEL_RE.test(t)) return true; // every Hanging Basket qualifies, any price
-      if(!SIZE_6IN_RE.test(t)) return false;
-      for(const rule of FOLIAGE_GENUS_RULES){
-        if(t.includes(rule.key)){
-          return rule.needAny ? rule.needAny.some(w => t.includes(w)) : true;
-        }
+      if(!t) return null;
+      if(HB_LABEL_RE.test(t)) return "Small Vigoro"; // every Hanging Basket, any size — no exceptions
+      if(SIZE_6IN_RE.test(t)){
+        return SMALL_REGULAR_KEYWORDS.some(k => t.includes(k)) ? "Small Regular" : "Small Vigoro";
       }
-      return false;
+      if(SIZE_10IN_RE.test(t)){
+        return MEDIUM_REGULAR_KEYWORDS.some(k => t.includes(k)) ? "Medium Regular" : "Medium Vigoro";
+      }
+      return null; // not a 6"/10" line and not a Hanging Basket — none of the 4 tracked types
     }
-    // Returns both the order's total label count AND a per-vendor split of
-    // it (keyed by the vendor block's name) — the tracker keeps a running
-    // by-vendor tally the same way it keeps the overall remaining count.
+    // Returns the order's overall total AND a per-vendor, per-sticker-type
+    // split of it (keyed by the vendor block's name, then by sticker type)
+    // — the tracker keeps a running vendor+type tally the same way it keeps
+    // each type's own remaining count.
     function computeOrderLabelBreakdown(vendorBlocks){
-      const byVendor = {};
+      const byVendor = {}; // { vendorName: { "Small Vigoro": qty, "Medium Regular": qty, ... } }
       let total = 0;
       (vendorBlocks||[]).forEach(vb => {
         const vendorName = (vb.name || "").trim() || "Unspecified Vendor";
         (vb.items||[]).forEach(it => {
           const qty = Number(it.qty || 0);
-          if(qty > 0 && itemNeedsVigoroLabel(it.item)){
-            total += qty;
-            byVendor[vendorName] = (byVendor[vendorName] || 0) + qty;
-          }
+          if(qty <= 0) return;
+          const stickerType = classifyStickerType(it.item);
+          if(!stickerType) return;
+          total += qty;
+          if(!byVendor[vendorName]) byVendor[vendorName] = {};
+          byVendor[vendorName][stickerType] = (byVendor[vendorName][stickerType] || 0) + qty;
         });
       });
       return { total, byVendor };
     }
-    // A truck's ".labelQty"/".labelQtyByVendor" fields (set whenever it's
-    // saved) record what was already applied to the tracker for that order,
-    // so editing/deleting/duplicating it only ever applies the DIFFERENCE —
-    // never double-counts or forgets to credit labels back.
-    function diffVendorBreakdown(nextByVendor, prevByVendor){
+    // A vendor's breakdown value used to always be a flat number (every
+    // order-detected label got dumped into one bucket per vendor — first
+    // whichever single pool the vendor had, later a hardcoded "Medium
+    // Vigoro" default). Now it's { stickerType: qty }. Any truck saved
+    // before this classification existed still has that old flat number in
+    // its .labelQtyByVendor — normalizing treats it as having all been
+    // applied to Medium Vigoro (where it actually landed under the old
+    // code), so re-saving/deleting/duplicating an older order still credits
+    // back from the right place instead of leaving a stale amount behind.
+    function normalizeVendorBreakdown(byVendor){
       const out = {};
-      const keys = new Set([...Object.keys(nextByVendor||{}), ...Object.keys(prevByVendor||{})]);
-      keys.forEach(k => {
-        const d = (nextByVendor?.[k]||0) - (prevByVendor?.[k]||0);
-        if(d) out[k] = d;
+      Object.keys(byVendor||{}).forEach(vendor => {
+        const v = byVendor[vendor];
+        out[vendor] = (typeof v === "number") ? { "Medium Vigoro": v } : (v || {});
       });
       return out;
     }
+    // A truck's ".labelQty"/".labelQtyByVendor" fields (set whenever it's
+    // saved) record what was already applied to the tracker for that order,
+    // so editing/deleting/duplicating it only ever applies the DIFFERENCE —
+    // never double-counts or forgets to credit labels back. Returns
+    // { vendor: { stickerType: delta } }.
+    function diffVendorBreakdown(nextByVendor, prevByVendor){
+      const next = normalizeVendorBreakdown(nextByVendor);
+      const prev = normalizeVendorBreakdown(prevByVendor);
+      const out = {};
+      const vendors = new Set([...Object.keys(next), ...Object.keys(prev)]);
+      vendors.forEach(vendor => {
+        const n = next[vendor] || {};
+        const p = prev[vendor] || {};
+        const types = new Set([...Object.keys(n), ...Object.keys(p)]);
+        types.forEach(type => {
+          const d = (n[type]||0) - (p[type]||0);
+          if(d){
+            if(!out[vendor]) out[vendor] = {};
+            out[vendor][type] = d;
+          }
+        });
+      });
+      return out;
+    }
+    // Merges a second { vendor: { type: delta } } map into the first,
+    // in place — used when a single Save touches several trucks at once and
+    // their per-vendor-per-type deltas need to be combined before applying.
+    function mergeVendorTypeDeltas(target, source){
+      Object.entries(source||{}).forEach(([vendor, types]) => {
+        if(!target[vendor]) target[vendor] = {};
+        Object.entries(types||{}).forEach(([type, d]) => {
+          if(!d) return;
+          target[vendor][type] = (target[vendor][type]||0) + d;
+        });
+      });
+      return target;
+    }
     // Applies a net change in labels-needed (positive = more used, negative
     // = credit back, e.g. an order was edited/deleted/duplicated) to each
-    // affected vendor's OWN tracker — vendorDeltaMap is a { vendorName:
-    // +/-qty } map; a vendor mentioned here that has no tracker yet gets
-    // one created automatically (defaults), same as typing a new vendor
-    // into Log Usage / Restock does. Order-line auto-detection (above) only
-    // recognizes Vigoro-branded 6" Foliage / Hanging Basket items — the
-    // catalog has no small/medium split — so these automatic deductions are
-    // applied to each vendor's Medium Vigoro count, the closest match for
-    // that catalog. Small Vigoro / Small Regular / Medium Regular stay
-    // manual (Log Usage / Restock) since orders don't carry that distinction.
+    // affected vendor+sticker-type tracker. vendorDeltaMap is a
+    // { vendorName: { stickerType: +/-qty } } map (see
+    // computeOrderLabelBreakdown for how each order line gets classified);
+    // a vendor/type mentioned here that has no tracker yet gets one created
+    // automatically (defaults), same as typing a new vendor into Log Usage /
+    // Restock does. Accepts the older flat { vendorName: qty } shape too
+    // (normalized to Medium Vigoro) so a stray legacy caller doesn't break.
     function applyVendorLabelDeltas(vendorDeltaMap, meta){
-      const entries = Object.entries(vendorDeltaMap || {}).filter(([, d]) => d);
-      if(!entries.length) return;
+      const normalized = normalizeVendorBreakdown(vendorDeltaMap);
+      const vendorNames = Object.keys(normalized).filter(v => Object.values(normalized[v]).some(d => d));
+      if(!vendorNames.length) return;
       const state = loadLabels();
       const who = (getUser() && getUser().name) || "Unknown";
       state.log = state.log || [];
-      entries.forEach(([name, delta]) => {
-        const { vendorKey, typeKey } = ensureVendorLabelState(state, name, "Medium Vigoro");
-        const t = state.vendors[vendorKey].types[typeKey];
-        t.remaining = Math.max(0, (t.remaining||0) - delta);
-        state.log.unshift({ id:cryptoRandomId(), at:new Date().toISOString(), type:"order", vendor:vendorKey, stickerType:typeKey, qty:delta, meta:meta||"", by:who });
+      vendorNames.forEach(name => {
+        Object.entries(normalized[name]).forEach(([type, delta]) => {
+          if(!delta) return;
+          const { vendorKey, typeKey } = ensureVendorLabelState(state, name, type);
+          const t = state.vendors[vendorKey].types[typeKey];
+          t.remaining = Math.max(0, (t.remaining||0) - delta);
+          state.log.unshift({ id:cryptoRandomId(), at:new Date().toISOString(), type:"order", vendor:vendorKey, stickerType:typeKey, qty:delta, meta:meta||"", by:who });
+        });
       });
       state.log = state.log.slice(0, 200);
       saveLabels(state);
