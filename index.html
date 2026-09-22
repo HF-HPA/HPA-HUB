@@ -846,11 +846,13 @@
     .labelTrackerNote.warn{ color:var(--state-warn-fg); }
     .labelTrackerNote.low{ color:var(--state-danger-fg); }
     .labelTrackerEmpty{ font-size:13px; color:var(--ink-2); padding:10px 2px; }
-    /* one independent bar/count per vendor, each with its own Use/Restock/Settings */
-    .labelVendorGrid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(230px, 1fr)); gap:12px; margin-top:14px; }
+    /* one card per vendor (nursery); each card holds one independent
+       bar/count per sticker type (Small Vigoro / Small Regular / Medium
+       Vigoro / Medium Regular), each with its own Use/Restock/Settings */
+    .labelVendorGrid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(270px, 1fr)); gap:12px; margin-top:14px; }
     .labelVendorCard{ background:var(--paper); border:1px solid var(--line-soft); border-radius:14px; padding:12px 14px; }
     html[data-theme="dark"] .labelVendorCard{ background:rgba(0,0,0,.15); }
-    .labelVendorHead{ display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; margin-bottom:8px; }
+    .labelVendorHead{ display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; margin-bottom:10px; }
     .labelVendorName{ font-weight:700; font-size:13px; color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:100%; }
     .labelVendorActions{ display:flex; gap:4px; flex-wrap:wrap; }
     .labelVendorActions .tinyBtn{ padding:4px 8px; font-size:11px; }
@@ -862,6 +864,14 @@
     .labelVendorNote{ font-size:11px; font-weight:700; color:var(--state-ok-fg); }
     .labelVendorNote.warn{ color:var(--state-warn-fg); }
     .labelVendorNote.low{ color:var(--state-danger-fg); }
+    /* the 4 sticker-type rows inside a vendor card */
+    .labelTypeGrid{ display:flex; flex-direction:column; gap:11px; }
+    .labelTypeRow{ padding-top:11px; border-top:1px dashed var(--line-soft); }
+    .labelTypeRow:first-child{ padding-top:0; border-top:none; }
+    .labelTypeRowHead{ display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; margin-bottom:6px; }
+    .labelTypeName{ font-weight:700; font-size:11px; color:var(--ink-2); text-transform:uppercase; letter-spacing:.03em; }
+    .labelTypeActions{ display:flex; gap:4px; flex-wrap:wrap; }
+    .labelTypeActions .tinyBtn{ padding:3px 7px; font-size:10.5px; }
 
     /* ----- Sync diagnostics ----- */
     .diagRow{ display:flex; justify-content:space-between; gap:14px; padding:8px 2px; border-bottom:1px solid var(--line-soft); }
@@ -1933,11 +1943,14 @@
       <div class="modalHead">
         <div>
           <h3>Log Label Usage</h3>
-          <div class="note">Pick the vendor and item that just got potted &amp; labeled and how many — it comes off that vendor's own label count.</div>
+          <div class="note">Pick the vendor, sticker type, and item that just got potted &amp; labeled and how many — it comes off that vendor's count for that sticker type.</div>
         </div>
         <button id="labelUseCloseBtn" class="closeX">Close</button>
       </div>
       <label><span class="lbl">Vendor</span><input id="lu_vendor" list="lu_vendorList" placeholder="e.g., ANCHOR"/><datalist id="lu_vendorList"></datalist></label>
+      <label><span class="lbl">Sticker Type</span>
+        <select id="lu_type"></select>
+      </label>
       <label><span class="lbl">Item</span>
         <select id="lu_item"></select>
       </label>
@@ -1951,11 +1964,14 @@
       <div class="modalHead">
         <div>
           <h3>Restock Labels</h3>
-          <div class="note">Add the quantity received for a vendor — a new roll or box of Vigoro labels for their shipments.</div>
+          <div class="note">Add the quantity received for a vendor and sticker type — a new roll or box of UPC stickers for their shipments.</div>
         </div>
         <button id="labelRestockCloseBtn" class="closeX">Close</button>
       </div>
       <label><span class="lbl">Vendor</span><input id="lr_vendor" list="lr_vendorList" placeholder="e.g., ANCHOR"/><datalist id="lr_vendorList"></datalist></label>
+      <label><span class="lbl">Sticker Type</span>
+        <select id="lr_type"></select>
+      </label>
       <label><span class="lbl">Labels Received</span><input id="lr_qty" type="number" min="1" step="1" placeholder="e.g., 1000"/></label>
       <button id="labelRestockSaveBtn" class="btn">Add to Count</button>
     </div>
@@ -1966,7 +1982,7 @@
       <div class="modalHead">
         <div>
           <h3 id="labelSettingsTitle">Vendor Label Settings</h3>
-          <div class="note">Set what "full" looks like for this vendor, its low-stock alert point, and correct the count after a physical recount.</div>
+          <div class="note">Set what "full" looks like for this vendor's sticker type, its low-stock alert point, and correct the count after a physical recount.</div>
         </div>
         <button id="labelSettingsCloseBtn" class="closeX">Close</button>
       </div>
@@ -1974,7 +1990,7 @@
       <label><span class="lbl">Low-Stock Alert At</span><input id="ls_reorder" type="number" min="0" step="1"/></label>
       <label><span class="lbl">Correct Current Count (optional)</span><input id="ls_current" type="number" min="0" step="1" placeholder="Leave blank to keep as-is"/></label>
       <button id="labelSettingsSaveBtn" class="btn">Save Settings</button>
-      <button id="labelDeleteVendorBtn" class="tinyBtn danger" type="button" style="margin-top:10px;">Remove This Vendor's Tracker</button>
+      <button id="labelDeleteVendorBtn" class="tinyBtn danger" type="button" style="margin-top:10px;">Reset This Sticker Type's Count</button>
     </div>
   </div>
 
@@ -3554,15 +3570,23 @@
       return { name, po, status, items };
     }
 
+    // Rounds a partial rack/case count UP to the nearest quarter (0.25) instead
+    // of jumping all the way to the next whole number — e.g. 2.08 -> 2.25, not
+    // 3. Physical racks/trays only come in whole units, but the exported
+    // totals are a planning figure (ordering hardware, estimating truck
+    // space), so keeping the true fractional need — rounded up just enough to
+    // hold the remainder — keeps those totals from being inflated by items
+    // that don't divide evenly.
+    function ceilToQuarter(n){ return Math.ceil(n * 4) / 4; }
     function addItemRowToVendor(tbody, block, itemObj){
       const tr = document.createElement("tr");
       const avHintHtml = itemObj.avCategory ? `<div class="avRackHint" style="font-size:11px; color:var(--moss); margin-top:3px;"></div>` : "";
       let rackCell;
       if(blockUsesUnitChoice(block)){
         const unit = itemObj.unit || "CC Rack";
-        rackCell = `<td><select class="it_unit" style="margin-bottom:4px;"><option ${unit==="CC Rack"?"selected":""}>CC Rack</option><option ${unit==="Pallet"?"selected":""}>Pallet</option></select><input class="it_racks" type="number" step="1" placeholder="0" value="${escapeHtml(itemObj.racks ?? "")}">${avHintHtml}</td>`;
+        rackCell = `<td><select class="it_unit" style="margin-bottom:4px;"><option ${unit==="CC Rack"?"selected":""}>CC Rack</option><option ${unit==="Pallet"?"selected":""}>Pallet</option></select><input class="it_racks" type="number" step="0.25" placeholder="0" value="${escapeHtml(itemObj.racks ?? "")}">${avHintHtml}</td>`;
       } else {
-        rackCell = `<td><input class="it_racks" type="number" step="1" placeholder="0" value="${escapeHtml(itemObj.racks ?? "")}">${avHintHtml}</td>`;
+        rackCell = `<td><input class="it_racks" type="number" step="0.25" placeholder="0" value="${escapeHtml(itemObj.racks ?? "")}">${avHintHtml}</td>`;
       }
       let shelvesCell = "";
       if(blockUsesShelves(block)){
@@ -3573,7 +3597,7 @@
         <td><input class="it_item" placeholder='e.g., 6" MONSTERA' value="${escapeHtml(itemObj.item ?? "")}"></td>
         ${rackCell}
         ${shelvesCell}
-        <td><input class="it_cases" type="number" step="1" placeholder="0" value="${escapeHtml(itemObj.cases ?? "")}"></td>
+        <td><input class="it_cases" type="number" step="0.25" placeholder="0" value="${escapeHtml(itemObj.cases ?? "")}"></td>
         <td><input class="it_qty" type="number" step="1" placeholder="0" value="${escapeHtml(itemObj.qty ?? "")}"></td>
         <td><input class="it_notes" placeholder="Line notes (optional)" value="${escapeHtml(itemObj.notes ?? "")}"></td>
         <td><select class="it_book" title="Reserve this line on the Booking tab">
@@ -3617,10 +3641,10 @@
         const racksInput = tr.querySelector(".it_racks");
         const casesInput = tr.querySelector(".it_cases");
         if(rule && qtyVal > 0){
-          if(racksInput && tr.dataset.racksAuto === "1") racksInput.value = Math.ceil(qtyVal / rule.plantsPerRack);
+          if(racksInput && tr.dataset.racksAuto === "1") racksInput.value = ceilToQuarter(qtyVal / rule.plantsPerRack);
           if(casesInput && rule.traysPerRack && tr.dataset.casesAuto === "1"){
             const plantsPerTray = rule.plantsPerRack / rule.traysPerRack;
-            casesInput.value = Math.ceil(qtyVal / plantsPerTray);
+            casesInput.value = ceilToQuarter(qtyVal / plantsPerTray);
           }
           if(hintEl) hintEl.textContent = `Auto: ${rule.label} — ${rule.plantsPerRack}/rack`;
         } else if(hintEl){
@@ -8341,11 +8365,15 @@
      * items is what empties the bar; Restock tops it back up when a new
      * box of labels comes in.
      *********************************************************/
-    // Each vendor keeps its own label supply — its own capacity, remaining
-    // count and low-stock threshold — rather than sharing one pool. State
-    // shape: { vendors: { "<vendor name>": {capacity, remaining, reorderAt} },
-    // log: [...] }. "Manual / Other" is just a vendor like any other, created
-    // on demand the first time something is logged against it.
+    // Each vendor tracks 4 sticker types separately — Small Vigoro, Small
+    // Regular, Medium Vigoro, Medium Regular (matching how the UPC Sticker
+    // Count workbook breaks each nursery down) — each with its own capacity,
+    // remaining count and low-stock threshold, rather than one pool per
+    // vendor. State shape: { vendors: { "<vendor name>": { types: {
+    // "<sticker type>": {capacity, remaining, reorderAt} } } }, log: [...] }.
+    // "Manual / Other" is just a vendor like any other, created on demand
+    // the first time something is logged against it.
+    const STICKER_TYPES = ["Small Vigoro", "Small Regular", "Medium Vigoro", "Medium Regular"];
     function loadLabels(){
       let state = LS.get(LS.labelsKey, null);
       if(!state){
@@ -8355,6 +8383,10 @@
       }
       if(!state.vendors){
         state = migrateLegacyLabelState(state);
+        saveLabels(state);
+      }
+      if(needsStickerTypeMigration(state)){
+        state = migrateVendorsToStickerTypes(state);
         saveLabels(state);
       }
       return state;
@@ -8381,15 +8413,60 @@
       log.unshift({ id:cryptoRandomId(), at:new Date().toISOString(), type:"migrate", qty:0, meta:"Switched to a separate label tracker per vendor", by:"System" });
       return { vendors, log:log.slice(0,200) };
     }
-    // Gets a vendor's tracker, creating it with defaults the first time
-    // it's referenced (a new vendor typed on an order, or a name typed
-    // into Log Usage / Restock). Returns the resolved (trimmed, defaulted)
-    // vendor name so callers key off the same string that got stored.
-    function ensureVendorLabelState(state, name){
+    // Second migration: a vendor still holding the OLD flat per-vendor shape
+    // ({capacity, remaining, reorderAt} directly on the vendor, no .types)
+    // gets switched over to the 4-sticker-type shape. Per-vendor counts are
+    // NOT carried into any of the 4 categories — every category starts blank
+    // so it reflects only what's actually counted/restocked going forward.
+    // The old combined count is preserved in the activity log for reference.
+    function needsStickerTypeMigration(state){
+      const vendors = state.vendors || {};
+      return Object.keys(vendors).some(name => vendors[name] && !vendors[name].types);
+    }
+    function migrateVendorsToStickerTypes(state){
+      const vendors = state.vendors || {};
+      state.log = state.log || [];
+      Object.keys(vendors).forEach(name => {
+        const v = vendors[name];
+        if(!v || v.types) return;
+        const oldCapacity = v.capacity;
+        const oldRemaining = v.remaining;
+        vendors[name] = { types:{} };
+        if(oldCapacity != null || oldRemaining != null){
+          state.log.unshift({
+            id:cryptoRandomId(), at:new Date().toISOString(), type:"migrate", vendor:name, qty:0,
+            meta:`Switched to per-sticker-type tracking (${STICKER_TYPES.join(" / ")}). ${name}'s previous combined count was ${oldRemaining||0}/${oldCapacity||0} — not carried over; re-enter by sticker type via Restock.`,
+            by:"System"
+          });
+        }
+      });
+      state.log = state.log.slice(0, 200);
+      return state;
+    }
+    // Ensures a vendor exists (no sticker type implied yet) — used when a
+    // vendor is only being named, e.g. adding a new nursery or populating
+    // the vendor autocomplete list.
+    function ensureVendorOnly(state, name){
       const key = (name || "").trim() || "Manual / Other";
       state.vendors = state.vendors || {};
-      if(!state.vendors[key]) state.vendors[key] = { capacity:1000, remaining:1000, reorderAt:200 };
+      if(!state.vendors[key]) state.vendors[key] = { types:{} };
+      if(!state.vendors[key].types) state.vendors[key].types = {};
       return key;
+    }
+    // Gets a vendor + sticker-type tracker, creating it with defaults the
+    // first time it's referenced (a new vendor/type typed on an order, or
+    // picked in Log Usage / Restock). Defaults start at 0 remaining — never
+    // pre-filled — since the actual on-hand count is something only a
+    // physical count/restock should set. Returns the resolved (trimmed,
+    // defaulted) vendor name and sticker type so callers key off the same
+    // strings that got stored.
+    function ensureVendorLabelState(state, name, type){
+      const vendorKey = ensureVendorOnly(state, name);
+      const typeKey = STICKER_TYPES.includes(type) ? type : STICKER_TYPES[0];
+      if(!state.vendors[vendorKey].types[typeKey]){
+        state.vendors[vendorKey].types[typeKey] = { capacity:1000, remaining:0, reorderAt:200 };
+      }
+      return { vendorKey, typeKey };
     }
 
     // --- Auto-detecting label usage straight from Order Tracker lines ---
@@ -8476,7 +8553,12 @@
     // affected vendor's OWN tracker — vendorDeltaMap is a { vendorName:
     // +/-qty } map; a vendor mentioned here that has no tracker yet gets
     // one created automatically (defaults), same as typing a new vendor
-    // into Log Usage / Restock does.
+    // into Log Usage / Restock does. Order-line auto-detection (above) only
+    // recognizes Vigoro-branded 6" Foliage / Hanging Basket items — the
+    // catalog has no small/medium split — so these automatic deductions are
+    // applied to each vendor's Medium Vigoro count, the closest match for
+    // that catalog. Small Vigoro / Small Regular / Medium Regular stay
+    // manual (Log Usage / Restock) since orders don't carry that distinction.
     function applyVendorLabelDeltas(vendorDeltaMap, meta){
       const entries = Object.entries(vendorDeltaMap || {}).filter(([, d]) => d);
       if(!entries.length) return;
@@ -8484,10 +8566,10 @@
       const who = (getUser() && getUser().name) || "Unknown";
       state.log = state.log || [];
       entries.forEach(([name, delta]) => {
-        const key = ensureVendorLabelState(state, name);
-        const v = state.vendors[key];
-        v.remaining = Math.max(0, (v.remaining||0) - delta);
-        state.log.unshift({ id:cryptoRandomId(), at:new Date().toISOString(), type:"order", vendor:key, qty:delta, meta:meta||"", by:who });
+        const { vendorKey, typeKey } = ensureVendorLabelState(state, name, "Medium Vigoro");
+        const t = state.vendors[vendorKey].types[typeKey];
+        t.remaining = Math.max(0, (t.remaining||0) - delta);
+        state.log.unshift({ id:cryptoRandomId(), at:new Date().toISOString(), type:"order", vendor:vendorKey, stickerType:typeKey, qty:delta, meta:meta||"", by:who });
       });
       state.log = state.log.slice(0, 200);
       saveLabels(state);
@@ -8511,6 +8593,12 @@
       if(curCat !== null) html += `</optgroup>`;
       sel.innerHTML = html;
     }
+    // Fills a <select> with the 4 sticker-type options (Log Usage / Restock).
+    function populateStickerTypeSelect(selectId){
+      const sel = document.getElementById(selectId);
+      if(!sel) return;
+      sel.innerHTML = STICKER_TYPES.map(t => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join("");
+    }
     // Keeps the Vendor field's autocomplete list on Log Usage / Restock in
     // sync with whichever vendors already have a tracker.
     function populateLabelVendorDatalists(){
@@ -8526,12 +8614,15 @@
     const labelUseModal = document.getElementById("labelUseModal");
     const labelRestockModal = document.getElementById("labelRestockModal");
     const labelSettingsModal = document.getElementById("labelSettingsModal");
-    let settingsVendorTarget = null; // which vendor's tracker the Settings modal is currently open for
+    let settingsVendorTarget = null; // which vendor the Settings modal is currently open for
+    let settingsTypeTarget = null;   // which of that vendor's 4 sticker types it's open for
 
-    function openLabelUseModal(vendorName){
+    function openLabelUseModal(vendorName, stickerType){
       populateLabelItemSelect();
       populateLabelVendorDatalists();
+      populateStickerTypeSelect("lu_type");
       document.getElementById("lu_vendor").value = vendorName || "";
+      document.getElementById("lu_type").value = STICKER_TYPES.includes(stickerType) ? stickerType : STICKER_TYPES[0];
       document.getElementById("lu_qty").value = "";
       labelUseModal.classList.add("active");
       labelUseModal.setAttribute("aria-hidden","false");
@@ -8542,29 +8633,32 @@
     labelUseModal.addEventListener("click", (e) => { if(e.target === labelUseModal) closeLabelUseModal(); });
     document.getElementById("labelUseSaveBtn").addEventListener("click", () => {
       const vendorRaw = document.getElementById("lu_vendor").value;
+      const stickerType = document.getElementById("lu_type").value;
       const sku = document.getElementById("lu_item").value;
       const qty = parseInt(document.getElementById("lu_qty").value, 10);
       const found = VIGORO_LABEL_ITEMS.find(x => x.sku === sku);
       if(!found){ alert("Pick an item."); return; }
       if(!(qty > 0)){ alert("Enter how many were labeled."); return; }
       const state = loadLabels();
-      const key = ensureVendorLabelState(state, vendorRaw);
-      const v = state.vendors[key];
-      v.remaining = Math.max(0, (v.remaining||0) - qty);
+      const { vendorKey, typeKey } = ensureVendorLabelState(state, vendorRaw, stickerType);
+      const t = state.vendors[vendorKey].types[typeKey];
+      t.remaining = Math.max(0, (t.remaining||0) - qty);
       state.log = state.log || [];
       const who = (getUser() && getUser().name) || "Unknown";
-      state.log.unshift({ id:cryptoRandomId(), at:new Date().toISOString(), type:"use", vendor:key, item:found.item, qty, by:who });
+      state.log.unshift({ id:cryptoRandomId(), at:new Date().toISOString(), type:"use", vendor:vendorKey, stickerType:typeKey, item:found.item, qty, by:who });
       state.log = state.log.slice(0, 200); // keep the log from growing forever
       saveLabels(state);
       markTabChanged("dashboard");
-      showToast(`Logged ${qty} label${qty===1?"":"s"} used for ${key}`);
+      showToast(`Logged ${qty} label${qty===1?"":"s"} used for ${vendorKey} — ${typeKey}`);
       closeLabelUseModal();
       renderLabelTracker();
     });
 
-    function openLabelRestockModal(vendorName){
+    function openLabelRestockModal(vendorName, stickerType){
       populateLabelVendorDatalists();
+      populateStickerTypeSelect("lr_type");
       document.getElementById("lr_vendor").value = vendorName || "";
+      document.getElementById("lr_type").value = STICKER_TYPES.includes(stickerType) ? stickerType : STICKER_TYPES[0];
       document.getElementById("lr_qty").value = "";
       labelRestockModal.classList.add("active");
       labelRestockModal.setAttribute("aria-hidden","false");
@@ -8575,33 +8669,35 @@
     labelRestockModal.addEventListener("click", (e) => { if(e.target === labelRestockModal) closeLabelRestockModal(); });
     document.getElementById("labelRestockSaveBtn").addEventListener("click", () => {
       const vendorRaw = document.getElementById("lr_vendor").value;
+      const stickerType = document.getElementById("lr_type").value;
       const qty = parseInt(document.getElementById("lr_qty").value, 10);
       if(!(qty > 0)){ alert("Enter how many labels were received."); return; }
       const state = loadLabels();
-      const key = ensureVendorLabelState(state, vendorRaw);
-      const v = state.vendors[key];
-      v.remaining = (v.remaining||0) + qty;
-      if(v.remaining > v.capacity) v.capacity = v.remaining; // a bigger shipment than "full" resets what full means
+      const { vendorKey, typeKey } = ensureVendorLabelState(state, vendorRaw, stickerType);
+      const t = state.vendors[vendorKey].types[typeKey];
+      t.remaining = (t.remaining||0) + qty;
+      if(t.remaining > t.capacity) t.capacity = t.remaining; // a bigger shipment than "full" resets what full means
       state.log = state.log || [];
       const who = (getUser() && getUser().name) || "Unknown";
-      state.log.unshift({ id:cryptoRandomId(), at:new Date().toISOString(), type:"restock", vendor:key, qty, by:who });
+      state.log.unshift({ id:cryptoRandomId(), at:new Date().toISOString(), type:"restock", vendor:vendorKey, stickerType:typeKey, qty, by:who });
       state.log = state.log.slice(0, 200);
       saveLabels(state);
       markTabChanged("dashboard");
-      showToast(`Added ${qty} labels to ${key}'s count`);
+      showToast(`Added ${qty} labels to ${vendorKey} — ${typeKey}'s count`);
       closeLabelRestockModal();
       renderLabelTracker();
     });
 
-    function openLabelSettingsModal(vendorName){
+    function openLabelSettingsModal(vendorName, stickerType){
       const state = loadLabels();
-      const key = ensureVendorLabelState(state, vendorName);
+      const { vendorKey, typeKey } = ensureVendorLabelState(state, vendorName, stickerType);
       saveLabels(state);
-      settingsVendorTarget = key;
-      const v = state.vendors[key];
-      document.getElementById("labelSettingsTitle").textContent = `${key} — Label Settings`;
-      document.getElementById("ls_capacity").value = v.capacity || 1000;
-      document.getElementById("ls_reorder").value = v.reorderAt || 0;
+      settingsVendorTarget = vendorKey;
+      settingsTypeTarget = typeKey;
+      const t = state.vendors[vendorKey].types[typeKey];
+      document.getElementById("labelSettingsTitle").textContent = `${vendorKey} — ${typeKey} — Label Settings`;
+      document.getElementById("ls_capacity").value = t.capacity || 1000;
+      document.getElementById("ls_reorder").value = t.reorderAt || 0;
       document.getElementById("ls_current").value = "";
       labelSettingsModal.classList.add("active");
       labelSettingsModal.setAttribute("aria-hidden","false");
@@ -8610,66 +8706,71 @@
     document.getElementById("labelSettingsCloseBtn").addEventListener("click", closeLabelSettingsModal);
     labelSettingsModal.addEventListener("click", (e) => { if(e.target === labelSettingsModal) closeLabelSettingsModal(); });
     document.getElementById("labelSettingsSaveBtn").addEventListener("click", () => {
-      if(!settingsVendorTarget){ closeLabelSettingsModal(); return; }
+      if(!settingsVendorTarget || !settingsTypeTarget){ closeLabelSettingsModal(); return; }
       const capacity = parseInt(document.getElementById("ls_capacity").value, 10);
       const reorderAt = parseInt(document.getElementById("ls_reorder").value, 10);
       const currentRaw = document.getElementById("ls_current").value;
       if(!(capacity > 0)){ alert("Enter a full count greater than 0."); return; }
       const state = loadLabels();
-      const key = ensureVendorLabelState(state, settingsVendorTarget);
-      const v = state.vendors[key];
-      v.capacity = capacity;
-      v.reorderAt = reorderAt >= 0 ? reorderAt : 0;
+      const { vendorKey, typeKey } = ensureVendorLabelState(state, settingsVendorTarget, settingsTypeTarget);
+      const t = state.vendors[vendorKey].types[typeKey];
+      t.capacity = capacity;
+      t.reorderAt = reorderAt >= 0 ? reorderAt : 0;
       if(currentRaw !== ""){
         const current = parseInt(currentRaw, 10);
         if(!(current >= 0)){ alert("Corrected count must be 0 or more."); return; }
         const who = (getUser() && getUser().name) || "Unknown";
         state.log = state.log || [];
-        state.log.unshift({ id:cryptoRandomId(), at:new Date().toISOString(), type:"adjust", vendor:key, qty:current - (v.remaining||0), by:who });
+        state.log.unshift({ id:cryptoRandomId(), at:new Date().toISOString(), type:"adjust", vendor:vendorKey, stickerType:typeKey, qty:current - (t.remaining||0), by:who });
         state.log = state.log.slice(0, 200);
-        v.remaining = current;
+        t.remaining = current;
       }
       saveLabels(state);
       markTabChanged("dashboard");
-      showToast(`Saved settings for ${key}`);
+      showToast(`Saved settings for ${vendorKey} — ${typeKey}`);
       closeLabelSettingsModal();
       renderLabelTracker();
     });
     document.getElementById("labelDeleteVendorBtn").addEventListener("click", () => {
-      if(!settingsVendorTarget) return;
-      const target = settingsVendorTarget;
-      if(!confirm(`Remove the label tracker for ${target}? This can't be undone.`)) return;
+      if(!settingsVendorTarget || !settingsTypeTarget) return;
+      const vendorTarget = settingsVendorTarget;
+      const typeTarget = settingsTypeTarget;
+      if(!confirm(`Reset ${vendorTarget} — ${typeTarget}'s count back to blank? This can't be undone.`)) return;
       const state = loadLabels();
-      delete state.vendors[target];
+      if(state.vendors[vendorTarget] && state.vendors[vendorTarget].types){
+        delete state.vendors[vendorTarget].types[typeTarget];
+      }
       state.log = state.log || [];
-      state.log.unshift({ id:cryptoRandomId(), at:new Date().toISOString(), type:"remove", vendor:target, qty:0, by:(getUser() && getUser().name) || "Unknown" });
+      state.log.unshift({ id:cryptoRandomId(), at:new Date().toISOString(), type:"remove", vendor:vendorTarget, stickerType:typeTarget, qty:0, by:(getUser() && getUser().name) || "Unknown" });
       state.log = state.log.slice(0, 200);
       saveLabels(state);
       markTabChanged("dashboard");
-      showToast(`Removed ${target}'s label tracker`);
+      showToast(`Reset ${vendorTarget} — ${typeTarget}`);
       settingsVendorTarget = null;
+      settingsTypeTarget = null;
       closeLabelSettingsModal();
       renderLabelTracker();
     });
 
     // Prompts for a brand-new vendor name and gives it its own tracker
-    // (defaults) right away, so it shows up before any order ever
-    // references it.
+    // (all 4 sticker types, still blank) right away, so it shows up before
+    // any order ever references it.
     function addLabelVendorPrompt(){
       const name = (prompt("Vendor name for the new label tracker:") || "").trim();
       if(!name) return;
       const state = loadLabels();
-      const key = ensureVendorLabelState(state, name);
+      const key = ensureVendorOnly(state, name);
       saveLabels(state);
       markTabChanged("dashboard");
       showToast(`Added a label tracker for ${key}`);
       renderLabelTracker();
     }
 
-    function renderLabelVendorCard(name, v){
-      const capacity = Math.max(1, v.capacity || 1000);
-      const remaining = Math.max(0, v.remaining || 0);
-      const reorderAt = v.reorderAt || 0;
+    function renderLabelTypeRow(vendorName, type, t){
+      const info = t || { capacity:1000, remaining:0, reorderAt:200 };
+      const capacity = Math.max(1, info.capacity || 1000);
+      const remaining = Math.max(0, info.remaining || 0);
+      const reorderAt = info.reorderAt || 0;
       const pct = Math.max(0, Math.min(100, Math.round(remaining / capacity * 100)));
       let level = "ok", fillColor = "var(--state-ok-bd)";
       if(remaining <= reorderAt){ level = "low"; fillColor = "var(--state-danger-bd)"; }
@@ -8679,15 +8780,16 @@
         : level === "warn"
           ? `Getting low`
           : `Stock looks good`;
-      const safeName = escapeHtml(name);
+      const safeName = escapeHtml(vendorName);
+      const safeType = escapeHtml(type);
       return `
-        <div class="labelVendorCard">
-          <div class="labelVendorHead">
-            <div class="labelVendorName" title="${safeName}">${safeName}</div>
-            <div class="labelVendorActions">
-              <button class="tinyBtn" type="button" data-vendor-action="use" data-vendor="${safeName}">${icon("plus")} Use</button>
-              <button class="tinyBtn" type="button" data-vendor-action="restock" data-vendor="${safeName}">${icon("upload")} Restock</button>
-              <button class="tinyBtn" type="button" data-vendor-action="settings" data-vendor="${safeName}" aria-label="Settings for ${safeName}" title="Settings">⚙</button>
+        <div class="labelTypeRow">
+          <div class="labelTypeRowHead">
+            <div class="labelTypeName">${safeType}</div>
+            <div class="labelTypeActions">
+              <button class="tinyBtn" type="button" data-vendor-action="use" data-vendor="${safeName}" data-type="${safeType}">${icon("plus")} Use</button>
+              <button class="tinyBtn" type="button" data-vendor-action="restock" data-vendor="${safeName}" data-type="${safeType}">${icon("upload")} Restock</button>
+              <button class="tinyBtn" type="button" data-vendor-action="settings" data-vendor="${safeName}" data-type="${safeType}" aria-label="Settings for ${safeName} ${safeType}" title="Settings">⚙</button>
             </div>
           </div>
           <div class="labelVendorBarTrack">
@@ -8700,6 +8802,19 @@
         </div>`;
     }
 
+    function renderLabelVendorCard(name, v){
+      const types = (v && v.types) || {};
+      const rowsHtml = STICKER_TYPES.map(type => renderLabelTypeRow(name, type, types[type])).join("");
+      const safeName = escapeHtml(name);
+      return `
+        <div class="labelVendorCard">
+          <div class="labelVendorHead">
+            <div class="labelVendorName" title="${safeName}">${safeName}</div>
+          </div>
+          <div class="labelTypeGrid">${rowsHtml}</div>
+        </div>`;
+    }
+
     function renderLabelTracker(){
       const wrap = document.getElementById("dashLabelTracker");
       if(!wrap) return;
@@ -8707,13 +8822,13 @@
       const vendorNames = Object.keys(state.vendors || {}).sort((a,b) => a.localeCompare(b));
       const cardsHtml = vendorNames.length
         ? vendorNames.map(name => renderLabelVendorCard(name, state.vendors[name])).join("")
-        : `<div class="labelTrackerEmpty">No vendor label trackers yet — add one to start tracking Vigoro labels by vendor.</div>`;
+        : `<div class="labelTrackerEmpty">No vendor label trackers yet — add one to start tracking UPC stickers by nursery.</div>`;
       wrap.innerHTML = `
         <div class="labelTrackerCard">
           <div class="labelTrackerHead">
             <div class="labelTrackerTitle">
               <div class="labelTrackerIcon">${icon("receipt")}</div>
-              <h3>Vigoro Label Tracker</h3>
+              <h3>UPC Sticker Tracker</h3>
             </div>
             <div class="labelTrackerActions">
               <button id="labelAddVendorBtn" class="btnGhost" type="button">${icon("plus")} Add Vendor</button>
@@ -8724,11 +8839,12 @@
       document.getElementById("labelAddVendorBtn").addEventListener("click", addLabelVendorPrompt);
       wrap.querySelectorAll("[data-vendor-action]").forEach(btn => {
         const name = btn.getAttribute("data-vendor");
+        const type = btn.getAttribute("data-type");
         const action = btn.getAttribute("data-vendor-action");
         btn.addEventListener("click", () => {
-          if(action === "use") openLabelUseModal(name);
-          else if(action === "restock") openLabelRestockModal(name);
-          else if(action === "settings") openLabelSettingsModal(name);
+          if(action === "use") openLabelUseModal(name, type);
+          else if(action === "restock") openLabelRestockModal(name, type);
+          else if(action === "settings") openLabelSettingsModal(name, type);
         });
       });
     }
@@ -9759,8 +9875,8 @@
           { icon:"✅", title:"Open Order Check-In", tag:"Nav", run:()=>showPage("checkin") },
           { icon:"🔗", title:"Add training link", tag:"Action", run:()=>{ showPage("training"); document.getElementById("trainingAddLinkBtn")?.click(); } },
           { icon:"💲", title:"Add Ad", sub:"Log an item going on ad", tag:"Action", run:()=>{ showPage("ads"); document.getElementById("newAdBtn")?.click(); } },
-          { icon:"🏷️", title:"Log Label Usage", sub:"Track Vigoro labels used", tag:"Action", run:()=>{ showPage("dashboard"); openLabelUseModal(); } },
-          { icon:"🏷️", title:"Restock Labels", sub:"Add received labels to the count", tag:"Action", run:()=>{ showPage("dashboard"); openLabelRestockModal(); } },
+          { icon:"🏷️", title:"Log Label Usage", sub:"Track UPC stickers used", tag:"Action", run:()=>{ showPage("dashboard"); openLabelUseModal(); } },
+          { icon:"🏷️", title:"Restock Labels", sub:"Add received UPC stickers to the count", tag:"Action", run:()=>{ showPage("dashboard"); openLabelRestockModal(); } },
           { icon:"📄", title:"Export Truck Order", tag:"Export", run:()=>{ showPage("order"); document.getElementById("exportTruckBtn")?.click(); } },
           { icon:"📄", title:"Export CC Order", tag:"Export", run:()=>{ showPage("order"); document.getElementById("exportCCBtn")?.click(); } },
           { icon:"📄", title:"Export Order Breakdown", tag:"Export", run:()=>{ showPage("order"); document.getElementById("exportBreakdownBtn")?.click(); } },
