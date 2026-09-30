@@ -315,25 +315,19 @@
     .availItemsHead .lbl{ margin:0; }
     .availEntryRow{ display:grid; grid-template-columns:1.3fr 0.8fr 1.3fr 40px; gap:8px; align-items:center; margin-bottom:8px; }
     .availEntryRow input{ margin:0; }
+    .availQuickTip{ margin:-2px 0 10px; font-size:12px; line-height:1.5; }
+    .availQuickTip kbd{ font-family:var(--sans); font-size:11px; font-weight:700; padding:1px 5px; border:1px solid var(--line); border-bottom-width:2px; border-radius:4px; background:var(--paper-2); }
+    .availQuickTip code{ font-size:11.5px; padding:0 4px; border-radius:4px; background:var(--paper-3, rgba(0,0,0,.06)); }
+    .availSaveRow{ display:flex; gap:8px; flex-wrap:wrap; margin-top:4px; }
+    .availSaveRow{ flex-wrap:nowrap; align-items:stretch; }
+    .availSaveRow .btn{ flex:1 1 auto; width:auto; margin:0; }
+    .availSaveRow .btnGhost{ flex:none; margin:0; }
     .availEntryRow .rmItem{ width:40px; height:40px; padding:0; line-height:1; display:flex; align-items:center; justify-content:center; }
     @media (max-width:560px){
       .availEntryRow{ grid-template-columns:1fr 1fr; }
       .availEntryRow > .ai_notes{ grid-column:1 / -1; }
       .availEntryRow > .rmItem{ grid-column:2; justify-self:end; }
     }
-    /* ----- Import Availability PDF — review list before committing ----- */
-    .availImportBody{ max-height:min(50vh, 480px); overflow-y:auto; border:1px solid var(--line-soft); border-radius:12px; }
-    .availImportGroup{ border-bottom:1px solid var(--line-soft); }
-    .availImportGroup:last-child{ border-bottom:none; }
-    .availImportGroupHead{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:9px 13px; background:var(--thead); font-size:13px; }
-    .availImportGroupHead label{ display:flex; align-items:center; gap:8px; cursor:pointer; }
-    .availImportGroupHead input[type="checkbox"]{ width:17px; height:17px; accent-color:var(--mint-deep); cursor:pointer; }
-    .availImportItems{ display:flex; flex-direction:column; }
-    .availImportItemRow{ display:flex; align-items:center; gap:9px; padding:6px 13px 6px 26px; font-size:13px; border-top:1px solid var(--line-soft); cursor:pointer; }
-    .availImportItemRow:first-child{ border-top:none; }
-    .availImportItemRow input[type="checkbox"]{ width:16px; height:16px; accent-color:var(--mint-deep); cursor:pointer; flex:none; }
-    .availImportItemRow span:first-of-type{ flex:1 1 auto; color:var(--ink); }
-    .availImportItemCat{ color:var(--ink-2); font-size:11px; flex:none; }
     /* Pre-Booking — a season tab bar (always all 4, each with its own color
        theme) drives a month calendar; a month bar underneath lets you arrow
        or sub-tab through that season's 3 months. Items appear on their
@@ -1514,9 +1508,6 @@
                 </div>
                 <input id="availSearch" placeholder="Search vendor or item..." />
                 <button id="availAddBtn" class="btn"><span data-icon="plus" aria-hidden="true"></span> Add Availability</button>
-                <button id="availImportPdfBtn" class="btnGhost"><span data-icon="upload" aria-hidden="true"></span> Import PDF</button>
-                <input id="availImportPdfInput" type="file" accept="application/pdf,.pdf" style="display:none;" />
-                <button id="availExportBtn" class="btnGhost"><span data-icon="download" aria-hidden="true"></span> Export CSV</button>
               </div>
             </div>
           </div>
@@ -1771,25 +1762,21 @@
         <span class="lbl">Items Available</span>
         <button id="a_addItemBtn" class="tinyBtn" type="button">+ Add Another Item</button>
       </div>
+      <div class="availQuickTip note">
+        <strong>Quick tips:</strong> press <kbd>Enter</kbd> to jump to the next item line ·
+        put several sizes in Spec like <code>4, 6, 10</code> to add them all at once ·
+        paste a list (one item per line) into Item to fill many rows ·
+        <kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>Enter</kbd> saves.
+      </div>
       <div id="a_itemRows"></div>
-      <button id="availSaveBtn" class="btn">Save Availability</button>
+      <datalist id="a_itemSuggestions"></datalist>
+      <div class="availSaveRow">
+        <button id="availSaveBtn" class="btn">Save Availability</button>
+        <button id="availSaveMoreBtn" class="btnGhost" type="button" title="Save these items and keep the window open for the next batch">Save &amp; Add More</button>
+      </div>
     </div>
   </div>
 
-  <div id="availImportModal" class="modal" aria-hidden="true">
-    <div class="modalCard" style="width:min(640px,96vw);">
-      <div class="modalHead">
-        <div>
-          <h3>Import Availability PDF</h3>
-          <div class="note">Upload a vendor availability sheet — new items are grouped by vendor below so you can review before adding them. Amounts still get entered per week in the grid, same as always.</div>
-        </div>
-        <button id="availImportCloseBtn" class="closeX">Close</button>
-      </div>
-      <div id="availImportStatus" class="note" style="margin:6px 0 10px;"></div>
-      <div id="availImportBody" class="availImportBody"></div>
-      <button id="availImportConfirmBtn" class="btn" style="margin-top:12px;" disabled>Import Selected Items</button>
-    </div>
-  </div>
 
   <div id="availDetailModal" class="modal" aria-hidden="true">
     <div class="modalCard" style="width:min(440px,96vw);">
@@ -6264,226 +6251,7 @@
       return spec || e.item || "Details";
     }
 
-    /*********************************************************
-     * Import Availability from a vendor PDF
-     * Vendors export a weekly availability sheet as a PDF: a
-     * category heading (e.g. 6" Foliage), then one block per
-     * vendor (vendor name + a row of week-ending dates), then a
-     * plain list of item names under it (sometimes with a note or
-     * that week's quantity alongside — we only pull the item name;
-     * Amount stays a manual per-week entry same as everywhere else
-     * in this tab). The same vendor block often repeats further
-     * down the PDF for the next few weeks — we de-duplicate so an
-     * item already seen (in this import, or already saved) isn't
-     * added twice.
-     *********************************************************/
-    let _pdfjsPromise = null;
-    function loadPdfJs(){
-      if(window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
-      if(_pdfjsPromise) return _pdfjsPromise;
-      _pdfjsPromise = new Promise((resolve, reject) => {
-        const s = document.createElement("script");
-        s.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js";
-        s.onload = () => {
-          if(window.pdfjsLib){
-            window.pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js";
-            resolve(window.pdfjsLib);
-          } else reject(new Error("PDF library loaded but pdfjsLib wasn't found."));
-        };
-        s.onerror = () => reject(new Error("Could not load the PDF reading library. Check your internet connection and try again."));
-        document.head.appendChild(s);
-      });
-      return _pdfjsPromise;
-    }
-    // Pulls every page's text into reading-order "lines" (clusters of text
-    // that share roughly the same vertical position), each line an array of
-    // {x, str} cells left-to-right — a lightweight table reconstruction
-    // since the PDF itself has no row/column structure, just positioned text.
-    async function extractPdfLines(pdfjsLib, arrayBuffer){
-      const doc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-      const lines = [];
-      for(let p = 1; p <= doc.numPages; p++){
-        const page = await doc.getPage(p);
-        const content = await page.getTextContent();
-        const rowsByY = [];
-        content.items.forEach(it => {
-          const str = (it.str || "").trim();
-          if(!str) return;
-          const x = it.transform[4];
-          const y = it.transform[5];
-          let row = rowsByY.find(r => Math.abs(r.y - y) <= 3);
-          if(!row){ row = { y, cells:[] }; rowsByY.push(row); }
-          row.cells.push({ x, str });
-        });
-        rowsByY.sort((a, b) => b.y - a.y); // PDF y grows upward — top of page first
-        rowsByY.forEach(r => lines.push(r.cells.sort((a, b) => a.x - b.x)));
-      }
-      return lines;
-    }
-    const AVAIL_IMPORT_DATE_RE = /^\d{1,2}\/\d{1,2}$/;
-    // Matches this sheet's own category names (straight or curly quotes)
-    // against our AVAIL_CATEGORIES list.
-    function matchAvailCategoryHeading(text){
-      const norm = (text || "").replace(/[“”″]/g, '"').trim().toLowerCase();
-      return AVAIL_CATEGORIES.find(c => c.toLowerCase() === norm) || null;
-    }
-    // Maps an extracted vendor name onto our standard vendor list when it's
-    // a clear match (e.g. "Omega Farms" -> "Omega") so imported items line
-    // up with everything else already tracked for that vendor; otherwise
-    // keeps the sheet's own name as-is.
-    function normalizeImportedVendor(name){
-      const raw = (name || "").trim();
-      if(!raw) return raw;
-      const strip = s => s.toLowerCase().replace(/\b(farms?|nursery|nurseries|growers?|greenhouses?|inc\.?|llc\.?)\b/g, "").replace(/[^a-z0-9]+/g, "");
-      const key = strip(raw);
-      if(!key) return raw;
-      const match = HOMESTEAD_VENDORS.find(v => strip(v) === key);
-      return match || raw;
-    }
-    // Walks the reconstructed lines, tracking the current category/vendor
-    // heading, and pulls out every plausible item name under them. Returns
-    // a de-duplicated (by category+vendor+item) array in first-seen order —
-    // callers still check against what's already saved before adding.
-    function parseAvailabilityLines(lines){
-      let currentCategory = null;
-      let currentVendor = null;
-      const seen = new Set();
-      const out = [];
-      lines.forEach(cells => {
-        if(!cells.length) return;
-        const first = cells[0].str;
-        const cat = matchAvailCategoryHeading(cells.map(c => c.str).join(" ")) || matchAvailCategoryHeading(first);
-        if(cat){ currentCategory = cat; currentVendor = null; return; }
-        const hasDateCell = cells.some(c => AVAIL_IMPORT_DATE_RE.test(c.str));
-        const hasNotesCell = cells.some(c => /^notes$/i.test(c.str));
-        if((hasDateCell || hasNotesCell) && first && !/^\d+(\.\d+)?$/.test(first)){
-          currentVendor = first;
-          return;
-        }
-        if(!currentVendor || !first) return;
-        if(/^\d+(\.\d+)?$/.test(first)) return;          // stray quantity, no item name
-        if(/^we have\b/i.test(first)) return;             // freeform banner text, not an item
-        if(first.length > 60 || /,.*,/.test(first)) return; // real item names are short — a long, comma-heavy run is a note/description, not a plant
-        if(cells.length > 1 && AVAIL_IMPORT_DATE_RE.test(cells[1].str) === false && /,/.test(cells.slice(1).map(c=>c.str).join(" "))) return; // "3 items: X, Y, Z" style aside
-        const vendor = normalizeImportedVendor(currentVendor);
-        const key = `${currentCategory||""}${vendor.toLowerCase()}${first.toLowerCase()}`;
-        if(seen.has(key)) return;
-        seen.add(key);
-        out.push({ category: currentCategory || availActiveCat, vendor, item: first });
-      });
-      return out;
-    }
-
-    const availImportModal = document.getElementById("availImportModal");
-    let availImportRows = []; // the parsed+deduped rows currently shown for review
-    function closeAvailImportModal(){
-      availImportModal.classList.remove("active");
-      availImportModal.setAttribute("aria-hidden","true");
-      document.getElementById("availImportPdfInput").value = "";
-    }
-    document.getElementById("availImportCloseBtn").addEventListener("click", closeAvailImportModal);
-    availImportModal.addEventListener("click", (e) => { if(e.target === availImportModal) closeAvailImportModal(); });
-
-    function renderAvailImportReview(){
-      const body = document.getElementById("availImportBody");
-      const statusEl = document.getElementById("availImportStatus");
-      const confirmBtn = document.getElementById("availImportConfirmBtn");
-      if(!availImportRows.length){
-        statusEl.textContent = "No new items found — everything in this PDF already looks like it's on your list.";
-        body.innerHTML = "";
-        confirmBtn.disabled = true;
-        return;
-      }
-      const byVendor = new Map();
-      availImportRows.forEach(r => {
-        if(!byVendor.has(r.vendor)) byVendor.set(r.vendor, []);
-        byVendor.get(r.vendor).push(r);
-      });
-      const totalCount = availImportRows.length;
-      statusEl.textContent = `Found ${totalCount} new item${totalCount===1?"":"s"} across ${byVendor.size} vendor${byVendor.size===1?"":"s"}. Uncheck anything you don't want added.`;
-      let html = "";
-      let gi = 0;
-      byVendor.forEach((rows, vendor) => {
-        const groupIdx = gi++;
-        html += `<div class="availImportGroup">
-          <div class="availImportGroupHead">
-            <label><input type="checkbox" class="aig_all" data-group="${groupIdx}" checked> <strong>${escapeHtml(vendor)}</strong></label>
-            <span class="note">${rows.length} item${rows.length===1?"":"s"}</span>
-          </div>
-          <div class="availImportItems">`;
-        rows.forEach((r, ri) => {
-          html += `<label class="availImportItemRow">
-            <input type="checkbox" class="aii_check" data-group="${groupIdx}" data-idx="${ri}" checked>
-            <span>${escapeHtml(r.item)}</span>
-            <span class="availImportItemCat">${escapeHtml(r.category || "")}</span>
-          </label>`;
-        });
-        html += `</div></div>`;
-      });
-      body.innerHTML = html;
-      // stash the grouped rows on the DOM lookup structure used at import time
-      body._groups = Array.from(byVendor.entries());
-      body.querySelectorAll(".aig_all").forEach(cb => {
-        cb.addEventListener("change", () => {
-          body.querySelectorAll(`.aii_check[data-group="${cb.dataset.group}"]`).forEach(x => { x.checked = cb.checked; });
-        });
-      });
-      confirmBtn.disabled = false;
-    }
-    document.getElementById("availImportPdfBtn").addEventListener("click", () => {
-      document.getElementById("availImportPdfInput").click();
-    });
-    document.getElementById("availImportPdfInput").addEventListener("change", async (e) => {
-      const file = e.target.files && e.target.files[0];
-      if(!file) return;
-      availImportModal.classList.add("active");
-      availImportModal.setAttribute("aria-hidden","false");
-      const statusEl = document.getElementById("availImportStatus");
-      const body = document.getElementById("availImportBody");
-      const confirmBtn = document.getElementById("availImportConfirmBtn");
-      body.innerHTML = "";
-      confirmBtn.disabled = true;
-      statusEl.textContent = "Reading " + (file.name || "the PDF") + "…";
-      try {
-        const pdfjsLib = await loadPdfJs();
-        const buf = await file.arrayBuffer();
-        const lines = await extractPdfLines(pdfjsLib, buf);
-        const parsed = parseAvailabilityLines(lines);
-        // drop anything that already matches an existing saved item for
-        // that vendor+category (case-insensitive) so re-importing the same
-        // or an updated sheet never creates duplicates
-        const existing = loadAvail();
-        const existingKeys = new Set(existing.map(en => `${en.category||""}${(en.vendor||"").toLowerCase()}${(en.item||"").toLowerCase()}`));
-        availImportRows = parsed.filter(r => !existingKeys.has(`${r.category||""}${r.vendor.toLowerCase()}${r.item.toLowerCase()}`));
-        renderAvailImportReview();
-      } catch(err){
-        statusEl.textContent = "Couldn't read that PDF: " + (err && err.message ? err.message : "unknown error");
-        availImportRows = [];
-      }
-    });
-    document.getElementById("availImportConfirmBtn").addEventListener("click", () => {
-      const body = document.getElementById("availImportBody");
-      const groups = body._groups || [];
-      const list = loadAvail();
-      let addedCount = 0;
-      let lastCategory = null;
-      groups.forEach(([, rows], groupIdx) => {
-        rows.forEach((r, ri) => {
-          const cb = body.querySelector(`.aii_check[data-group="${groupIdx}"][data-idx="${ri}"]`);
-          if(!cb || !cb.checked) return;
-          list.push({ id: cryptoRandomId(), category: r.category, vendor: r.vendor, item: r.item, spec:"", notes:"", createdAt: new Date().toISOString() });
-          lastCategory = r.category;
-          addedCount++;
-        });
-      });
-      if(!addedCount){ closeAvailImportModal(); return; }
-      saveAvail(list);
-      if(lastCategory) availActiveCat = lastCategory;
-      markTabChanged("avail");
-      showToast(`Imported ${addedCount} item${addedCount===1?"":"s"} from the PDF`);
-      closeAvailImportModal();
-      renderAvailability();
-    });
+    // (Import PDF removed)
 
     document.getElementById("availPrevMonth").addEventListener("click", () => { availMonthAnchor = addMonths(availMonthAnchor, -1); renderAvailability(); });
     document.getElementById("availNextMonth").addEventListener("click", () => { availMonthAnchor = addMonths(availMonthAnchor,  1); renderAvailability(); });
@@ -6517,8 +6285,8 @@
       const row = document.createElement("div");
       row.className = "availEntryRow";
       row.innerHTML = `
-        <input class="ai_item" placeholder='Item (e.g., Monstera Deliciosa)' value="${escapeHtml(item)}">
-        <input class="ai_spec" type="number" step="0.5" min="0" inputmode="decimal" placeholder="Spec (e.g., 12)" value="${escapeHtml(spec)}">
+        <input class="ai_item" list="a_itemSuggestions" autocomplete="off" placeholder='Item (e.g., Monstera Deliciosa)' value="${escapeHtml(item)}">
+        <input class="ai_spec" type="text" autocomplete="off" placeholder="Spec (e.g., 6 or 4, 6, 10)" value="${escapeHtml(spec)}">
         <input class="ai_notes" placeholder="Notes (optional)" value="${escapeHtml(notes)}">
         <button class="tinyBtn danger rmItem" type="button" title="Remove item">x</button>
       `;
@@ -6526,9 +6294,66 @@
         row.remove();
         if(document.getElementById("a_itemRows").children.length === 0) addAvailItemRow();
       });
+      // Speed-ups: Enter moves to the next item line (creating one if
+      // needed); Ctrl/Cmd+Enter saves; pasting a multi-line list into the
+      // Item box splits it into one row per line ("Item<TAB>Spec" or
+      // "Item, 6" also works).
+      row.querySelectorAll("input").forEach(inp => {
+        inp.addEventListener("keydown", (e) => {
+          if(e.key !== "Enter") return;
+          e.preventDefault();
+          if(e.ctrlKey || e.metaKey){ saveAvailFromModal(false); return; }
+          if(editingAvailId){ saveAvailFromModal(false); return; }
+          const next = row.nextElementSibling;
+          if(next){ next.querySelector(".ai_item").focus(); return; }
+          if(!row.querySelector(".ai_item").value.trim()) return; // empty last line — nothing to add
+          addAvailItemRow().querySelector(".ai_item").focus();
+        });
+      });
+      const itemInp = row.querySelector(".ai_item");
+      itemInp.addEventListener("paste", (e) => {
+        if(editingAvailId) return;
+        const text = (e.clipboardData || window.clipboardData)?.getData("text") || "";
+        const pasted = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+        if(pasted.length < 2) return;
+        e.preventDefault();
+        const parse = (l) => {
+          let parts = l.split("\t");
+          if(parts.length < 2){
+            const m = l.match(/^(.*?)[,;]\s*([\d.]+(?:\s*[,/]\s*[\d.]+)*)\s*$/);
+            parts = m ? [m[1], m[2]] : [l];
+          }
+          return { item:(parts[0]||"").trim(), spec:(parts[1]||"").trim(), notes:(parts[2]||"").trim() };
+        };
+        let target = row;
+        pasted.forEach((l, i) => {
+          const p = parse(l);
+          if(i > 0){
+            const nxt = target.nextElementSibling;
+            target = (nxt && !nxt.querySelector(".ai_item").value.trim()) ? nxt : addAvailItemRow();
+          }
+          target.querySelector(".ai_item").value = p.item;
+          if(p.spec) target.querySelector(".ai_spec").value = p.spec;
+          if(p.notes) target.querySelector(".ai_notes").value = p.notes;
+        });
+        showToast(`Filled ${pasted.length} rows from your paste`);
+      });
       rows.appendChild(row);
       return row;
     }
+    // Suggest item names already on the list so repeat plants are a couple
+    // of keystrokes instead of retyping the full name.
+    function fillAvailItemSuggestions(){
+      const dl = document.getElementById("a_itemSuggestions");
+      const names = Array.from(new Set(loadAvail().map(e => (e.item||"").trim()).filter(Boolean))).sort((a,b)=>a.localeCompare(b));
+      dl.innerHTML = names.map(n => `<option value="${escapeHtml(n)}"></option>`).join("");
+    }
+    // "4, 6, 10" / "4/6/10" / "4 6 10" -> ["4","6","10"]; blank -> [""]
+    function splitAvailSpecs(spec){
+      const parts = String(spec||"").split(/[,/;\s]+/).map(x => x.replace(/["”]/g,"").trim()).filter(Boolean);
+      return parts.length ? Array.from(new Set(parts)) : [""];
+    }
+    let lastAvailVendor = "";
     document.getElementById("a_addItemBtn").addEventListener("click", () => {
       const row = addAvailItemRow();
       row.querySelector(".ai_item").focus();
@@ -6540,24 +6365,36 @@
         ? `Editing one custom item. Amount is entered per week directly in the grid.`
         : `Add one or more items for a vendor — they'll show up every month from now on, same as the rest of the list. Amount is entered per week directly in the grid.`;
       fillAvailCategoryOptions(entry?.category || availActiveCat);
-      fillAvailVendorOptions(entry?.vendor || prefillVendor || "");
+      fillAvailVendorOptions(entry?.vendor || prefillVendor || lastAvailVendor || "");
+      fillAvailItemSuggestions();
       const rows = document.getElementById("a_itemRows");
       rows.innerHTML = "";
       if(entry){ addAvailItemRow(entry.item ?? "", entry.spec ?? "", entry.notes ?? ""); }
       else { addAvailItemRow(); }
       document.getElementById("a_addItemBtn").style.display = editingAvailId ? "none" : "";
+      document.getElementById("availSaveMoreBtn").style.display = editingAvailId ? "none" : "";
+      document.querySelector("#availModal .availQuickTip").style.display = editingAvailId ? "none" : "";
       availModal.classList.add("active");
       availModal.setAttribute("aria-hidden","false");
+      setTimeout(() => {
+        const vSel = document.getElementById("a_vendor");
+        if(!vSel.value) vSel.focus();
+        else document.querySelector("#a_itemRows .ai_item")?.focus();
+      }, 50);
     }
+    // Picking a vendor jumps straight to the first item box.
+    document.getElementById("a_vendor").addEventListener("change", () => {
+      if(document.getElementById("a_vendor").value) document.querySelector("#a_itemRows .ai_item")?.focus();
+    });
     function closeAvailModal(){
       availModal.classList.remove("active");
       availModal.setAttribute("aria-hidden","true");
       editingAvailId = null;
     }
-    document.getElementById("availSaveBtn").addEventListener("click", () => {
+    function saveAvailFromModal(keepOpen){
       const category = document.getElementById("a_category").value;
       const vendor = document.getElementById("a_vendor").value.trim();
-      if(!vendor){ alert("Vendor is required."); return; }
+      if(!vendor){ alert("Vendor is required."); document.getElementById("a_vendor").focus(); return; }
       const rows = Array.from(document.querySelectorAll("#a_itemRows .availEntryRow"));
       const items = rows.map(r => ({
         item: r.querySelector(".ai_item").value.trim(),
@@ -6566,42 +6403,57 @@
       })).filter(x => x.item);
       if(items.length === 0){ alert("Add at least one item (the Item field can't be blank)."); return; }
       const list = loadAvail();
+      const keyOf = (c, v, i, sp) => [c, (v||"").toLowerCase(), (i||"").trim().toLowerCase(), String(sp||"").trim()].join("|");
+      const existingKeys = new Set(list.map(e => keyOf(e.category, e.vendor, e.item, e.spec)));
+      let added = 0, skipped = 0;
       if(editingAvailId){
         const idx = list.findIndex(e => e.id === editingAvailId);
         if(idx >= 0){
           const it = items[0];
-          list[idx] = { ...list[idx], category, vendor, item: it.item, spec: it.spec, notes: it.notes };
+          const specs = splitAvailSpecs(it.spec);
+          list[idx] = { ...list[idx], category, vendor, item: it.item, spec: specs[0], notes: it.notes };
+          // extra sizes typed while editing become new rows
+          specs.slice(1).forEach(sp => {
+            if(existingKeys.has(keyOf(category, vendor, it.item, sp))){ skipped++; return; }
+            list.push({ id: cryptoRandomId(), category, vendor, item: it.item, spec: sp, notes: it.notes, createdAt: new Date().toISOString() });
+            added++;
+          });
         }
       } else {
         for(const it of items){
-          list.push({ id: cryptoRandomId(), category, vendor, item: it.item, spec: it.spec, notes: it.notes, createdAt: new Date().toISOString() });
+          for(const sp of splitAvailSpecs(it.spec)){
+            const k = keyOf(category, vendor, it.item, sp);
+            if(existingKeys.has(k)){ skipped++; continue; }
+            existingKeys.add(k);
+            list.push({ id: cryptoRandomId(), category, vendor, item: it.item, spec: sp, notes: it.notes, createdAt: new Date().toISOString() });
+            added++;
+          }
         }
         availActiveCat = category;
+        availExpandedVendors.add(vendor);
       }
+      lastAvailVendor = vendor;
       saveAvail(list);
       markTabChanged("avail");
-      showToast("Availability saved");
-      closeAvailModal();
+      let msg = editingAvailId ? "Availability saved" : `Added ${added} item${added===1?"":"s"} for ${vendor}`;
+      if(skipped) msg += ` (${skipped} already on the list, skipped)`;
+      showToast(msg);
       renderAvailability();
-    });
+      if(keepOpen && !editingAvailId){
+        // keep category + vendor, clear the item lines for the next batch
+        const rowsEl = document.getElementById("a_itemRows");
+        rowsEl.innerHTML = "";
+        addAvailItemRow().querySelector(".ai_item").focus();
+        fillAvailItemSuggestions();
+      } else {
+        closeAvailModal();
+      }
+    }
+    document.getElementById("availSaveBtn").addEventListener("click", () => saveAvailFromModal(false));
+    document.getElementById("availSaveMoreBtn").addEventListener("click", () => saveAvailFromModal(true));
 
     document.getElementById("availMonthSelect").addEventListener("change", (e) => { availMonthAnchor = dateFromMonthKey(e.target.value); renderAvailability(); });
     document.getElementById("availSearch").addEventListener("input", renderAvailability);
-    document.getElementById("availExportBtn").addEventListener("click", () => {
-      const weeks = availWeeksInMonth(availMonthAnchor);
-      const mk = monthKeyFromDate(availMonthAnchor);
-      const rows = [];
-      weeks.forEach(w => {
-        const wk = weekKeyFromDate(w);
-        const orders = loadAvailOrders()[wk] || {};
-        getWeekEntries(wk)
-          .filter(e => (e.amount && e.amount.trim()) || orders[e.id])
-          .sort((a,b) => (a.category+a.vendor+a.item).localeCompare(b.category+b.vendor+b.item))
-          .forEach(e => rows.push({ Week: wk, Category: e.category, Vendor: e.vendor, Item: e.item, Spec: e.spec || "", Amount: e.amount || "", Ordering: orders[e.id] ? "YES" : "NO" }));
-      });
-      if(!rows.length){ alert("No availability reported this month to export."); return; }
-      downloadCSV(`availability_${mk}.csv`, rows, ["Week","Category","Vendor","Item","Spec","Amount","Ordering"]);
-    });
 
     function renderAvailTabs(weekEntries){
       const tabsEl = document.getElementById("availTabs");
