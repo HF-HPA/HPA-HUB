@@ -1406,10 +1406,10 @@
                   </div>
                   <div class="otcStat" id="otcGradesStat" style="display:none;">
                     <span class="otcStatLabel">Grades shipping</span>
-                    <span class="otcStatValue" id="weekMetaLabel" title="Store grades shipping and store count for this week"></span>
+                    <span class="otcStatValue" id="weekMetaLabel" title="Store grades shipping, HPA store count and Tropical store count for this week"></span>
                   </div>
                 </div>
-                <button id="editWeekBtn" class="tinyBtn otcEditBtn" type="button" title="Set store grades shipping and store count for this week">✏️ Edit Week</button>
+                <button id="editWeekBtn" class="tinyBtn otcEditBtn" type="button" title="Set store grades shipping, HPA store count and Tropical store count for this week">✏️ Edit Week</button>
               </div>
               <div class="otcWeekTotals" id="otcWeekTotals">
                 <span class="otcTotalsLabel">Week Totals</span>
@@ -1867,12 +1867,13 @@
       <div class="modalHead">
         <div>
           <h3 id="weekMetaModalTitle">Edit Week</h3>
-          <div class="note" id="weekMetaModalSub">Store grades shipping and store count for this week.</div>
+          <div class="note" id="weekMetaModalSub">Store grades shipping, HPA store count and Tropical store count for this week.</div>
         </div>
         <button id="weekMetaCloseBtn" class="closeX">Close</button>
       </div>
       <label><span class="lbl">Store grades shipping</span><input id="wm_grades" placeholder="e.g., A, B, C"/></label>
-      <label><span class="lbl">Quantity of stores</span><input id="wm_storeCount" type="number" min="0" step="1" placeholder="e.g., 42"/></label>
+      <label><span class="lbl">Number of HPA stores</span><input id="wm_hpaCount" type="number" min="0" step="1" placeholder="e.g., 42"/></label>
+      <label><span class="lbl">Number of TROPICAL stores</span><input id="wm_tropCount" type="number" min="0" step="1" placeholder="e.g., 18"/></label>
       <button id="weekMetaSaveBtn" class="btn">Save</button>
     </div>
   </div>
@@ -3065,7 +3066,8 @@
     function getWeekMeta(weekKey){ return loadWeekMeta()[weekKey] || null; }
     function setWeekMeta(weekKey, data){
       const map = loadWeekMeta();
-      if(data && (data.grades || (data.storeCount !== null && data.storeCount !== undefined && data.storeCount !== ""))){
+      const has = v => v !== null && v !== undefined && v !== "";
+      if(data && (data.grades || has(data.hpaCount) || has(data.tropCount) || has(data.storeCount))){
         map[weekKey] = data;
       } else {
         delete map[weekKey];
@@ -3118,7 +3120,11 @@
       const sub = document.getElementById("weekMetaModalSub");
       if(sub) sub.textContent = `For ${weekLabel(weekAnchor)}`;
       document.getElementById("wm_grades").value = meta.grades || "";
-      document.getElementById("wm_storeCount").value = (meta.storeCount === null || meta.storeCount === undefined) ? "" : meta.storeCount;
+      const val = v => (v === null || v === undefined) ? "" : v;
+      // Older weeks saved a single "storeCount" — carry it into the HPA field so it isn't lost.
+      const hpaVal = (meta.hpaCount === null || meta.hpaCount === undefined) ? meta.storeCount : meta.hpaCount;
+      document.getElementById("wm_hpaCount").value = val(hpaVal);
+      document.getElementById("wm_tropCount").value = val(meta.tropCount);
       weekMetaModal.classList.add("active");
       weekMetaModal.setAttribute("aria-hidden","false");
       setTimeout(() => document.getElementById("wm_grades").focus(), 50);
@@ -3130,9 +3136,10 @@
     document.getElementById("weekMetaSaveBtn")?.addEventListener("click", () => {
       const wk = weekKeyFromDate(weekAnchor);
       const grades = document.getElementById("wm_grades").value.trim();
-      const countRaw = document.getElementById("wm_storeCount").value;
-      const storeCount = countRaw === "" ? null : Number(countRaw);
-      setWeekMeta(wk, { grades, storeCount });
+      const num = id => { const raw = document.getElementById(id).value; return raw === "" ? null : Number(raw); };
+      const hpaCount = num("wm_hpaCount");
+      const tropCount = num("wm_tropCount");
+      setWeekMeta(wk, { grades, hpaCount, tropCount });
       markTabChanged("order");
       closeWeekMetaModal();
       renderOrder();
@@ -3144,10 +3151,11 @@
       const gradesStat = document.getElementById("otcGradesStat");
       const parts = [];
       if(meta && meta.grades) parts.push(meta.grades);
-      if(meta && meta.storeCount !== null && meta.storeCount !== undefined && meta.storeCount !== ""){
-        const n = Number(meta.storeCount);
-        parts.push(`${n.toLocaleString()} store${n===1?"":"s"}`);
-      }
+      const has = v => v !== null && v !== undefined && v !== "";
+      const storeTxt = (v, label) => { const n = Number(v); return `${n.toLocaleString()} ${label} store${n===1?"":"s"}`; };
+      if(meta && has(meta.hpaCount)) parts.push(storeTxt(meta.hpaCount, "HPA"));
+      else if(meta && !has(meta.tropCount) && has(meta.storeCount)) parts.push(storeTxt(meta.storeCount, "HPA"));
+      if(meta && has(meta.tropCount)) parts.push(storeTxt(meta.tropCount, "Tropical"));
       if(parts.length){
         weekMetaLabelEl.textContent = parts.join(" · ");
         if(gradesStat) gradesStat.style.display = "";
