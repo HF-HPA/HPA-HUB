@@ -342,6 +342,8 @@
     .prebookSeasonTab.active{ background:linear-gradient(120deg, var(--seasonA), var(--seasonB)); border-color:transparent; color:#fff; box-shadow:0 2px 8px rgba(0,0,0,.15); text-shadow:0 1px 2px rgba(0,0,0,.15); }
     .prebookSeasonTab .count{ font-size:11px; font-weight:700; background:rgba(0,0,0,.08); color:inherit; padding:1px 8px; border-radius:999px; }
     .prebookSeasonTab.active .count{ background:rgba(255,255,255,.28); }
+    /* Year filter buttons (replaced the season tabs) — same pill style, brand color. */
+    .prebookSeasonTab[data-year]{ --seasonA:var(--moss); --seasonB:#2f7d5b; }
     /* The whole tab — search row, month bar, calendar — sits on a soft wash
        of whichever season is currently active, via a data-season attribute
        set on the page section; these variables cascade down to everything
@@ -1570,7 +1572,7 @@
             <button type="button" class="checkinChooserBtn" data-mode="homestead">
               <span class="checkinChooserIcon">🏠</span>
               <span class="checkinChooserLabel">Homestead Check In</span>
-              <span class="checkinChooserSub">Only items coming from our Homestead vendors</span>
+              <span class="checkinChooserSub">This week's Homestead orders, straight from the Order Tracker</span>
             </button>
             <button type="button" class="checkinChooserBtn" data-mode="hampshire">
               <span class="checkinChooserIcon">📦</span>
@@ -3294,6 +3296,25 @@
     const ORDER_TYPES = ["CC","FLOOR STACK","CC/FLOOR STACK","CC RACKS/PALLETS","CC RACKS","PALLETS","DIRECT SHIP"];
     const REGIONS = ["Homestead","Apopka","Canada","New Jersey"];
     function orderTypeLabel(t){ return t === "CC/FLOOR STACK" ? "CC/Floor Stack" : t; }
+    // What the rack-count column is called on the Order Tracker sheet:
+    //   FLOOR STACK          → no column at all (returns null)
+    //   PALLETS              → "Pallets"
+    //   CC RACKS/PALLETS     → follows each line's chosen unit: all Pallet →
+    //                          "Pallets", all CC Rack → "CC Racks", mixed →
+    //                          "CC Racks / Pallets" (each cell then shows its unit)
+    //   everything else      → "CC Racks"
+    function rackColumnInfo(orderType, items){
+      const t = (orderType || "CC").toUpperCase();
+      if(t === "FLOOR STACK") return null;
+      if(t === "PALLETS") return { label:"Pallets", short:"pallets", mixed:false };
+      if(t === "CC RACKS/PALLETS"){
+        const used = (items || []).filter(it => Number(it.racks || 0) > 0);
+        const units = new Set(used.map(it => it.unit === "Pallet" ? "Pallet" : "CC Rack"));
+        if(units.size === 1 && units.has("Pallet")) return { label:"Pallets", short:"pallets", mixed:false };
+        if(units.size > 1) return { label:"CC Racks / Pallets", short:"racks/pallets", mixed:true };
+      }
+      return { label:"CC Racks", short:"racks", mixed:false };
+    }
 
     // For Canada and New Jersey, the date stored on the order is actually the
     // delivery date, not a pickup date — so it's labeled/badged differently
@@ -3488,7 +3509,8 @@
     function blockUsesShelves(block){ return blockRegion(block) === "Apopka"; }
 
     function itemsHeaderHTML(block){
-      const rackCol = blockUsesUnitChoice(block)
+      const rackCol = blockOrderType(block) === "FLOOR STACK" ? ``
+        : blockUsesUnitChoice(block)
         ? `<th style="width:16%;">Unit / Count</th>`
         : `<th style="width:12%;">CC Rack Count</th>`;
       const shelvesCol = blockUsesShelves(block) ? `<th style="width:10%;">Shelves</th>` : ``;
@@ -3577,7 +3599,9 @@
       const tr = document.createElement("tr");
       const avHintHtml = itemObj.avCategory ? `<div class="avRackHint" style="font-size:11px; color:var(--moss); margin-top:3px;"></div>` : "";
       let rackCell;
-      if(blockUsesUnitChoice(block)){
+      if(blockOrderType(block) === "FLOOR STACK"){
+        rackCell = ``; // Floor stack orders don't use racks — no rack column.
+      } else if(blockUsesUnitChoice(block)){
         const unit = itemObj.unit || "CC Rack";
         rackCell = `<td><select class="it_unit" style="margin-bottom:4px;"><option ${unit==="CC Rack"?"selected":""}>CC Rack</option><option ${unit==="Pallet"?"selected":""}>Pallet</option></select><input class="it_racks" type="number" step="0.25" placeholder="0" value="${escapeHtml(itemObj.racks ?? "")}">${avHintHtml}</td>`;
       } else {
@@ -4387,6 +4411,8 @@
           return acc;
         }, { racks:0, cases:0, qty:0, price:0 });
 
+        const secRackInfo = rackColumnInfo(normalizeOrderType(sectionTrucks[0]),
+          sectionTrucks.flatMap(t => (t.vendorBlocks || []).flatMap(vb => vb.items || [])));
         const sec = document.createElement("div");
         sec.className = "orderSection";
         sec.dataset.kind = "group";
@@ -4396,7 +4422,7 @@
               <div class="sectionTitle">${escapeHtml(key)}</div>
               <div class="sectionMeta">
                 <span class="pillMini">${sectionTrucks.length} order(s)</span>
-                <span class="pillMini">${secTotals.racks.toLocaleString()} racks</span>
+                ${secRackInfo ? `<span class="pillMini">${secTotals.racks.toLocaleString()} ${secRackInfo.short}</span>` : ``}
                 <span class="pillMini">${secTotals.cases.toLocaleString()} cases</span>
                 <span class="pillMini">${secTotals.qty.toLocaleString()} plants</span>
                 <span class="pillMini">${money(secTotals.price)}</span>
@@ -4423,11 +4449,12 @@
           const truckRacks = Number(t.totals?.racks || 0);
           const truckCases = Number(t.totals?.cases || 0);
           const truckQty = Number(t.totals?.qty || 0);
+          const truckRackInfo = rackColumnInfo(normalizeOrderType(t), (t.vendorBlocks || []).flatMap(vb => vb.items || []));
           const statsParts = [
             `${vendorCount} vendor${vendorCount===1?"":"s"}`,
-            `${itemLines} line${itemLines===1?"":"s"}`,
-            `${truckRacks.toLocaleString()} rack${truckRacks===1?"":"s"}`
+            `${itemLines} line${itemLines===1?"":"s"}`
           ];
+          if(truckRackInfo) statsParts.push(`${truckRacks.toLocaleString()} ${truckRackInfo.short}`);
           if(truckCases) statsParts.push(`${truckCases.toLocaleString()} case${truckCases===1?"":"s"}`);
           statsParts.push(`${truckQty.toLocaleString()} plant${truckQty===1?"":"s"}`);
 
@@ -4495,6 +4522,15 @@
 
             const items = (vb.items || []);
             const showCases = items.some(it => Number(it.cases || 0) > 0);
+            const rackInfo = rackColumnInfo(normalizeOrderType(t), items);
+            const showRacks = !!rackInfo;
+            const colCount = 4 + (showRacks ? 1 : 0) + (showCases ? 1 : 0);
+            const rackCellText = (it) => {
+              const n = Number(it.racks || 0);
+              if(!n) return "";
+              if(!rackInfo.mixed) return n.toLocaleString();
+              return `${n.toLocaleString()} ${it.unit === "Pallet" ? (n === 1 ? "pallet" : "pallets") : (n === 1 ? "rack" : "racks")}`;
+            };
 
             const vTotals = items.reduce((acc,it) => {
               acc.racks += Number(it.racks || 0);
@@ -4513,7 +4549,7 @@
                   <button class="${statusPillClass(vendorStatus)} statusToggle" data-tid="${t.id}" data-vidx="${vIdx}" type="button" title="Click to toggle Open / Confirmed">${escapeHtml(vendorStatus)}</button>
                 </div>
                 <div class="sectionMeta">
-                  <span class="pillMini">${vTotals.racks.toLocaleString()} racks</span>
+                  ${showRacks ? `<span class="pillMini">${vTotals.racks.toLocaleString()} ${rackInfo.short}</span>` : ``}
                   ${showCases ? `<span class="pillMini">${vTotals.cases.toLocaleString()} cases</span>` : ``}
                   <span class="pillMini">${vTotals.qty.toLocaleString()} plants</span>
                 </div>
@@ -4523,7 +4559,7 @@
                   <tr>
                     <th style="width:5%;" title="Mark as added to the order">Added</th>
                     <th style="width:39%;">Item</th>
-                    <th class="num nowrap" style="width:13%;">CC Racks</th>
+                    ${showRacks ? `<th class="num nowrap" style="width:13%;">${escapeHtml(rackInfo.label)}</th>` : ``}
                     ${showCases ? `<th class="num nowrap" style="width:13%;">Cases</th>` : ``}
                     <th class="num nowrap" style="width:13%;">Plant Qty</th>
                     <th>Notes</th>
@@ -4536,18 +4572,18 @@
                         <tr class="itemRow${it.substituted ? " substituted" : ""}${it.checked ? " itemChecked" : ""}" data-tid="${t.id}" data-vidx="${vIdx}" data-iidx="${iIdx}">
                           <td class="itemCheckCell"><input type="checkbox" class="itemCheckBox" data-tid="${t.id}" data-vidx="${vIdx}" data-iidx="${iIdx}" ${it.checked ? "checked" : ""} title="Mark as added to the order"></td>
                           <td class="itemNameCell" title="Click to substitute this item">${escapeHtml(it.item || "—")}</td>
-                          <td class="num">${Number(it.racks || 0) ? Number(it.racks).toLocaleString() : ""}</td>
+                          ${showRacks ? `<td class="num">${rackCellText(it)}</td>` : ``}
                           ${showCases ? `<td class="num">${Number(it.cases || 0) ? Number(it.cases).toLocaleString() : ""}</td>` : ``}
                           <td class="num">${Number(it.qty || 0) ? Number(it.qty).toLocaleString() : ""}</td>
                           <td>${escapeHtml(it.notes || "")}</td>
                         </tr>
                       `).join("")
-                      : `<tr><td colspan="${showCases ? 6 : 5}" style="color:var(--ink-2); font-weight:600;">No lines.</td></tr>`
+                      : `<tr><td colspan="${colCount}" style="color:var(--ink-2); font-weight:600;">No lines.</td></tr>`
                   }
                 </tbody>
               </table>
               <div class="totalsStrip">
-                <span class="pillMini">TOTAL RACKS: ${vTotals.racks.toLocaleString()}</span>
+                ${showRacks ? `<span class="pillMini">TOTAL ${escapeHtml(rackInfo.label.toUpperCase())}: ${vTotals.racks.toLocaleString()}</span>` : ``}
                 ${showCases ? `<span class="pillMini">TOTAL CASES: ${vTotals.cases.toLocaleString()}</span>` : ``}
                 <span class="pillMini">TOTAL PLANTS: ${vTotals.qty.toLocaleString()}</span>
               </div>
@@ -6909,7 +6945,14 @@
     // Which season tab is showing. Every pre-book/tag in that season is
     // listed as one flat list, soonest ready date first — no year step and
     // no month sub-grouping (a line's own Ready Date still shows its year).
-    let prebookSeasonKey = seasonForDate(fmtDate(new Date())).key;
+    let prebookSeasonKey = seasonForDate(fmtDate(new Date())).key; // legacy, no longer used for filtering
+    // Booking is one long list filtered by ready-date year: "all", "none"
+    // (no ready date), or a year like "2026". Defaults to the current year.
+    let prebookYearKey = String(new Date().getFullYear());
+    function prebookYearOf(p){
+      const d = parseDate(p.readyDate);
+      return d ? String(d.getFullYear()) : "none";
+    }
     // Which flow is showing: null = the Pre Book/Tag chooser (nothing
     // listed yet), "prebook" or "tag" once picked — mirrors Order Check-In's
     // mode chooser. Reset to null every time the page is freshly navigated
@@ -7205,39 +7248,46 @@
       // Fully-taken tags live in the Archive, not the active season list.
       if(prebookViewMode === "tag") items = items.filter(p => !isTaken(p));
 
-      // Seasons always show, whether or not anything's booked in them yet —
-      // the counts on each tab reflect the current search + filter.
-      const countBySeason = new Map(SEASONS.map(s => [s.key, 0]));
-      items.forEach(p => { const s = seasonForDate(p.readyDate); countBySeason.set(s.key, countBySeason.get(s.key) + 1); });
-      tabsEl.innerHTML = SEASONS.map(season => `
-        <button type="button" class="prebookSeasonTab ${season.key===prebookSeasonKey?"active":""}" data-season="${season.key}">
-          ${season.emoji} ${season.name} <span class="count">${countBySeason.get(season.key)}</span>
+      // No season split any more — one long list, with a row of year
+      // buttons (plus "All") to filter by ready-date year. The current year
+      // always gets a button; counts reflect the current search + filter.
+      document.getElementById("page-prebook").removeAttribute("data-season");
+      const countByYear = new Map();
+      countByYear.set(String(new Date().getFullYear()), 0);
+      items.forEach(p => { const y = prebookYearOf(p); countByYear.set(y, (countByYear.get(y) || 0) + 1); });
+      const yearKeys = Array.from(countByYear.keys()).filter(y => y !== "none").sort();
+      if(countByYear.has("none")) yearKeys.push("none");
+      if(prebookYearKey !== "all" && !countByYear.has(prebookYearKey)) prebookYearKey = String(new Date().getFullYear());
+      const yearLabel = (y) => y === "all" ? "All years" : (y === "none" ? "No date" : y);
+      tabsEl.innerHTML = ["all"].concat(yearKeys).map(y => `
+        <button type="button" class="prebookSeasonTab ${y===prebookYearKey?"active":""}" data-year="${escapeHtml(y)}">
+          ${escapeHtml(yearLabel(y))} <span class="count">${y === "all" ? items.length : countByYear.get(y)}</span>
         </button>`).join("");
       tabsEl.querySelectorAll(".prebookSeasonTab").forEach(btn => {
-        btn.addEventListener("click", () => { prebookSeasonKey = btn.dataset.season; renderPrebook(); });
+        btn.addEventListener("click", () => { prebookYearKey = btn.dataset.year; renderPrebook(); });
       });
 
-      const season = SEASONS.find(s => s.key === prebookSeasonKey) || SEASONS[0];
-      document.getElementById("page-prebook").dataset.season = season.key;
-
-      // One flat list per season — every ready year together, soonest
-      // first. No year step and no month sub-grouping; each line's own
-      // Ready Date still carries its year so nothing's ambiguous.
-      const seasonItems = items.filter(p => seasonForDate(p.readyDate).key === season.key)
-        .sort((a,b) => (a.readyDate||"").localeCompare(b.readyDate||"") || (a.vendor||"").localeCompare(b.vendor||""));
+      // One flat list, soonest ready date first (undated lines last).
+      const listItems = items.filter(p => prebookYearKey === "all" || prebookYearOf(p) === prebookYearKey)
+        .sort((a,b) => {
+          const ad = a.readyDate || " ", bd = b.readyDate || " ";
+          return ad.localeCompare(bd) || (a.vendor||"").localeCompare(b.vendor||"");
+        });
 
       wrap.innerHTML = "";
-      if(seasonItems.length === 0){
+      if(listItems.length === 0){
         const kind = prebookViewMode === "tag" ? "tags" : "pre-books";
-        wrap.innerHTML = emptyStateHtml(`No ${escapeHtml(season.name)} ${kind} yet. Click <strong>+ Add</strong> to reserve stock ahead of a date or holiday.`, "pin");
+        const scope = prebookYearKey === "all" ? "" : ` for ${escapeHtml(yearLabel(prebookYearKey))}`;
+        wrap.innerHTML = emptyStateHtml(`No ${kind}${scope} yet. Click <strong>+ Add</strong> to reserve stock ahead of a date or holiday.`, "pin");
         return;
       }
+      const seasonItems = listItems;
 
       const section = document.createElement("div");
       section.className = "prebookSeasonSection";
       section.innerHTML = `
         <div class="prebookSeasonSectionHead">
-          <h3>${season.emoji} ${escapeHtml(season.name)}</h3>
+          <h3>${prebookViewMode === "tag" ? "🏷️ Tags" : "📌 Pre Books"} — ${escapeHtml(yearLabel(prebookYearKey))}</h3>
           <span class="sectionMeta"><span class="pillMini">${seasonItems.length} item(s)</span></span>
         </div>
         <div class="prebookLineHead">
@@ -7566,6 +7616,48 @@
       return false;
     }
 
+    // Homestead Check-In pulls straight from the Order Tracker: every item
+    // line on this week's Homestead-region orders becomes one check-in row.
+    // Row keys are prefixed "hs::" so their check marks/notes never collide
+    // with PO Analysis rows stored under the same week.
+    const HOMESTEAD_CHECKIN_HEADERS = ["Pickup Date", "Vendor", "PO Number", "Item", "Racks", "Cases", "Qty", "Order Notes", "Notes"];
+    function homesteadCheckinRowsForWeek(wk){
+      const trucks = loadTrucks()
+        .filter(t => t.weekKey === wk && (t.region || "").trim() === "Homestead")
+        .sort((a,b) => (a.pickupDate||"").localeCompare(b.pickupDate||""));
+      const rows = [];
+      const seen = {};
+      trucks.forEach(t => {
+        const pu = parseDate(t.pickupDate);
+        const puLabel = pu ? pu.toLocaleDateString() : (t.pickupDate || "");
+        (t.vendorBlocks || []).forEach(vb => {
+          (vb.items || []).forEach(it => {
+            if(!it || !(it.item || it.qty || it.racks || it.cases)) return;
+            const vendor = (vb.name || "").trim();
+            const po = (vb.po || "").trim();
+            let item = (it.item || "").trim();
+            if(it.substituted && it.subbedFrom) item += ` (sub for ${it.subbedFrom})`;
+            const base = `hs::${t.id}::${vendor}::${po}::${(it.item || "").trim()}`;
+            seen[base] = (seen[base] || 0) + 1;
+            const key = seen[base] > 1 ? `${base}::${seen[base]}` : base;
+            rows.push({
+              key, vendor, item, po,
+              comment: it.notes || "",
+              qty: Number(it.qty) || 0,
+              cells: {
+                "Pickup Date": puLabel, "Vendor": vendor, "PO Number": po, "Item": item,
+                "Racks": it.racks === "" || it.racks == null ? "" : Number(it.racks) || it.racks,
+                "Cases": it.cases === "" || it.cases == null ? "" : Number(it.cases) || it.cases,
+                "Qty":   it.qty   === "" || it.qty   == null ? "" : Number(it.qty)   || it.qty,
+                "Order Notes": it.notes || "", "Notes": ""
+              }
+            });
+          });
+        });
+      });
+      return rows;
+    }
+
     function loadPoImportAll(){ return LS.get(LS.poImportKey, {}); }
     function savePoImportAll(o){ LS.set(LS.poImportKey, o); }
     function poImportForWeek(wk){ return loadPoImportAll()[wk] || null; }
@@ -7779,9 +7871,13 @@
     });
 
     function checkinSummaryHTML(imp, rows, state){
-      if(!rows.length) return "No PO Analysis imported yet for this week — click <strong>Import PO Analysis</strong> to bring one in.";
+      const isHs = checkinViewMode === "homestead";
+      if(!rows.length) return isHs
+        ? "No Homestead orders on the Order Tracker for this week."
+        : "No PO Analysis imported yet for this week — click <strong>Import PO Analysis</strong> to bring one in.";
       const done = rows.filter(r => (state[r.key] || {}).checked).length;
-      const fileBit = imp && imp.fileName ? ` · from <strong>${escapeHtml(imp.fileName)}</strong>` : "";
+      const fileBit = isHs ? " · from the <strong>Order Tracker</strong>"
+        : (imp && imp.fileName ? ` · from <strong>${escapeHtml(imp.fileName)}</strong>` : "");
       return `<strong>${escapeHtml(weekLabel(weekAnchor))}</strong> · ${rows.length} line(s) · <strong>${done}</strong> checked in${fileBit}`;
     }
 
@@ -7808,19 +7904,26 @@
       modeChip.style.display = "";
       modeChip.textContent = checkinViewMode === "homestead" ? "🏠 Homestead" : "📦 Hampshire";
 
-      const imp = poImportForWeek(wk);
-      const headers = checkinDisplayColumns(checkinHeadersForWeek(wk));
-      const allRows = checkinRowsForWeek(wk);
-      const state = checkinStateForWeek(wk);
+      const isHs = checkinViewMode === "homestead";
+      // Homestead has no file to import — it reads the Order Tracker.
+      document.getElementById("checkinImportBtn").style.display = isHs ? "none" : "";
+      const sortDefaultOpt = document.querySelector('#checkinSort option[value="default"]');
+      if(sortDefaultOpt) sortDefaultOpt.textContent = isHs ? "Sort: by pickup date" : "Sort: as imported";
 
-      // Homestead view only shows lines cross-referenced as coming from a
-      // Homestead vendor; Hampshire shows every imported line, unfiltered.
-      const modeRows = checkinViewMode === "homestead"
-        ? allRows.filter(r => isHomesteadCheckinRow(r, homesteadVendorNameSet()))
-        : allRows;
+      const imp = isHs ? null : poImportForWeek(wk);
+      // Homestead view = this week's Homestead orders from the Order Tracker.
+      // Hampshire view = every line of the imported PO Analysis, unchanged.
+      const headers = isHs ? HOMESTEAD_CHECKIN_HEADERS.slice() : checkinDisplayColumns(checkinHeadersForWeek(wk));
+      const allRows = isHs ? homesteadCheckinRowsForWeek(wk) : checkinRowsForWeek(wk);
+      const state = checkinStateForWeek(wk);
+      const modeRows = allRows;
 
       note.innerHTML = checkinSummaryHTML(imp, modeRows, state);
       checkinWrap.innerHTML = "";
+      if(isHs && !allRows.length){
+        checkinWrap.innerHTML = emptyStateHtml(`No Homestead orders on the Order Tracker for ${escapeHtml(weekLabel(weekAnchor))}. Add them on the <strong>Order Tracker</strong> and they'll show up here.`, "checkCircle");
+        return;
+      }
       if(!allRows.length){
         checkinWrap.innerHTML = '<div class="linkCard"><div class="linkCardIcon">📥</div><div><div class="linkCardTitle">No PO Analysis imported for this week</div><div class="note">Click <strong>Import PO Analysis</strong> and pick the .xlsx for this week — every column comes in exactly as exported, ready to check off.</div></div></div>';
         return;
@@ -7851,7 +7954,7 @@
       table.className = "poTable";
       const notesHeader = findHeader(headers, /^notes$/i);
       const theadCells = [`<th style="width:78px;">✓</th>`]
-        .concat(headers.map(h => `<th${/ordered|qty|price|total|open|received|returned/i.test(h) ? ' class="num"' : ''}>${escapeHtml(h)}</th>`))
+        .concat(headers.map(h => `<th${/ordered|qty|racks|cases|price|total|open|received|returned/i.test(h) ? ' class="num"' : ''}>${escapeHtml(h)}</th>`))
         .join("");
       table.innerHTML = `<thead><tr>${theadCells}</tr></thead><tbody></tbody>`;
       const tb = table.querySelector("tbody");
@@ -7869,7 +7972,7 @@
             const notesVal = (s.notes !== undefined) ? s.notes : cleanCellText(String(r.cells[h] ?? ""));
             return `<td><textarea class="poNotes" placeholder="Notes...">${escapeHtml(notesVal)}</textarea></td>`;
           }
-          const isNumericCol = /ordered|qty|price|total|open|received|returned/i.test(h);
+          const isNumericCol = /ordered|qty|racks|cases|price|total|open|received|returned/i.test(h);
           const isVendorCol = /^vendor name$|^vendor$/i.test(h);
           const display = formatCellForDisplay(h, r.cells[h]);
           const cls = isNumericCol ? "num" : (isVendorCol ? "poVendor" : "poDetails");
