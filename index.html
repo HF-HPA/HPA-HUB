@@ -2222,7 +2222,7 @@
                 <button type="button" class="gsIconBtn" id="gsReloadBtn" title="Reload the sheet (R)" aria-label="Reload sheet"><span data-icon="refresh" aria-hidden="true"></span></button>
                 <button type="button" class="gsIconBtn" id="gsFullBtn" title="Full screen (F)" aria-label="Full screen"><span data-icon="expand" aria-hidden="true"></span></button>
                 <button type="button" class="gsIconBtn" id="gsLinkBtn" title="Change which sheet this page shows" aria-label="Change sheet"><span data-icon="gear" aria-hidden="true"></span></button>
-                <a class="btn gsOpenBtn" id="gsOpenBtn" href="#" target="_blank" rel="noopener"><span data-icon="externalLink" aria-hidden="true"></span> Open in Google Sheets</a>
+                <a class="btn gsOpenBtn" id="gsOpenBtn" href="https://docs.google.com/spreadsheets/d/1tdGmNqOIGaWF1FHMQIsU5nAreqCHjA1bXnPAoXqUzqU/edit#gid=0" target="_blank" rel="noopener"><span data-icon="externalLink" aria-hidden="true"></span> Open in Google Sheets</a>
               </div>
             </div>
             <div class="gsFrameWrap" id="gsFrameWrap">
@@ -8947,6 +8947,13 @@
     (function initGoogleSheetHub(){
       const frame = document.getElementById("gsFrame");
       if(!frame) return;
+      // "Open in Google Sheets" must always point at the sheet — in Smart view the
+      // iframe never loads, so set the link up front and re-check it on every click.
+      const openBtn = document.getElementById("gsOpenBtn");
+      const syncOpenLink = () => { try { openBtn.href = gsOpenUrl(gsCurrent()); } catch(_){} };
+      syncOpenLink();
+      openBtn.addEventListener("click", syncOpenLink, true);
+      openBtn.addEventListener("pointerdown", syncOpenLink);
       const grid = document.getElementById("gsLoaderGrid");
       if(grid) grid.innerHTML = Array.from({ length:32 }, (_, i) => `<span style="animation-delay:${((i % 8) + Math.floor(i / 8)) * 0.08}s"></span>`).join("");
       frame.addEventListener("load", () => {
