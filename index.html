@@ -689,6 +689,12 @@
     .avCell.sel{ box-shadow:0 0 0 2px var(--moss), 0 4px 12px rgba(30,142,62,.3); background:var(--mint-deep); color:#fff; }
     .avSelTick{ position:absolute; top:-6px; right:-6px; width:16px; height:16px; border-radius:50%; background:var(--moss); color:#fff; font-size:10px; font-style:normal; display:grid; place-items:center; }
     .avOnOrder{ position:absolute; bottom:-4px; right:-2px; font-style:normal; font-size:11px; }
+    .avCell.has.hl{ background:#ffd447 !important; color:#3a2a00 !important; box-shadow:0 0 0 2px #e0a800, 0 4px 12px rgba(224,168,0,.35); }
+    .avCell.has:focus-visible{ outline:none; box-shadow:0 0 0 3px rgba(43,212,154,.45); }
+    .avHlBy{ position:absolute; top:-7px; right:-7px; min-width:17px; height:17px; padding:0 3px; border-radius:9px; background:#8a6200; color:#fff; font-size:9px; font-weight:800; font-style:normal; display:grid; place-items:center; letter-spacing:.02em; box-shadow:0 0 0 2px var(--paper-2); }
+    .avHlSwatch{ display:inline-block; width:12px; height:12px; border-radius:3px; background:#ffd447; box-shadow:0 0 0 1px #e0a800; vertical-align:-1px; margin-right:4px; }
+    .avHint .avHlCount{ margin-left:10px; color:var(--ink-2); }
+    .avHint .tinyBtn{ margin-left:6px; }
     .avNone, .avEmpty{ padding:40px 16px; text-align:center; color:var(--ink-2); font-weight:600; }
     .avCart{ margin:0 14px 12px; border:1px solid var(--moss); border-radius:14px; background:var(--paper-2); box-shadow:0 -8px 28px rgba(4,18,12,.12); overflow:hidden; flex:0 0 auto; display:flex; flex-direction:column; }
     .avCartHead{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:10px 14px; background:linear-gradient(120deg, rgba(43,212,154,.18), rgba(31,92,67,.06)); font-size:13px; color:var(--ink); }
@@ -1995,6 +2001,90 @@
     .avSkelRow{ display:grid; grid-template-columns:240px repeat(6, 1fr); gap:10px; }
     .avSkelRow .skeleton{ height:22px; display:block; }
     .avSkelNote{ text-align:center; font-size:12.5px; color:var(--ink-2); margin-top:4px; }
+
+    /* =====================================================================
+       HPA DESIGN v3 — polish pass: calmer page headers, tidier controls,
+       tables that always fit, livelier (but quiet) interactions.
+       ===================================================================== */
+    :root{ --ease: cubic-bezier(.2,.7,.2,1); --ring: 0 0 0 3px rgba(43,212,154,.28); }
+
+    /* Brand mark in the sidebar */
+    .navTitle{ display:flex; align-items:center; gap:10px; }
+    .navTitle::before{ content:""; width:30px; height:30px; flex:none; border-radius:9px;
+      background:linear-gradient(145deg, #2bd49a, #13865f) ; box-shadow:inset 0 1px 0 rgba(255,255,255,.35), 0 6px 14px rgba(0,0,0,.25); }
+    .navTitle::before{ background:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z'/%3E%3Cpath d='M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12'/%3E%3C/svg%3E") center/17px no-repeat,
+        linear-gradient(145deg, #2bd49a, #13865f); }
+    .navSub{ margin-left:44px; margin-top:-6px; }
+
+    /* Smooth page entry + calmer motion everywhere */
+    .page{ animation:hpaPageIn .28s var(--ease) both; }
+    @keyframes hpaPageIn{ from{ opacity:0; transform:translateY(6px); } to{ opacity:1; transform:none; } }
+    @media (prefers-reduced-motion: reduce){ .page{ animation:none; } }
+    button, .btn, .btnGhost, .tinyBtn, .chip, .navBtn, input, select, textarea{ transition:background-color .15s var(--ease), border-color .15s var(--ease), box-shadow .15s var(--ease), color .15s var(--ease), transform .15s var(--ease); }
+    .btn:active, .btnGhost:active, .tinyBtn:active{ transform:translateY(1px); }
+    :where(button, a, input, select, textarea, [role="button"], summary):focus-visible{ outline:none; box-shadow:var(--ring) !important; }
+
+    /* Page headers: title on the left, controls on the right, wrap neatly */
+    .toolbar{ align-items:center; row-gap:12px; }
+    .toolbar > .tools{ display:flex; flex-wrap:wrap; align-items:center; justify-content:flex-end; gap:8px; margin-left:auto; }
+    .toolbar > .tools > input[type="search"], .toolbar > .tools > input[type="text"]{ min-width:220px; flex:1 1 220px; max-width:360px; }
+    .toolbar > .tools > select{ width:auto; min-width:170px; }
+    .weekStepper{ display:inline-flex; align-items:center; gap:2px; padding:3px; border:1px solid var(--line); border-radius:999px; background:var(--paper-2); box-shadow:var(--shadow-sm); }
+    .weekStepper > .btnGhost{ width:32px; height:32px; min-width:32px; padding:0; border:none !important; background:transparent; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:18px; line-height:1; }
+    .weekStepper > .btnGhost:hover{ background:var(--rowHover); }
+    .weekStepper > .chip{ border:none !important; background:transparent !important; box-shadow:none !important; font-weight:600; padding:0 8px; white-space:nowrap; }
+
+    /* Nicer native selects (custom chevron) */
+    select:not([multiple]){ -webkit-appearance:none; appearance:none; padding-right:34px !important;
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%234c5d52' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+      background-repeat:no-repeat; background-position:right 11px center; background-size:15px; }
+    html[data-theme="dark"] select:not([multiple]){ background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23b9cfc2' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); }
+    select:not([multiple]){ background-repeat:no-repeat !important; background-position:right 11px center !important; background-size:15px !important; }
+    input[type="checkbox"], input[type="radio"]{ accent-color:var(--mint-deep); }
+    #truckModal td select{ min-width:72px; padding-left:9px; }
+
+    /* Scrollbars that match the theme */
+    .main, .modalCard, .poTableScroll, .avGridWrap, .xlPanel, .stBody{ scrollbar-width:thin; scrollbar-color:rgba(31,92,67,.35) transparent; }
+    .main ::-webkit-scrollbar, .modalCard::-webkit-scrollbar{ width:10px; height:10px; }
+    .main ::-webkit-scrollbar-thumb, .modalCard::-webkit-scrollbar-thumb{ background:rgba(31,92,67,.28); border-radius:99px; border:3px solid transparent; background-clip:padding-box; }
+    html[data-theme="dark"] .main, html[data-theme="dark"] .modalCard{ scrollbar-color:rgba(185,207,194,.25) transparent; }
+
+    /* Dashboard tiles: readable labels, gentle hover */
+    .statCard{ border-radius:12px; cursor:pointer; }
+    .statCard:hover{ background:var(--rowHover); }
+    .statLbl{ text-transform:none; letter-spacing:0; font-size:13.5px; font-weight:600; color:var(--ink); }
+    .statSub{ font-size:12px; line-height:1.35; }
+    .statSub{ font-weight:500; }
+    .labelVendorGrid{ grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); }
+
+    /* Check-In table: always fits — scrolls sideways instead of spilling out */
+    .poTableScroll{ overflow-x:auto; -webkit-overflow-scrolling:touch; border-radius:var(--radius-sm); }
+    .poTable{ min-width:760px; }
+    .poTable td.poDetails{ min-width:120px; }
+    .poTable td[data-label="Item"], .poTable td[data-label="Item Description"]{ min-width:170px; }
+    .poTable td[data-label="Notes"]{ min-width:180px; }
+    .poTable .poNotes{ min-height:36px; }
+
+    /* Booking: section header in the app's palette (was plain grey) */
+    .prebookSeasonSectionHead{ background:linear-gradient(180deg, var(--paper-2), var(--paper-3)) !important; border-left:4px solid var(--moss); }
+
+    /* Cards & panels lift a touch on hover */
+    .trainingCard, .photoTile, .labelVendorCard, .checkinChooserBtn{ transition:transform .18s var(--ease), box-shadow .18s var(--ease), border-color .18s var(--ease); }
+    .trainingCard:hover, .photoTile:hover, .labelVendorCard:hover{ transform:translateY(-2px); box-shadow:0 12px 26px rgba(8,29,22,.12); }
+
+    /* Section titles inside pages */
+    .main h3{ letter-spacing:-.005em; }
+    .note{ line-height:1.5; }
+
+    @media (max-width: 760px){
+      .toolbar > .tools{ justify-content:stretch; margin-left:0; width:100%; }
+      .toolbar > .tools > input[type="search"], .toolbar > .tools > input[type="text"]{ max-width:none; min-width:0; }
+      .toolbar .tools > .weekStepper{ grid-column:1 / -1; width:100%; justify-content:space-between; }
+      .weekStepper > .chip{ flex:1; text-align:center; }
+      .navSub{ margin-left:4px; }
+      .poTable{ min-width:0; }
+    }
   </style>
 </head>
 <body class="density-comfortable atmos">
@@ -2316,9 +2406,11 @@
             <div class="tools" id="checkinToolbarTools" style="display:none;">
               <button id="checkinSwitchModeBtn" class="btnGhost" title="Choose a different Check-In view"><span data-icon="swap" aria-hidden="true"></span>Switch view</button>
               <button id="checkinScanBtn" class="btn checkinScanBtn" type="button" title="Phone-friendly check-in with barcode scanning and damage photos"><span data-icon="scan" aria-hidden="true"></span>Scan mode</button>
-              <button id="checkinPrevWeek" class="btnGhost" title="Previous week">‹</button>
-              <div class="chip" id="checkinWeekLabel">Week</div>
-              <button id="checkinNextWeek" class="btnGhost" title="Next week">›</button>
+              <div class="weekStepper" role="group" aria-label="Week">
+                <button id="checkinPrevWeek" class="btnGhost" title="Previous week" aria-label="Previous week">‹</button>
+                <div class="chip" id="checkinWeekLabel">Week</div>
+                <button id="checkinNextWeek" class="btnGhost" title="Next week" aria-label="Next week">›</button>
+              </div>
               <input id="checkinSearch" type="search" placeholder="Search vendor, item, PO…" />
               <button id="checkinImportBtn" class="btnGhost">Import PO Analysis</button>
               <input id="checkinImportFile" type="file" accept=".xlsx,.xls" style="display:none;">
@@ -4173,7 +4265,7 @@
           name: vb.name || "", po: vb.po || truck?.po || "", status: vb.status || "Confirmed",
           items: (vb.items || []).map(x => ({
             item:x.item, racks:x.racks, cases:x.cases ?? "", qty:x.qty, notes:x.notes,
-            unit:x.unit ?? "", shelves:x.shelves ?? "", substituted:!!x.substituted, subbedFrom:x.subbedFrom || "", ...(x.st != null ? { st:x.st } : {}), ...(x.sku ? { sku:x.sku } : {}), ...(x.checked ? { checked:true } : {}), ...(x.bookId ? { bookId:x.bookId } : {})
+            unit:x.unit ?? "", shelves:x.shelves ?? "", substituted:!!x.substituted, subbedFrom:x.subbedFrom || "", ...(x.st != null ? { st:x.st } : {}), ...(x.sku ? { sku:x.sku } : {}), ...(x.checked ? { checked:true } : {}), ...(x.bookId ? { bookId:x.bookId } : {}), ...(x.bookType ? { bookType:x.bookType } : {}), ...(x.avCategory ? { avCategory:x.avCategory, avSpec:x.avSpec ?? "" } : {})
           }))
         }))
       };
@@ -4368,9 +4460,11 @@
       const items = [];
       vb.querySelectorAll("tbody tr").forEach(tr => {
         const item = tr.querySelector(".it_item").value.trim();
-        const racks = Number(tr.querySelector(".it_racks")?.value || 0);
-        const cases = Number(tr.querySelector(".it_cases").value || 0);
-        const qty = Number(tr.querySelector(".it_qty").value || 0);
+        const racksEl = tr.querySelector(".it_racks");
+        const keepNum = (v) => (v === "" || v == null) ? "" : Number(v);
+        const racks = racksEl ? keepNum(racksEl.value) : keepNum(tr.dataset.racks);
+        const cases = keepNum(tr.querySelector(".it_cases").value);
+        const qty = keepNum(tr.querySelector(".it_qty").value);
         const lineNotes = tr.querySelector(".it_notes").value.trim();
         const unitSel = tr.querySelector(".it_unit");
         const unit = unitSel ? unitSel.value : "";
@@ -4384,6 +4478,7 @@
         const bookSel = tr.querySelector(".it_book");
         if(bookSel && bookSel.value) rec.bookType = bookSel.value;
         if(tr.dataset.bookId) rec.bookId = tr.dataset.bookId;
+        if(tr.dataset.avCategory){ rec.avCategory = tr.dataset.avCategory; rec.avSpec = tr.dataset.avSpec || ""; rec.racksAuto = tr.dataset.racksAuto; rec.casesAuto = tr.dataset.casesAuto; }
         items.push(rec);
       });
       return { name, po, status, items };
@@ -4404,7 +4499,7 @@
       if(blockOrderType(block) === "FLOOR STACK"){
         rackCell = ``; // Floor stack orders don't use racks — no rack column.
       } else if(blockUsesUnitChoice(block)){
-        const unit = itemObj.unit || "CC Rack";
+        const unit = itemObj.unit || (blockOrderType(block) === "PALLETS" ? "Pallet" : "CC Rack");
         rackCell = `<td><select class="it_unit" style="margin-bottom:4px;"><option ${unit==="CC Rack"?"selected":""}>CC Rack</option><option ${unit==="Pallet"?"selected":""}>Pallet</option></select><input class="it_racks" type="number" step="0.25" placeholder="0" value="${escapeHtml(itemObj.racks ?? "")}">${avHintHtml}</td>`;
       } else {
         rackCell = `<td><input class="it_racks" type="number" step="0.25" placeholder="0" value="${escapeHtml(itemObj.racks ?? "")}">${avHintHtml}</td>`;
@@ -4440,8 +4535,9 @@
       // never fought or overwritten.
       tr.dataset.avCategory = itemObj.avCategory || "";
       tr.dataset.avSpec = (itemObj.avSpec ?? "");
-      tr.dataset.racksAuto = itemObj.avCategory ? "1" : "0";
-      tr.dataset.casesAuto = itemObj.avCategory ? "1" : "0";
+      tr.dataset.racksAuto = itemObj.racksAuto != null ? itemObj.racksAuto : (itemObj.avCategory ? "1" : "0");
+      tr.dataset.casesAuto = itemObj.casesAuto != null ? itemObj.casesAuto : (itemObj.avCategory ? "1" : "0");
+      tr.dataset.racks = itemObj.racks ?? "";
       tr.querySelector("td:last-child button").addEventListener("click", () => {
         tr.remove();
         if(tbody.children.length === 0) addItemRowToVendor(tbody, block, { item:"", racks:"", cases:"", qty:"", notes:"" });
@@ -4633,6 +4729,10 @@
         lastWk = wk;
         const totals = computeTotals(d.vendorBlocks);
         const labelBreakdown = computeOrderLabelBreakdown(d.vendorBlocks);
+        if(d.id && trucks.findIndex(t => t.id === d.id) < 0){
+          if(!confirm("Someone deleted this order while you were editing it.\n\nOK = save your version back as a new order\nCancel = keep editing (nothing saved)")) return;
+          delete d.id;
+        }
         if(d.id){
           const idx = trucks.findIndex(t => t.id === d.id);
           if(idx >= 0){
@@ -4709,7 +4809,8 @@
       // lines must not keep pointing at the same Booking entries as the
       // original (see syncOrderLinesToBooking), or editing/re-saving the
       // duplicate later would silently overwrite the original's booking.
-      (clone.vendorBlocks || []).forEach(vb => (vb.items || []).forEach(it => { delete it.bookId; }));
+      (clone.vendorBlocks || []).forEach(vb => { delete vb.poFile; (vb.items || []).forEach(it => { delete it.bookId; delete it.checked; }); });
+      delete clone.invoicePaid;
       clone.history = [];
       pushTruckHistory(clone, `Duplicated from the ${t.pickupDate || "—"} order`);
       // If the original pickup date was just the standard formula (request date
@@ -5014,7 +5115,7 @@
       loadTrucks().forEach(t => {
         (t.vendorBlocks || []).forEach(vb => {
           (vb.items || []).forEach(it => {
-            const itemHit = (it.item||"").toLowerCase().includes(q);
+            const itemHit = (it.item||"").toLowerCase().includes(q) || String(it.sku||"").toLowerCase().includes(q);
             const notesHit = (it.notes||"").toLowerCase().includes(q);
             if(itemHit || notesHit){
               rows.push({
@@ -5471,7 +5572,8 @@
       const photoWeekFilter = document.getElementById("photoWeekFilter");
       const prevPhoto = photoWeekFilter.value;
       photoWeekFilter.innerHTML = `<option value="">All weeks</option>` + weeks.map(w => `<option value="${w}">${w}</option>`).join("");
-      photoWeekFilter.value = prevPhoto || currentWk;
+      const firstPhotoFill = !photoWeekFilter.dataset.init; photoWeekFilter.dataset.init = "1";
+      photoWeekFilter.value = firstPhotoFill ? currentWk : prevPhoto;
 
       const pWeek = document.getElementById("p_week");
       pWeek.innerHTML = weeks.map(w => `<option value="${w}">${w}</option>`).join("");
@@ -6027,7 +6129,7 @@
 
         r++; // blank spacer row
         // Total row
-        ws.getCell(r,2).value = "TOTAL RACKS";
+        ws.getCell(r,2).value = anyRacks ? "TOTAL RACKS" : "TOTAL PLANTS";
         ws.getCell(r,2).font = { bold:true };
         ws.getCell(r,3).value = totalPrimary;
         ws.getCell(r,3).font = { bold:true };
@@ -6291,7 +6393,7 @@
     }
     function saveCatalog(list){ LS.set(LS.catalogKey, list); }
     function loadThumbCache(){ return LS.get(LS.thumbKey, {}); }
-    function saveThumbCache(o){ try{ LS.set(LS.thumbKey, o); }catch{} }
+    function saveThumbCache(o){ try{ localStorage.setItem(LS.thumbKey, JSON.stringify(o)); }catch{} }
     async function fetchWikiThumb(title){
       if(!title) return "";
       const cache = loadThumbCache();
@@ -6304,8 +6406,7 @@
         const c2 = loadThumbCache(); c2[title] = url; saveThumbCache(c2);
         return url;
       }catch(e){
-        const c2 = loadThumbCache(); c2[title] = ""; saveThumbCache(c2);
-        return "";
+        return ""; // don't remember a failed lookup — try again next time
       }
     }
     function updatePlant(id, fn){
@@ -6375,7 +6476,7 @@
         tile.querySelector(".plantPhotoBtn").addEventListener("click", () => fileInput.click());
         fileInput.addEventListener("change", async () => {
           const f = fileInput.files?.[0]; if(!f) return;
-          const shrunk = await shrinkImageToFit(f);
+          const shrunk = await shrinkImageToFit(f, 150000);
           updatePlant(id, p => { p.photo = shrunk.dataUrl; });
           drawPlantTiles(document.getElementById("plantSearch")?.value || "");
         });
@@ -7564,7 +7665,7 @@
     function wireAvailDetailSpecInput(entry){
       const input = document.getElementById("availDetailSpecInput");
       const savedNote = document.getElementById("availDetailSpecSavedNote");
-      const originalSpec = entry.spec;
+      let originalSpec = entry.spec;
       input.value = originalSpec || "";
       savedNote.textContent = "";
       // Catalog items save a spec edit as an override (applies to this item
@@ -7573,6 +7674,8 @@
       function commit(){
         const next = input.value.trim();
         if((originalSpec || "") === next) return;
+        if(input.validity && input.validity.badInput) return;          // half-typed number
+        if(next === "" && originalSpec && isNaN(Number(originalSpec))) return; // a text size the number box can't show
         if(entry.isCatalog){
           const all = loadAvailSpecOverrides();
           if(next) all[entry.id] = next; else delete all[entry.id];
@@ -7584,6 +7687,7 @@
           rec.spec = next;
           saveAvail(list);
         }
+        originalSpec = next;
         markTabChanged("avail");
         renderAvailability(); // refreshes the row behind the popup
         savedNote.textContent = "Saved ✓";
@@ -7602,7 +7706,7 @@
     function wireAvailDetailNotesInput(entry){
       const input = document.getElementById("availDetailNotesInput");
       const savedNote = document.getElementById("availDetailNotesSavedNote");
-      const originalNotes = entry.notes || "";
+      let originalNotes = entry.notes || "";
       input.value = originalNotes;
       savedNote.textContent = "";
       function commit(){
@@ -7613,6 +7717,7 @@
         if(!rec) return;
         rec.notes = next;
         saveAvail(list);
+        originalNotes = next;
         markTabChanged("avail");
         renderAvailability(); // refreshes the row behind the popup
         savedNote.textContent = "Saved ✓";
@@ -8063,7 +8168,7 @@
       tabsEl.style.display = "";
       if(statusFilter) items = items.filter(p => statusFilter === "fulfilled" ? isTaken(p) : !isTaken(p));
       // Fully-taken tags live in the Archive, not the active season list.
-      if(prebookViewMode === "tag") items = items.filter(p => !isTaken(p));
+      if(prebookViewMode === "tag" && statusFilter !== "fulfilled") items = items.filter(p => !isTaken(p));
 
       // No season split any more — one long list, with a row of year
       // buttons (plus "All") to filter by ready-date year. The current year
@@ -8158,10 +8263,16 @@
       const f = document.getElementById("i_photoUpload").files?.[0];
       const prev = document.getElementById("i_photoPreview");
       if(!f){ prev.style.display = "none"; prev.innerHTML = ""; prev.dataset.url = ""; return; }
-      const shrunk = await shrinkImageToFit(f);
+      const shrunk = await shrinkImageToFit(f, 200000);
       prev.dataset.url = shrunk.dataUrl;
-      prev.innerHTML = `<img src="${shrunk.dataUrl}" style="max-height:130px; border-radius:8px; border:1px solid var(--line);">`;
+      prev.innerHTML = issuePhotoPreviewHtml(shrunk.dataUrl);
       prev.style.display = "block";
+    });
+    function issuePhotoPreviewHtml(url){
+      return `<img src="${escapeHtml(url)}" alt="Issue photo" style="max-height:130px; border-radius:8px; border:1px solid var(--line); display:block;"><button type="button" class="tinyBtn danger" data-clear-issue-photo style="margin-top:6px;">Remove photo</button>`;
+    }
+    document.getElementById("i_photoPreview").addEventListener("click", (e) => {
+      if(e.target.closest("[data-clear-issue-photo]")) resetIssuePhotoUpload();
     });
 
     // When an issue is opened from the Order Check-In "⚠ Add Issue" flag,
@@ -8184,12 +8295,14 @@
       document.getElementById("i_truck").value = issue?.truckId || "";
       document.getElementById("i_item").value = issue?.item || "";
       document.getElementById("i_notes").value = issue?.notes || "";
-      document.getElementById("i_photo").value = issue?.photoId || "";
+      const photoSel = document.getElementById("i_photo");
+      photoSel.value = issue?.photoId || "";
+      if(issue?.photoId && photoSel.value !== issue.photoId){ photoSel.add(new Option("(linked photo)", issue.photoId)); photoSel.value = issue.photoId; }
       resetIssuePhotoUpload();
       if(issue?.photoDataUrl){
         const prev = document.getElementById("i_photoPreview");
         prev.dataset.url = issue.photoDataUrl;
-        prev.innerHTML = `<img src="${issue.photoDataUrl}" style="max-height:130px; border-radius:8px; border:1px solid var(--line);">`;
+        prev.innerHTML = issuePhotoPreviewHtml(issue.photoDataUrl);
         prev.style.display = "block";
       }
       const saveBtn = document.getElementById("issueSaveBtn");
@@ -8313,7 +8426,7 @@
         tr.dataset.issueId = i.id;
         const truckExists = i.truckId && loadTrucks().some(t => t.id === i.truckId);
         const truckCell = truckExists
-          ? `<button type="button" class="xlJumpBtn" data-xl-jump-truck="${escapeHtml(i.truckId)}" title="Open this order">${icon("truck")}${escapeHtml(i.truckLabel ? prettyDay(String(i.truckLabel).split(" ")[0]) : "Order")}</button>`
+          ? `<button type="button" class="xlJumpBtn" data-xl-jump-truck="${escapeHtml(i.truckId)}" title="Open this order">${icon("truck")}${escapeHtml(i.truckLabel ? prettyDay((String(i.truckLabel).match(/\d{4}-\d{2}-\d{2}/) || [""])[0]) : "Order")}</button>`
           : escapeHtml(i.truckLabel || "—");
         const checkinCell = i.checkinWeek
           ? `<button type="button" class="xlJumpBtn" data-xl-jump-checkin="${escapeHtml(i.checkinWeek)}" data-xl-mode="${escapeHtml(i.checkinMode || "")}" data-xl-row="${escapeHtml(i.checkinRowKey || "")}" title="Open the Check-In line this was flagged from">${icon("checkCircle")}Check-in</button>`
@@ -8522,7 +8635,7 @@
 
     // Excel stores dates as a day-count from 1899-12-30; PO Analysis date columns
     // usually come through as plain numbers (no cell date formatting), so convert by hand.
-    function excelSerialToDate(n){ return new Date(Date.UTC(1899,11,30) + Math.round(n) * 86400000); }
+    function excelSerialToDate(n){ return new Date(1899, 11, 30 + Math.round(n)); }   // local midnight, so dates never slip a day
     // Some export pipelines leave a literal "_x000D_" in place of a real line break — clean that up for display.
     function cleanCellText(v){
       if(typeof v !== "string") return v;
@@ -8531,7 +8644,7 @@
     function rawCellValue(cell){
       const v = cell ? cell.value : null;
       if(v == null) return "";
-      if(v instanceof Date) return v;
+      if(v instanceof Date) return new Date(v.getUTCFullYear(), v.getUTCMonth(), v.getUTCDate(), v.getUTCHours(), v.getUTCMinutes());   // Excel dates are wall-clock, stored as UTC
       if(typeof v === "object"){
         if(Array.isArray(v.richText)) return v.richText.map(t => t.text).join("");
         if("result" in v) return v.result;
@@ -8543,6 +8656,11 @@
       if(value == null || value === "") return "";
       const h = (header || "").toLowerCase();
       if(value instanceof Date) return value.toLocaleDateString();
+      if(typeof value === "string" && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/.test(value)){
+        const d = new Date(value);
+        // saved imports: older ones were stored at UTC midnight, newer ones at local midnight
+        return (d.getUTCHours() === 0 && d.getUTCMinutes() === 0 ? new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()) : d).toLocaleDateString();
+      }
       if(typeof value === "number"){
         if(h.includes("date")) return excelSerialToDate(value).toLocaleDateString();
         if(h.includes("price")) return "$" + value.toLocaleString(undefined, { minimumFractionDigits:2, maximumFractionDigits:2 });
@@ -8568,7 +8686,7 @@
         const v = rawCellValue(cell);
         headers[colNumber - 1] = (v == null || v === "") ? `Column ${colNumber}` : cleanCellText(String(v));
       });
-      headers = headers.filter(Boolean);
+      headers = Array.from(headers, (h, i) => h || `Column ${i+1}`);
       if(!headers.length) throw new Error("Couldn't find a header row in that workbook.");
       const hasNotes = headers.some(h => /^notes$/i.test(h));
       if(!hasNotes) headers.push("Notes");
@@ -8991,6 +9109,7 @@
         if(!gsParse(url)){ alert("That doesn't look like a Google Sheets link. It should contain docs.google.com/spreadsheets/d/…"); return; }
         const title = prompt("Name to show for this sheet:", cur.url === url.trim() ? cur.title : "") || "Availability sheet";
         LS.set(LS.availLinkKey, { sheetUrl: url.trim(), title: title.trim(), updatedAt: new Date().toISOString(), by: ((typeof getUser === "function" && getUser()) ? (getUser().name || "") : "") });
+        gsApplyLink();
         gsLoad(true);
       });
       // Keyboard: R = reload, F = full screen (only on this page, not while typing).
@@ -9009,24 +9128,20 @@
      * Reads the whole Google workbook (free: the sheet's own xlsx export,
      * which works for any "anyone with the link can view" sheet — no API key)
      * and turns each tab's vendor blocks × weekly columns into a heat grid.
-     * Click cells to build a pick list, then one click builds (or adds to)
-     * an Order Tracker order with item names, quantities and racks filled in.
+     * Click any number to highlight it for the whole team (synced); click
+     * again to clear it.
      *********************************************************/
     const AvSmart = (function(){
       const CACHE_KEY = "hpa_avsheet_cache_v1";      // per device, not synced
       const VIEW_KEY = "hpa_av_view";                // smart | sheet (per device)
-      const DATEMODE_KEY = "hpa_av_datemode";        // pickup | order (per device)
       const REFRESH_MS = 3 * 60000;
       let data = null, loading = false, lastErr = "", timer = null;
-      let filters = { tab:"all", vendor:"", q:"", onlyAvail:true };
-      let cart = { date:null, lines:[] };            // date = sheet column YYYY-MM-DD
-      let chooser = null;                            // existing-order choices while building
+      let filters = { tab:"all", vendor:"", q:"", onlyAvail:true, onlyHl:false };
       const pad = (n) => String(n).padStart(2, "0");
       const ymdUTC = (d) => `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
       const prefGet = (k, d) => { try { return localStorage.getItem(k) || d; } catch(_){ return d; } };
       const prefSet = (k, v) => { try { localStorage.setItem(k, v); } catch(_){} };
       const viewMode = () => prefGet(VIEW_KEY, "smart") === "sheet" ? "sheet" : "smart";
-      const dateMode = () => prefGet(DATEMODE_KEY, "pickup") === "order" ? "order" : "pickup";
       const n0 = (s) => String(s ?? "").trim().toLowerCase().replace(/\s+/g, " ");
       const cellText = (v) => {
         if(v == null) return "";
@@ -9145,110 +9260,32 @@
         try { const c = JSON.parse(localStorage.getItem(CACHE_KEY) || "null"); if(c && c.items && c.sheetId === gsCurrent().id) data = c; } catch(_){}
       }
 
-      /* ---------- order helpers ---------- */
-      function orderDatesFor(colDate){
-        const d = parseDate(colDate);
-        if(dateMode() === "order"){ return { requestDate: fmtDate(requestDateFor(d)), pickupDate: fmtDate(pickupDateForRequest(requestDateFor(d), "Homestead")) }; }
-        return { pickupDate: colDate, requestDate: fmtDate(addDays(d, 7)) };
-      }
+      /* ---------- team highlights ---------- */
+      // Click any number to highlight it for everyone (synced); click again to clear.
+      // Keyed by sheet + tab + vendor + item name + date (not row number), so a
+      // highlight stays on the right plant when rows are added to the sheet.
+      const HL_KEY = "hpa_av_highlights_v1";
       function lineItemName(it){
         if(/\d+(\.\d+)?\s*["'”’]/.test(it.name)) return it.name.trim();   // already has a size
         const size = sizeOf(it.section) || sizeOf(it.tab);
         const isHB = it.category === "Hanging Baskets";
         return `${size ? size + '"' : ""}${isHB ? " HB" : ""} ${it.name.trim()}`.trim();
       }
-      function rackRuleFor(it, name){
-        if(!it.category) return null;
-        let spec = it.category === "Hanging Baskets" ? (sizeOf(it.section) || sizeOf(name)) : it.category === "Bromeliads" ? sizeOf(name) : null;
-        let rule = findRackRule(it.category, name, spec);
-        let estimated = false;
-        if(!rule && it.category === '6" Foliage'){ rule = findRackRule(it.category, "around 15", null); estimated = true; }
-        return rule ? { rule, estimated } : null;
-      }
-      function computeLine(line){
-        const it = line.it;
-        const name = lineItemName(it);
-        const rr = rackRuleFor(it, name);
-        let qty = Number(line.qty) || 0, racks = "", cases = "", note = it.notes || "";
-        if(line.unit){ racks = Number(line.racks) || 0; if(rr && line.unit === "CC Rack" && !qty) qty = Math.round(racks * rr.rule.plantsPerRack); }
-        else if(rr && qty > 0){
-          racks = ceilToQuarter(qty / rr.rule.plantsPerRack);
-          if(rr.rule.traysPerRack) cases = ceilToQuarter(qty / (rr.rule.plantsPerRack / rr.rule.traysPerRack));
-          if(rr.estimated) note = (note ? note + " · " : "") + `racks est. @${rr.rule.plantsPerRack}/rack`;
-        }
-        return { name, qty, racks, cases, note, unit: line.unit || "", perRack: rr ? rr.rule.plantsPerRack : null };
-      }
-      function onOrderFor(it, colDate){
-        const { pickupDate } = orderDatesFor(colDate);
-        const want = n0(lineItemName(it));   // size-aware: 6" HB ≠ 8" HB
-        for(const t of loadTrucks()){
-          if((t.region || "").trim() !== "Homestead" || t.pickupDate !== pickupDate) continue;
-          for(const vb of (t.vendorBlocks || [])){
-            if(!(n0(vb.name).includes(n0(it.vendor)) || n0(it.vendor).includes(n0(vb.name))) || !n0(vb.name)) continue;
-            const hit = (vb.items || []).find(x => { const a = n0(x.item); return a && (a.includes(want) || (want.length > 5 && want.includes(a))); });
-            if(hit) return { truckId: t.id, qty: Number(hit.qty) || 0, racks: Number(hit.racks) || 0 };
-          }
-        }
-        return null;
-      }
+      const hlAll = () => { const h = LS.get(HL_KEY, {}); return (h && typeof h === "object") ? h : {}; };
+      const hlKey = (it, d) => [gsCurrent().id, n0(it.tab), n0(it.vendor), n0(it.section), n0(it.name), d].join("|");
       function toggleCell(it, colDate){
-        const v = it.values[colDate];
-        if(!v) return;
-        if(cart.date && cart.date !== colDate && cart.lines.length){
-          if(!confirm(`Your pick list is for ${fmtShort(cart.date)}. Start a new pick list for ${fmtShort(colDate)}?`)) return;
-          cart.lines = [];
-        }
-        cart.date = colDate;
-        const key = it.id;
-        const i = cart.lines.findIndex(l => l.key === key);
-        if(i >= 0) cart.lines.splice(i, 1);
-        else cart.lines.push({ key, it, qty: v.qty || "", racks: v.racks || "", unit: v.unit || "", avail: v });
-        if(!cart.lines.length) cart.date = null;
-        chooser = null;
+        if(!it.values[colDate]) return;
+        const all = hlAll(), k = hlKey(it, colDate);
+        if(all[k]) delete all[k];
+        else all[k] = { by: (getUser() && getUser().name) || "", at: Date.now(), label: `${it.vendor} · ${lineItemName(it)}` };
+        // tidy: forget highlights on dates more than 60 days ago
+        const cutoff = fmtDate(addDays(new Date(), -60));
+        Object.keys(all).forEach(x => { const d = x.split("|").pop(); if(d && d < cutoff) delete all[x]; });
+        LS.set(HL_KEY, all);
         render();
       }
       const fmtShort = (ymd) => { const d = parseDate(ymd); return d ? d.toLocaleDateString(undefined, { weekday:"short", month:"short", day:"numeric" }) : ymd; };
-      function buildBlocks(){
-        const byVendor = new Map();
-        cart.lines.forEach(l => {
-          const c = computeLine(l);
-          if(!byVendor.has(l.it.vendor)) byVendor.set(l.it.vendor, []);
-          byVendor.get(l.it.vendor).push({ item: c.name, racks: c.racks === "" ? "" : c.racks, cases: c.cases, qty: c.qty || "", notes: c.note, unit: c.unit || "" });
-        });
-        return byVendor;
-      }
-      function startBuild(){
-        if(!cart.lines.length) return;
-        const { pickupDate } = orderDatesFor(cart.date);
-        const existing = loadTrucks().filter(t => (t.region || "").trim() === "Homestead" && t.pickupDate === pickupDate);
-        if(existing.length){ chooser = existing.map(t => ({ id:t.id, label:`PU ${fmtShort(t.pickupDate)} · ${(t.vendorBlocks || []).map(v => v.name).filter(Boolean).join(", ") || "no vendors yet"}` })); render(); return; }
-        finishBuild(null);
-      }
-      function finishBuild(truckId){
-        const { pickupDate, requestDate } = orderDatesFor(cart.date);
-        const blocks = buildBlocks();
-        const anyPallet = [...blocks.values()].some(list => list.some(x => x.unit === "Pallet"));
-        if(truckId){
-          const t = loadTrucks().find(x => x.id === truckId);
-          if(!t){ showToast("That order no longer exists"); return; }
-          const clone = JSON.parse(JSON.stringify(t));
-          blocks.forEach((lines, vendor) => {
-            const vb = (clone.vendorBlocks || []).find(v => n0(v.name) === n0(vendor) || n0(v.name).includes(n0(vendor)) || n0(vendor).includes(n0(v.name)) && n0(v.name));
-            if(vb) vb.items = (vb.items || []).filter(x => x.item || x.qty || x.racks).concat(lines);
-            else (clone.vendorBlocks = clone.vendorBlocks || []).push({ name: vendor, po:"", status:"Open", items: lines });
-          });
-          openTruckModal(clone);
-        } else {
-          openTruckModal(null, {
-            id:null, pickupDate, requestDate, region:"Homestead",
-            orderType: anyPallet ? "CC RACKS/PALLETS" : "CC", trucking:"", price:"", notes:"Built from the availability sheet",
-            vendorBlocks: [...blocks.entries()].map(([name, items]) => ({ name, po:"", status:"Open", items }))
-          });
-        }
-        chooser = null;
-        showToast("Order drafted — review racks and save");
-        render();
-      }
+      const whoWhen = (h) => { if(!h) return ""; const ago = timeAgoShort(h.at || Date.now()); return `Highlighted${h.by ? " by " + h.by : ""} · ${ago}`; };
 
       /* ---------- render ---------- */
       let rootBound = false;
@@ -9256,8 +9293,10 @@
         const root = document.getElementById("avSmart");
         if(!root || root.hidden) return;
         loadCache();
+        // sheet link changed (here or by a teammate) — don't keep showing the old sheet
+        if(data && data.sheetId && data.sheetId !== gsCurrent().id && !loading){ data = null; setTimeout(() => refresh(true), 0); }
         if(!rootBound) bindRoot(root);
-        const cartKeys = new Set(cart.lines.map(l => l.key));
+        const hl = hlAll();
         const status = loading ? `<span class="avSpin"></span> Reading sheet…`
           : lastErr ? `⚠ ${escapeHtml(lastErr)}`
           : data ? `Synced from Google Sheets · ${escapeHtml(timeAgoShort(data.fetchedAt))}` : "Not loaded yet";
@@ -9272,11 +9311,14 @@
           (filters.tab === "all" || i.tab === filters.tab) &&
           (!filters.vendor || i.vendor === filters.vendor) &&
           (!q || n0(i.name + " " + i.vendor + " " + i.section + " " + i.notes).includes(q)) &&
-          (!filters.onlyAvail || Object.keys(i.values).length));
+          (!filters.onlyAvail || Object.keys(i.values).length) &&
+          (!filters.onlyHl || Object.keys(i.values).some(d => hl[hlKey(i, d)])));
         const todayWk = fmtDate(startOfWeek(new Date()));
         const dates = data.dates.filter(d => d >= fmtDate(addDays(startOfWeek(new Date()), -7)) || items.some(i => i.values[d]));
         const maxQty = Math.max(1, ...items.flatMap(i => Object.values(i.values).map(v => v.qty || (v.racks || 0) * 150)));
         const availCount = data.items.filter(i => Object.keys(i.values).length).length;
+        let hlCount = 0;
+        data.items.forEach(i => Object.keys(i.values).forEach(d => { if(hl[hlKey(i, d)]) hlCount++; }));
         // group by tab > vendor > section
         const groups = new Map();
         items.forEach(i => { const g = `${i.tab}|||${i.vendor}`; if(!groups.has(g)) groups.set(g, []); groups.get(g).push(i); });
@@ -9293,42 +9335,12 @@
                 const v = i.values[d];
                 if(!v) return `<td class="avCell${d === todayWk ? " now" : ""}"></td>`;
                 const strength = v.note ? 0.18 : Math.min(1, Math.sqrt((v.qty || (v.racks || 0) * 150) / maxQty));
-                const sel = cartKeys.has(i.id) && cart.date === d;
-                const oo = onOrderFor(i, d);
-                return `<td class="avCell has${sel ? " sel" : ""}${d === todayWk ? " now" : ""}" style="--heat:${(0.12 + 0.6 * strength).toFixed(2)}" data-av-cell="${escapeHtml(i.id)}" data-av-date="${d}" title="${escapeHtml(i.vendor + " · " + i.name + " · " + fmtShort(d) + ": " + v.raw)}${oo ? " · already on an order" : ""}">${escapeHtml(v.racks ? `${v.racks} ${v.unit === "Pallet" ? "pal" : "racks"}` : v.raw)}${oo ? `<i class="avOnOrder" title="On an order">🚛</i>` : ""}${sel ? `<i class="avSelTick">✓</i>` : ""}</td>`;
+                const h = hl[hlKey(i, d)];
+                return `<td class="avCell has${h ? " hl" : ""}${d === todayWk ? " now" : ""}" style="--heat:${(0.12 + 0.6 * strength).toFixed(2)}" role="button" tabindex="0" aria-pressed="${h ? "true" : "false"}" data-av-cell="${escapeHtml(i.id)}" data-av-date="${d}" title="${escapeHtml(i.vendor + " · " + i.name + " · " + fmtShort(d) + ": " + v.raw + (h ? "\n" + whoWhen(h) + " — click to clear" : "\nClick to highlight for the team"))}">${escapeHtml(v.racks ? `${v.racks} ${v.unit === "Pallet" ? "pal" : "racks"}` : v.raw)}${h && h.by ? `<i class="avHlBy" aria-hidden="true">${escapeHtml(initials(h.by))}</i>` : ""}</td>`;
               }).join("") + `</tr>`;
           });
         });
         const head = `<tr><th class="avCorner">Item</th>${dates.map(d => { const dd = parseDate(d); return `<th class="${d === todayWk ? "now" : ""}"><b>${escapeHtml(dd.toLocaleDateString(undefined, { month:"short", day:"numeric" }))}</b><small>Wk ${isoWeekNumOf(dd)}</small></th>`; }).join("")}</tr>`;
-        // cart
-        let cartHtml = "";
-        if(cart.lines.length){
-          const od = orderDatesFor(cart.date);
-          const rows = cart.lines.map((l, idx) => {
-            const c = computeLine(l);
-            return `<div class="avCartLine">
-              <div class="avCartName"><b>${escapeHtml(c.name)}</b><small>${escapeHtml(l.it.vendor)} · sheet: ${escapeHtml(l.avail.raw)}</small></div>
-              ${l.unit
-                ? `<label class="avQty"><input type="number" min="0" step="0.25" value="${escapeHtml(l.racks)}" data-av-racks="${idx}"><span>${l.unit === "Pallet" ? "pallets" : "racks"}</span></label>`
-                : `<label class="avQty"><input type="number" min="0" step="1" value="${escapeHtml(l.qty)}" data-av-qty="${idx}"><span>plants</span></label>`}
-              <div class="avCartCalc">${c.racks !== "" && c.racks ? `<b>${c.racks}</b> ${c.unit === "Pallet" ? "pallets" : "racks"}${c.perRack && !l.unit ? `<small>@${c.perRack}/rack</small>` : ""}` : `<small>${l.it.category === '10" Foliage' ? "set racks in order" : "—"}</small>`}</div>
-              <button type="button" class="avCartX" data-av-remove="${idx}" aria-label="Remove">✕</button>
-            </div>`;
-          }).join("");
-          const totRacks = cart.lines.reduce((n, l) => n + (Number(computeLine(l).racks) || 0), 0);
-          cartHtml = `<div class="avCart">
-            <div class="avCartHead">
-              <div><b>🧺 Pick list</b> · ${cart.lines.length} line${cart.lines.length === 1 ? "" : "s"} · <span class="avCartTot">${totRacks ? totRacks + " racks · " : ""}</span>PU <b>${escapeHtml(fmtShort(od.pickupDate))}</b> <small>→ Order Tracker week of ${escapeHtml(fmtShort(od.requestDate))}</small></div>
-              <label class="avDateMode" title="How to read the dates across the top of your sheet">Sheet dates are
-                <select data-av="datemode"><option value="pickup" ${dateMode() === "pickup" ? "selected" : ""}>pickup days</option><option value="order" ${dateMode() === "order" ? "selected" : ""}>order weeks</option></select></label>
-            </div>
-            <div class="avCartLines">${rows}</div>
-            ${chooser ? `<div class="avChooser"><div>There's already a Homestead order picking up ${escapeHtml(fmtShort(od.pickupDate))}. Add these lines to it?</div>
-              ${chooser.map(c => `<button type="button" class="btnGhost" data-av-addto="${escapeHtml(c.id)}">➕ Add to ${escapeHtml(c.label)}</button>`).join("")}
-              <button type="button" class="btnGhost" data-av-addto="">🆕 Start a new order</button></div>`
-              : `<div class="avCartActions"><button type="button" class="btnGhost" data-av="clear">Clear</button><button type="button" class="btn" data-av="build">🚛 Build order</button></div>`}
-          </div>`;
-        }
         root.innerHTML = `
           <div class="avTop">
             <span class="avStatus">${status}</span>
@@ -9340,56 +9352,49 @@
             <select data-av="vendor"><option value="">All vendors</option>${vendors.map(v => `<option ${filters.vendor === v ? "selected" : ""}>${escapeHtml(v)}</option>`).join("")}</select>
             <input type="search" data-av="q" placeholder="Search items…" value="${escapeHtml(filters.q)}">
             <label class="avToggle"><input type="checkbox" data-av="onlyavail" ${filters.onlyAvail ? "checked" : ""}> Only available</label>
+            <label class="avToggle"><input type="checkbox" data-av="onlyhl" ${filters.onlyHl ? "checked" : ""}> Only highlighted</label>
           </div>
-          <div class="avHint">Click quantities to add them to a pick list, then <b>Build order</b>. 🚛 = already on an order.</div>
-          <div class="avGridWrap"><table class="avGrid"><thead>${head}</thead><tbody>${body || `<tr><td colspan="${dates.length + 1}" class="avNone">Nothing matches.</td></tr>`}</tbody></table></div>
-          ${cartHtml}`;
+          <div class="avHint"><span class="avHlSwatch" aria-hidden="true"></span> Click a number to highlight it for the whole team — click it again to clear.
+            ${hlCount ? `<span class="avHlCount"><b>${hlCount}</b> highlighted</span><button type="button" class="tinyBtn" data-av="clearhl">Clear all</button>` : ""}</div>
+          <div class="avGridWrap"><table class="avGrid"><thead>${head}</thead><tbody>${body || `<tr><td colspan="${dates.length + 1}" class="avNone">Nothing matches.</td></tr>`}</tbody></table></div>`;
         // keep the search box focused while typing
         if(render._refocus){ const inp = root.querySelector('[data-av="q"]'); if(inp){ inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); } render._refocus = false; }
-        // auto-drop cart lines that are now on an order
-        const before = cart.lines.length;
-        cart.lines = cart.lines.filter(l => !onOrderFor(l.it, cart.date));
-        if(before && !cart.lines.length){ cart.date = null; setTimeout(render, 0); }
       }
+      const initials = (name) => String(name || "").trim().split(/\s+/).map(w => w[0] || "").join("").slice(0, 2).toUpperCase();
       function timeAgoShort(t){ const s = Math.round((Date.now() - t) / 1000); if(s < 60) return "just now"; if(s < 3600) return Math.round(s / 60) + " min ago"; if(s < 86400) return Math.round(s / 3600) + " h ago"; return new Date(t).toLocaleDateString(); }
       function bindRoot(root){
         rootBound = true;
+        const cellHit = (cell) => { const it = data && data.items.find(i => i.id === cell.dataset.avCell); if(it) toggleCell(it, cell.dataset.avDate); };
         root.addEventListener("click", (e) => {
           const t = e.target;
+          if(t.closest(".xlink")) return;                 // item/vendor links still open the linked view
           const cell = t.closest("[data-av-cell]");
-          if(cell){ const it = data.items.find(i => i.id === cell.dataset.avCell); if(it) toggleCell(it, cell.dataset.avDate); return; }
+          if(cell){ cellHit(cell); return; }
           const tab = t.closest("[data-av-tab]"); if(tab){ filters.tab = tab.dataset.avTab; render(); return; }
-          const rm = t.closest("[data-av-remove]"); if(rm){ cart.lines.splice(Number(rm.dataset.avRemove), 1); if(!cart.lines.length) cart.date = null; chooser = null; render(); return; }
-          const add = t.closest("[data-av-addto]"); if(add){ finishBuild(add.dataset.avAddto || null); return; }
           const act = t.closest("[data-av]"); if(!act) return;
           const a = act.dataset.av;
           if(a === "refresh") refresh(true);
-          else if(a === "clear"){ cart = { date:null, lines:[] }; chooser = null; render(); }
-          else if(a === "build") startBuild();
+          else if(a === "clearhl"){
+            const all = hlAll(), sheet = gsCurrent().id + "|";
+            const mine = Object.keys(all).filter(k => k.startsWith(sheet));
+            if(!mine.length || !confirm(`Clear all ${mine.length} highlight${mine.length === 1 ? "" : "s"} for everyone?`)) return;
+            mine.forEach(k => delete all[k]); LS.set(HL_KEY, all); render();
+          }
+        });
+        root.addEventListener("keydown", (e) => {
+          const cell = e.target.closest && e.target.closest("[data-av-cell]");
+          if(cell && (e.key === "Enter" || e.key === " ")){ e.preventDefault(); cellHit(cell); }
         });
         root.addEventListener("input", (e) => {
           const t = e.target;
           if(t.dataset.av === "q"){ filters.q = t.value; render._refocus = true; render(); }
-          else if(t.dataset.avQty != null){ cart.lines[Number(t.dataset.avQty)].qty = t.value; updateCalc(); }
-          else if(t.dataset.avRacks != null){ cart.lines[Number(t.dataset.avRacks)].racks = t.value; updateCalc(); }
         });
         root.addEventListener("change", (e) => {
           const t = e.target;
           if(t.dataset.av === "vendor"){ filters.vendor = t.value; render(); }
           else if(t.dataset.av === "onlyavail"){ filters.onlyAvail = t.checked; render(); }
-          else if(t.dataset.av === "datemode"){ prefSet(DATEMODE_KEY, t.value); chooser = null; render(); }
-          else if(t.dataset.avQty != null || t.dataset.avRacks != null) updateCalc();
+          else if(t.dataset.av === "onlyhl"){ filters.onlyHl = t.checked; render(); }
         });
-      }
-      function updateCalc(){
-        // live-update rack math without re-rendering (keeps the cursor in the box)
-        document.querySelectorAll("#avSmart .avCartLine").forEach((row, idx) => {
-          const l = cart.lines[idx]; if(!l) return;
-          const c = computeLine(l), el = row.querySelector(".avCartCalc");
-          if(el) el.innerHTML = c.racks !== "" && c.racks ? `<b>${c.racks}</b> ${c.unit === "Pallet" ? "pallets" : "racks"}${c.perRack && !l.unit ? `<small>@${c.perRack}/rack</small>` : ""}` : `<small>—</small>`;
-        });
-        const tot = cart.lines.reduce((n, l) => n + (Number(computeLine(l).racks) || 0), 0);
-        const totEl = document.querySelector("#avSmart .avCartTot"); if(totEl) totEl.textContent = tot ? tot + " racks · " : "";
       }
 
       /* ---------- view switching ---------- */
@@ -9418,7 +9423,7 @@
       // ⟳ in the bar reloads whichever view is showing
       document.getElementById("gsReloadBtn")?.addEventListener("click", (e) => { if(viewMode() === "smart"){ e.stopImmediatePropagation(); refresh(true); } }, true);
       window.addEventListener("focus", () => { if(typeof currentPage !== "undefined" && currentPage === "avail" && viewMode() === "smart" && data && Date.now() - data.fetchedAt > 60000) refresh(false); });
-      return { applyView, refresh, render, get data(){ return data; }, parseWorkbook, _cart: () => cart };
+      return { applyView, refresh, render, get data(){ return data; }, parseWorkbook, HL_KEY };
     })();
     window.AvSmart = AvSmart;
     // Availability page entry: show whichever view this person last used.
@@ -9535,7 +9540,7 @@
         card.querySelector(".trOpen").addEventListener("click", () => {
           if(isFile){
             if(d.mime === "application/pdf"){ window.open(dataUrlToBlobUrl(d.dataUrl), "_blank"); }
-            else if((d.mime||"").startsWith("image/")){ window.open(d.dataUrl, "_blank"); }
+            else if((d.mime||"").startsWith("image/")){ window.open(dataUrlToBlobUrl(d.dataUrl), "_blank"); }
             else { const a = document.createElement("a"); a.href = d.dataUrl; a.download = d.name || d.title || "document"; document.body.appendChild(a); a.click(); a.remove(); }
           } else {
             let u = d.url; if(!/^https?:|^mailto:/i.test(u)) u = "https://" + u;
@@ -9964,7 +9969,7 @@
           if(!delta) return;
           const { vendorKey, typeKey } = ensureVendorLabelState(state, name, type);
           const t = state.vendors[vendorKey].types[typeKey];
-          t.remaining = Math.max(0, (t.remaining||0) - delta);
+          t.remaining = (t.remaining||0) - delta;   // may dip below 0; shown as 0, and edits/deletes credit back exactly
           state.log.unshift({ id:cryptoRandomId(), at:new Date().toISOString(), type:"order", vendor:vendorKey, stickerType:typeKey, qty:delta, meta:meta||"", by:who });
         });
       });
@@ -10088,7 +10093,6 @@
     function openLabelSettingsModal(vendorName, stickerType){
       const state = loadLabels();
       const { vendorKey, typeKey } = ensureVendorLabelState(state, vendorName, stickerType);
-      saveLabels(state);
       settingsVendorTarget = vendorKey;
       settingsTypeTarget = typeKey;
       const t = state.vendors[vendorKey].types[typeKey];
@@ -10357,7 +10361,7 @@
     // their own per-week "poImports" collection (see below) rather than this flat
     // list — one workbook can be too big to lump in with everything else here.
     const SYNC_KEYS = [
-      "hpa_alert_settings_v1", "hpa_alert_sent_v1", "hpa_st_library_v1", "hpa_item_catalog_v1", "hpa_scan_memory_v1", "hpa_sku_book_v1", "hpa_sku_links_v1", "hpa_sku_defaults_v1",
+      "hpa_alert_settings_v1", "hpa_alert_sent_v1", "hpa_st_library_v1", "hpa_item_catalog_v1", "hpa_scan_memory_v1", "hpa_sku_book_v1", "hpa_sku_links_v1", "hpa_sku_defaults_v1", "hpa_av_highlights_v1",
       LS.trucksKey, LS.issuesKey,
       LS.trainingKey, LS.adsKey, LS.labelsKey, LS.availLinkKey, LS.catalogKey, LS.checkinKey,
       LS.availKey, LS.availOrdersKey, LS.availAmountsKey, LS.availSpecOverridesKey,
@@ -10428,7 +10432,7 @@
           this.presenceCol = fs.collection(db, "hubs", this.teamCode(), "presence");
           this.activityCol = fs.collection(db, "hubs", this.teamCode(), "activity");
           this.poFilesCol = fs.collection(db, "hubs", this.teamCode(), "poFiles");
-          this.ready = true; this._seeded = false; this._seededPhotos = false; this._seededTrainingFiles = false; this._seededPoImports = false; this._seededActivity = false; this._seededPoFiles = false;
+          this.ready = true; this._wasReady = true; this._seeded = false; this._seededPhotos = false; this._seededTrainingFiles = false; this._seededPoImports = false; this._seededActivity = false; this._seededPoFiles = false;
           this.subscribe();
           this.subscribePhotos();
           this.subscribeTrainingFiles();
@@ -10456,8 +10460,15 @@
         const { onSnapshot } = this.fs;
         if(this._unsub){ try{ this._unsub(); }catch(e){} }
         this._unsub = onSnapshot(this.col, (snap) => {
+          const dirty = this._seeded ? null : this._dirty();
           snap.docChanges().forEach(ch => {
             if(ch.type === "removed") return;
+            const at = dirty && dirty[ch.doc.id];
+            if(at){
+              const rd = ch.doc.data() || {};
+              if(!rd.updatedAt || rd.updatedAt < at){ this._pushNow(ch.doc.id); return; }   // our offline edit is newer
+              this._setDirty(ch.doc.id, false);
+            }
             this.applyRemote(ch.doc.id, ch.doc.data());
           });
           if(!this._seeded){ this._seeded = true; this.seedMissing(snap); }
@@ -10902,9 +10913,15 @@
         } catch(e){ return incomingStr; }
       },
       onLocalSet(key){ this.push(key); },
+      // Edits made after the connection drops are remembered, so when sync comes
+      // back they're sent up instead of being replaced by the team's older copy.
+      _dirty(){ try { return JSON.parse(localStorage.getItem("hpa_sync_dirty_v1") || "{}") || {}; } catch(_){ return {}; } },
+      _setDirty(key, on){
+        try { const d = this._dirty(); if(on) d[key] = Date.now(); else if(d[key]) delete d[key]; else return; localStorage.setItem("hpa_sync_dirty_v1", JSON.stringify(d)); } catch(_){}
+      },
       push(key){
-        if(!this.ready) return;
         if(SYNC_KEYS.indexOf(key) === -1) return;
+        if(!this.ready){ if(this._wasReady) this._setDirty(key, true); return; }
         clearTimeout(this._t[key]);
         this._t[key] = setTimeout(() => this._pushNow(key), 600);
       },
@@ -10938,6 +10955,7 @@
           const { doc, setDoc } = this.fs;
           await setDoc(doc(this.col, key), { value: val, updatedAt: Date.now(), by: this.user, client: this.clientId });
           this.lastSent = Date.now(); this.pushes++;
+          this._setDirty(key, false);
         } catch(e){ this.lastError = (e && (e.code || e.message)) || String(e); console.error("[HPA sync] push failed for", key, e); }
       },
       rerender(key){
@@ -10952,8 +10970,10 @@
           else if(k === "photos" && key === LS.catalogKey) renderPhotosTab();
           else if(k === "avail" && (key === LS.availKey || key === LS.availOrdersKey || key === LS.availAmountsKey || key === LS.availSpecOverridesKey)) renderAvailability();
           else if(key === LS.availLinkKey && typeof gsApplyLink === "function") gsApplyLink();
+          else if(k === "avail" && key === "hpa_av_highlights_v1" && window.AvSmart) AvSmart.render();
           else if(k === "prebook" && (key === LS.prebookKey || key === LS.tagKey)) renderPrebook();
           else if(k === "ads" && key === LS.adsKey) renderAds();
+          else if(k === "dashboard" && window.HPAExtras && [LS.trucksKey, LS.issuesKey, LS.checkinKey, LS.labelsKey].includes(key)) window.HPAExtras.renderDashboard();
           if(key === LS.labelsKey && typeof renderLabelTracker === "function") renderLabelTracker();
         } catch(e){}
         try {
@@ -11097,7 +11117,8 @@
         // push restored keys up so teammates receive them
         try {
           if(window.HPASync && window.HPASync.ready && Array.isArray(SYNC_KEYS)){
-            entries.forEach(([k]) => { if(SYNC_KEYS.indexOf(k) !== -1) window.HPASync.push(k); });
+            const ups = entries.filter(([k]) => SYNC_KEYS.indexOf(k) !== -1).map(([k]) => window.HPASync._pushNow(k));
+            await Promise.race([Promise.allSettled(ups), new Promise(r => setTimeout(r, 6000))]);
           }
         } catch(_){}
         alert(failed ? `Restored with ${failed} section(s) skipped (likely storage limits). Reloading…` : "Restore complete. Reloading…");
@@ -11268,12 +11289,12 @@
 
         const vendorPct = (totals.confirmed + totals.open) ? Math.round(totals.confirmed / (totals.confirmed + totals.open) * 100) : null;
         const stats = [
-          { num: totals.poCount, lbl:"Orders this week", sub: totals.poCount===1 ? "1 PO" : totals.poCount + " POs", accent:"var(--moss)", icon:"receipt", go:"order" },
-          { num: trucks.length, lbl:"Number of trucks", sub: trucks.length===1 ? "1 truck" : trucks.length + " trucks", accent:"var(--gold)", icon:"truck", go:"order" },
-          { num: totals.confirmed + "/" + (totals.confirmed+totals.open), lbl:"Vendors confirmed", sub: totals.open + " still open", accent: totals.open ? "var(--state-warn-fg)" : "var(--state-ok-fg)", icon:"checkCircle", ring: vendorPct, go:"order" },
+          { num: totals.poCount, lbl:"Orders", sub: (totals.poCount===1 ? "1 PO" : totals.poCount + " POs") + " this week", accent:"var(--moss)", icon:"receipt", go:"order" },
+          { num: trucks.length, lbl:"Trucks", sub: (() => { const locs = [...new Set(trucks.map(t => (t.region || "").trim()).filter(Boolean))]; return locs.length ? locs.join(" · ") : "none scheduled"; })(), accent:"var(--gold)", icon:"truck", go:"order" },
+          { num: totals.confirmed + "/" + (totals.confirmed+totals.open), lbl:"Confirmed", sub: totals.open ? totals.open + " vendor" + (totals.open === 1 ? "" : "s") + " still open" : "every vendor confirmed", accent: totals.open ? "var(--state-warn-fg)" : "var(--state-ok-fg)", icon:"checkCircle", ring: vendorPct, go:"order" },
           { num: totals.racks.toLocaleString(), lbl:"CC racks", sub: totals.qty.toLocaleString() + " plants", accent:"var(--fern)", icon:"plant", go:"order" },
-          { num: money(totals.price), lbl:"Trucking spend", sub: trucks.length + " load(s)", accent:"var(--gold)", icon:"dollar", go:"order" },
-          { num: ciPct===null ? "—" : ciPct+"%", lbl:"Check-in done", sub: ciLabel, accent: ciPct===100 ? "var(--state-ok-fg)" : "var(--state-info-fg)", icon:"checkCircle", ring: ciPct, go:"checkin" },
+          { num: money(totals.price), lbl:"Trucking", sub: trucks.length + " load(s)", accent:"var(--gold)", icon:"dollar", go:"order" },
+          { num: ciPct===null ? "—" : ciPct+"%", lbl:"Checked in", sub: ciLabel, accent: ciPct===100 ? "var(--state-ok-fg)" : "var(--state-info-fg)", icon:"checkCircle", ring: ciPct, go:"checkin" },
           { num: openIssues, lbl:"Open issues", sub: issues.length + " total", accent: openIssues ? "var(--state-danger-fg)" : "var(--state-ok-fg)", icon:"bug", go:"issues" }
         ];
         const grid = document.getElementById("dashStats");
@@ -12366,7 +12387,7 @@
         const it = tr && tr.vendorBlocks?.[ctx.v]?.items?.[ctx.i];
         if(!it) return close();
         const who = (getUser() && getUser().name) || "";
-        if(sku == null){ delete it.sku; const L = links(); delete L[lkey(it.item)]; LS.set(LINK_KEY, L); }
+        if(sku == null){ if(it.sku) delete it.sku; else { const L = links(); delete L[lkey(it.item)]; LS.set(LINK_KEY, L); } }
         else if(scope === "line"){ it.sku = sku; }
         else { delete it.sku; const L = links(); L[lkey(it.item)] = { sku, by: who, at: Date.now(), label: it.item }; LS.set(LINK_KEY, L); }
         saveTrucks(trucks);
@@ -12939,7 +12960,7 @@
         const wkOf = (d) => weekKeyFromDate(d);
         const now = new Date();
         const recent = compute({ sinceWeek: wkOf(addDays(now, -56)) });
-        const prior = compute({ sinceWeek: wkOf(addDays(now, -112)), untilWeek: wkOf(addDays(now, -57)) });
+        const prior = compute({ sinceWeek: wkOf(addDays(now, -112)), untilWeek: wkOf(addDays(now, -63)) });
         const find = (arr, name) => arr.find(x => n(x.name) === n(name));
         list.forEach(v => {
           const a = find(recent, v.name), b = find(prior, v.name);
@@ -13053,7 +13074,7 @@
             const st = checkinStateForWeek(t.weekKey);
             const rows = homesteadCheckinRowsForWeek(t.weekKey).filter(r => r.key.startsWith(`hs::${t.id}::`));
             const left = rows.filter(r => !(st[r.key] || {}).checked);
-            if(left.length) out.push({ id:`checkin:${t.id}:${left.length}`, kind:"checkin", title:`${left.length} Homestead line${left.length === 1 ? "" : "s"} not checked in`, sub:`Picked up ${fmtDay(t.pickupDate)} · ${[...new Set(left.map(r => r.vendor))].join(", ")}`, target:{ page:"checkin", wk:t.weekKey, mode:"homestead", rowKey:left[0].key } });
+            if(left.length) out.push({ id:`checkin:${t.id}:${t.pickupDate}`, kind:"checkin", title:`${left.length} Homestead line${left.length === 1 ? "" : "s"} not checked in`, sub:`Picked up ${fmtDay(t.pickupDate)} · ${[...new Set(left.map(r => r.vendor))].join(", ")}`, target:{ page:"checkin", wk:t.weekKey, mode:"homestead", rowKey:left[0].key } });
           }
         });
         try {
@@ -13110,6 +13131,7 @@
       async function pushTeam(current){
         const st = settings();
         if(!st.enabled || !st.topic || !navigator.onLine) return;
+        if(window.HPASync && window.HPASync.ready && !window.HPASync._seeded) return;   // wait for the team's "already sent" list
         const sent = LS.get(SENT_KEY, {}) || {};
         const cutoff = Date.now() - 30 * 86400000;
         Object.keys(sent).forEach(k => { if(sent[k] < cutoff) delete sent[k]; });
@@ -13206,7 +13228,7 @@
       function close(){ if(panel) panel.classList.remove("active"); }
       document.getElementById("alertBellBtn")?.addEventListener("click", (e) => { e.stopPropagation(); if(panel && panel.classList.contains("active")) close(); else open(); });
       setInterval(run, 5 * 60000);
-      setTimeout(run, 2500);
+      setTimeout(run, 8000);
       return { run, soon, evaluate, open, close, settings, list };
     })();
     window.HPAAlerts = HPAAlerts;
@@ -13938,7 +13960,7 @@
       return id;
     }
     function externalize(v){ return v.replace(DATA_RE, function(m){ return "hpablob://" + store(m); }); }
-    function rehydrate(v){ return v.replace(REF_RE, function(m, id){ var d = mem.get(id); return d != null ? d : ""; }); }
+    function rehydrate(v){ return v.replace(REF_RE, function(m, id){ var d = mem.get(id); return d != null ? d : m; }); }   // missing file: keep the reference, so a resave never loses it
 
     proto.setItem = function(k, v){
       if(ready && typeof v === "string" && v.length > MIN && String(k).indexOf("hpa_") === 0 && v.indexOf("data:") !== -1 && isLocal(this)) v = externalize(v);
@@ -14025,7 +14047,7 @@
         if(!window.indexedDB) throw new Error("no IndexedDB");
         db = await openDb();
         await loadAll();
-        if(started) return; // fallback already fired; stay in plain mode for this session
+        if(started){ ready = true; return; } // fallback already fired — files still become available from here on
         ready = true;
         var moved = await migrate();
         if(moved) console.info("[HPA files] moved large files out of localStorage for", moved, "key(s)");
