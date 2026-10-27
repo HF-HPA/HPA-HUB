@@ -2147,7 +2147,7 @@
                     <button id="exportTruckBreakdownBtn" class="tmItem" type="button"><span data-icon="download" aria-hidden="true"></span>Truck breakdown</button>
                     <div class="tmLabel">Look up</div>
                     <button id="plantHistoryBtn" class="tmItem" type="button"><span data-icon="history" aria-hidden="true"></span>Plant history</button>
-                    <button id="skuSearchBtn" class="tmItem" type="button" data-sku-open title="Search SKUs, UPCs, cost and retail"><span data-icon="tag" aria-hidden="true"></span>SKU search</button>
+                    <button id="skuSearchBtn" class="tmItem" type="button" data-sku-open title="Search SKUs, UPCs and retail"><span data-icon="tag" aria-hidden="true"></span>SKU search</button>
                     <div class="tmLabel">This week</div>
                     <button id="skipWeekBtn" class="tmItem otcSkipBtn" type="button"><span data-icon="ban" aria-hidden="true"></span>Mark as skip week</button>
                   </div>
@@ -11325,7 +11325,7 @@
           { icon:"📄", title:"Export Truck Order", tag:"Export", run:()=>{ showPage("order"); document.getElementById("exportTruckBtn")?.click(); } },
           { icon:"📄", title:"Export CC Order", tag:"Export", run:()=>{ showPage("order"); document.getElementById("exportCCBtn")?.click(); } },
           { icon:"📚", title:"Update item list (UPC · SKU · Retail)", sub:"Load the Customer Item Export for barcode scanning", tag:"Data", run:()=>{ const i = document.createElement("input"); i.type = "file"; i.accept = ".xlsx"; i.onchange = async () => { const f = i.files[0]; if(!f) return; try { const n = await ItemCatalog.importFile(f); showToast(`Item list loaded: ${n.toLocaleString()} UPCs`); } catch(e){ alert(e.message); } }; i.click(); } },
-          { icon:"🔎", title:"SKU search", sub:"Find a SKU, UPC, cost or retail", tag:"Order", run:()=>SkuBook.open(null) },
+          { icon:"🔎", title:"SKU search", sub:"Find a SKU, UPC or retail price", tag:"Order", run:()=>SkuBook.open(null) },
           { icon:"📈", title:"ST by Truck", sub:"Projected sell-through for this week's trucks", tag:"Order", run:()=>{ showPage("order"); STByTruck.open(null); } },
           { icon:"📄", title:"Export Order Breakdown", tag:"Export", run:()=>{ showPage("order"); document.getElementById("exportBreakdownBtn")?.click(); } },
           { icon:"📄", title:"Export Truck Breakdown", tag:"Export", run:()=>{ showPage("order"); document.getElementById("exportTruckBreakdownBtn")?.click(); } },
@@ -11759,7 +11759,7 @@
           { n: bookLeft.toLocaleString(), l:"still booked", s: d.books.length + " booking(s)" }
         ];
         let html = `<div class="xlTiles">${tiles.map(t => `<div class="xlTile${t.warn ? " warn" : ""}"><div class="xlTileN">${escapeHtml(String(t.n))}</div><div class="xlTileL">${escapeHtml(t.l)}</div><div class="xlTileS">${escapeHtml(t.s)}</div>${t.ring != null ? `<div class="xlTileBar"><i style="width:${t.ring}%"></i></div>` : ""}</div>`).join("")}</div>`;
-        if(cur.type === "item" && window.SkuBook){ try { const sk = SkuBook.forLine({ item: cur.value }); if(sk) html += `<section class="xlSec"><div class="xlSecHead"><h4>🏷️ SKU</h4></div><button type="button" class="xlRow" data-sku-open><span class="xlRowMain"><b>${escapeHtml(sk.e.sku)} · ${escapeHtml(sk.e.desc)}</b><small>${escapeHtml(sk.why)} · UPC ${escapeHtml(sk.e.upc)} · ${escapeHtml(sk.e.sec)}${sk.e.grp ? " · " + escapeHtml(sk.e.grp) : ""}</small></span><span class="xlRowSide"><b>${sk.e.retail != null ? "$" + Number(sk.e.retail).toFixed(2) : ""}</b><small>cost ${sk.e.cost != null ? "$" + Number(sk.e.cost).toFixed(2) : "—"}</small></span></button></section>`; } catch(_){} }
+        if(cur.type === "item" && window.SkuBook){ try { const sk = SkuBook.forLine({ item: cur.value }); if(sk) html += `<section class="xlSec"><div class="xlSecHead"><h4>🏷️ SKU</h4></div><button type="button" class="xlRow" data-sku-open><span class="xlRowMain"><b>${escapeHtml(sk.e.sku)} · ${escapeHtml(sk.e.desc)}</b><small>${escapeHtml(sk.why)} · UPC ${escapeHtml(sk.e.upc)} · ${escapeHtml(sk.e.sec)}${sk.e.grp ? " · " + escapeHtml(sk.e.grp) : ""}</small></span><span class="xlRowSide"><b>${sk.e.retail != null ? "$" + Number(sk.e.retail).toFixed(2) : ""}</b><small>retail</small></span></button></section>`; } catch(_){} }
         if(cur.type === "vendor" && window.VendorScores){ try { html += VendorScores.panelHtml(cur.value); } catch(e){ console.warn("[scores]", e); } }
 
         // Related
@@ -12249,7 +12249,7 @@
         return `<button type="button" class="skuRow${isCur ? " cur" : ""}" data-sku-pick="${escapeHtml(e.sku)}">
           <span class="skuNum">${escapeHtml(e.sku)}${isDefault(e) ? `<em class="skuDef${defOverrides()[groupKey(e)] ? " team" : ""}" title="${defOverrides()[groupKey(e)] ? "Default chosen by " + escapeHtml(defOverrides()[groupKey(e)].by || "the team") : "Default in the SKU/Cost file"}">DEFAULT${defOverrides()[groupKey(e)] ? " · team" : ""}</em>` : (e.grp || e.def != null) ? `<span class="skuMakeDef" role="button" tabindex="0" data-sku-def="${escapeHtml(e.sku)}" title="Use this as the default SKU for ${escapeHtml(e.grp || e.sec)}">☆ Make default</span>` : ""}${isDefault(e) && defOverrides()[groupKey(e)] ? `<span class="skuMakeDef" role="button" tabindex="0" data-sku-defreset="${escapeHtml(groupKey(e))}" title="Go back to the SKU/Cost file's default">↺ file default</span>` : ""}</span>
           <span class="skuDesc"><b>${escapeHtml(e.desc)}</b><small>${escapeHtml([e.sec, e.grp, e.cont, e.pack].filter(Boolean).join(" · "))} · UPC ${escapeHtml(e.upc)}</small></span>
-          <span class="skuMoney">${money(e.retail)}<small>cost ${money(e.cost)}</small></span>
+          <span class="skuMoney">${money(e.retail)}<small>retail</small></span>
           ${isCur ? `<span class="skuTag">current</span>` : isSug ? `<span class="skuTag sug">auto</span>` : ""}
         </button>`;
       }
@@ -12344,7 +12344,7 @@
         if(!r) return NOTES_ONLY.test(String(t.region || "").trim())
           ? `<button type="button" class="skuChip quiet" data-sku-line="${escapeHtml(ref)}" title="${escapeHtml(t.region)} orders only use a SKU named in the line's Notes — or pick one">+ SKU</button>`
           : `<button type="button" class="skuChip none" data-sku-line="${escapeHtml(ref)}" title="No SKU matched — pick one">+ SKU</button>`;
-        return `<button type="button" class="skuChip ${r.how}" data-sku-line="${escapeHtml(ref)}" title="${escapeHtml(r.e.desc)} · ${escapeHtml(r.why)} · cost ${money(r.e.cost)} · retail ${money(r.e.retail)} · UPC ${escapeHtml(r.e.upc)} — click to change">${escapeHtml(r.e.sku)}</button>`;
+        return `<button type="button" class="skuChip ${r.how}" data-sku-line="${escapeHtml(ref)}" title="${escapeHtml(r.e.desc)} · ${escapeHtml(r.why)} · retail ${money(r.e.retail)} · UPC ${escapeHtml(r.e.upc)} — click to change">${escapeHtml(r.e.sku)}</button>`;
       }
       document.addEventListener("click", (e) => {
         const c = e.target.closest && e.target.closest("[data-sku-line]");
