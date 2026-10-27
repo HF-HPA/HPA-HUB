@@ -695,6 +695,16 @@
     .avHlSwatch{ display:inline-block; width:12px; height:12px; border-radius:3px; background:#ffd447; box-shadow:0 0 0 1px #e0a800; vertical-align:-1px; margin-right:4px; }
     .avHint .avHlCount{ margin-left:10px; color:var(--ink-2); }
     .avHint .tinyBtn{ margin-left:6px; }
+    .avHint .avLinkBtn{ margin-left:auto; }
+    .avHint{ display:flex; flex-wrap:wrap; align-items:center; gap:4px 0; }
+    .avLinkBtn.on{ background:rgba(43,212,154,.14); border-color:var(--mint-deep); color:var(--moss); }
+    .avLinkCard{ width:min(680px, 96vw); }
+    .avLinkHead{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:6px; }
+    .avLinkHead h3{ margin:0; font-family:var(--display); }
+    .avLinkSteps{ margin:12px 0 0; padding-left:20px; display:grid; gap:12px; line-height:1.5; }
+    .avLinkCode{ display:block; width:100%; margin-top:8px; font-family:ui-monospace, SFMono-Regular, Menlo, monospace; font-size:11.5px; line-height:1.45; white-space:pre; background:var(--paper-3); }
+    .avLinkRow{ display:flex; gap:8px; margin-top:8px; } .avLinkRow input{ flex:1; } .avLinkRow .btn{ width:auto; white-space:nowrap; }
+    .avLinkOk{ margin-top:10px; padding:10px 12px; border-radius:10px; background:rgba(43,212,154,.12); display:flex; flex-wrap:wrap; align-items:center; gap:6px; font-weight:600; }
     .avNone, .avEmpty{ padding:40px 16px; text-align:center; color:var(--ink-2); font-weight:600; }
     .avCart{ margin:0 14px 12px; border:1px solid var(--moss); border-radius:14px; background:var(--paper-2); box-shadow:0 -8px 28px rgba(4,18,12,.12); overflow:hidden; flex:0 0 auto; display:flex; flex-direction:column; }
     .avCartHead{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:10px 14px; background:linear-gradient(120deg, rgba(43,212,154,.18), rgba(31,92,67,.06)); font-size:13px; color:var(--ink); }
@@ -9194,6 +9204,18 @@
         if(!m[3] && Number(m[1]) < now.getMonth() + 1 - 6) y++;
         return `${y}-${pad(Number(m[1]))}-${pad(Number(m[2]))}`;
       }
+      // A yellow cell background in the Google Sheet = highlighted (same as clicking it here).
+      function isYellowHex(hex){
+        const m = /^#?(?:[0-9a-f]{2})?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(String(hex || "").trim());
+        if(!m) return false;
+        const r = parseInt(m[1], 16), g = parseInt(m[2], 16), b = parseInt(m[3], 16);
+        return r > 230 && g > 200 && b < 215 && r - b > 40;
+      }
+      function isYellowFill(f){
+        if(!f || f.type !== "pattern" || !f.pattern || f.pattern === "none") return false;
+        const c = f.fgColor || f.bgColor;
+        return !!(c && c.argb && isYellowHex(c.argb));
+      }
       function parseWorkbook(wb){
         const tabs = [], items = [], dateSet = new Set();
         wb.worksheets.forEach(ws => {
@@ -9215,9 +9237,13 @@
               return;
             }
             if(!c1) return;
-            const vals = {};
+            const vals = {}, cols = {}, yl = {};
             let any = false;
-            Object.entries(dates).forEach(([cn, d]) => { const pv = parseValue(cellText(row.getCell(Number(cn)).value)); if(pv){ vals[d] = pv; any = true; } });
+            Object.entries(dates).forEach(([cn, d]) => {
+              const cell = row.getCell(Number(cn));
+              const pv = parseValue(cellText(cell.value));
+              if(pv){ vals[d] = pv; cols[d] = Number(cn); any = true; if(isYellowFill(cell.fill)) yl[d] = 1; }
+            });
             if(!any){
               const v = canonVendor(c1);
               if(v){ vendor = v; section = null; return; }
@@ -9226,7 +9252,7 @@
             }
             if(!vendor) return;
             count++;
-            items.push({ id: `${tabName}|${rn}`, tab: tabName, category, vendor, section: section || title || tabName, name: c1, notes: c2 && c2 !== "Notes" && c2 !== c1 ? c2 : "", values: vals });
+            items.push({ id: `${tabName}|${rn}`, tab: tabName, sheet: ws.name, row: rn, cols, yl, category, vendor, section: section || title || tabName, name: c1, notes: c2 && c2 !== "Notes" && c2 !== c1 ? c2 : "", values: vals });
           });
           tabs.push({ name: tabName, category, count });
         });
@@ -9271,18 +9297,126 @@
         const isHB = it.category === "Hanging Baskets";
         return `${size ? size + '"' : ""}${isHB ? " HB" : ""} ${it.name.trim()}`.trim();
       }
+      const SCRIPT_KEY = "hpa_av_script_v1";        // synced: the sheet's Apps Script link (two-way highlights)
       const hlAll = () => { const h = LS.get(HL_KEY, {}); return (h && typeof h === "object") ? h : {}; };
       const hlKey = (it, d) => [gsCurrent().id, n0(it.tab), n0(it.vendor), n0(it.section), n0(it.name), d].join("|");
+      const linked = () => { const c = LS.get(SCRIPT_KEY, null); return (c && c.url && c.sheetId === gsCurrent().id) ? c : null; };
+      // What a cell shows. Linked to the sheet: the sheet's yellow is the truth, except for a click made
+      // here in the last moments (before the sheet's next read catches up). Not linked: either one counts.
+      function hlState(it, d, all){
+        const e = (all || hlAll())[hlKey(it, d)];
+        const sheetOn = !!(it.yl && it.yl[d]);
+        if(linked()){
+          if(e && e.at > (data && data.fetchedAt || 0) - 20000) return { on: e.on !== false, e: e.on !== false ? e : null };
+          return { on: sheetOn, sheet: sheetOn };
+        }
+        if(e && e.on !== false) return { on: true, e };
+        return { on: sheetOn, sheet: sheetOn };
+      }
+      function tidy(all){
+        const cutoff = fmtDate(addDays(new Date(), -60)), dayAgo = Date.now() - 86400000;
+        Object.keys(all).forEach(x => { const d = x.split("|").pop(); if((d && d < cutoff) || (all[x].on === false && all[x].at < dayAgo)) delete all[x]; });
+      }
+      let sheetRefreshT = null;
+      async function sendToSheet(cells){
+        const c = linked(); if(!c || !cells.length) return;
+        try {
+          // text/plain keeps this a "simple" request; Apps Script accepts it without a CORS preflight
+          await fetch(c.url, { method:"POST", mode:"no-cors", headers:{ "Content-Type":"text/plain;charset=utf-8" }, body: JSON.stringify({ key: c.key, cells }) });
+        } catch(e){ showToast("Couldn't reach the Google Sheet — highlight saved in the app for now"); }
+        clearTimeout(sheetRefreshT); sheetRefreshT = setTimeout(() => refresh(true), 6000);
+      }
+      const cellRef = (it, d, on) => ({ tab: it.sheet || it.tab, row: it.row, col: it.cols && it.cols[d], on });
       function toggleCell(it, colDate){
         if(!it.values[colDate]) return;
-        const all = hlAll(), k = hlKey(it, colDate);
-        if(all[k]) delete all[k];
-        else all[k] = { by: (getUser() && getUser().name) || "", at: Date.now(), label: `${it.vendor} · ${lineItemName(it)}` };
-        // tidy: forget highlights on dates more than 60 days ago
-        const cutoff = fmtDate(addDays(new Date(), -60));
-        Object.keys(all).forEach(x => { const d = x.split("|").pop(); if(d && d < cutoff) delete all[x]; });
+        const all = hlAll(), k = hlKey(it, colDate), cur = hlState(it, colDate, all);
+        const who = (getUser() && getUser().name) || "";
+        if(linked() && it.row && it.cols && it.cols[colDate]){
+          all[k] = { on: !cur.on, by: who, at: Date.now(), label: `${it.vendor} · ${lineItemName(it)}` };
+          sendToSheet([cellRef(it, colDate, !cur.on)]);
+        } else if(cur.on && cur.sheet && !cur.e){
+          showToast("That one is highlighted in the Google Sheet — clear it there, or link the sheet (🔗) to clear it from here");
+          return;
+        } else if(cur.on){ delete all[k]; }
+        else all[k] = { on: true, by: who, at: Date.now(), label: `${it.vendor} · ${lineItemName(it)}` };
+        tidy(all);
         LS.set(HL_KEY, all);
         render();
+      }
+
+      /* ---------- link setup (free Google Apps Script web app on the sheet) ---------- */
+      function scriptCode(key){
+        return `// HPA HUB — two-way highlights. Paste into the sheet: Extensions → Apps Script.
+const KEY = "${key}";
+const YELLOW = "#ffff00";
+function doGet(e){ return out({ ok: (e.parameter.key || "") === KEY, sheet: SpreadsheetApp.getActive().getName() }); }
+function doPost(e){
+  const p = JSON.parse((e.postData && e.postData.contents) || "{}");
+  if(p.key !== KEY) return out({ ok:false, error:"wrong key" });
+  const ss = SpreadsheetApp.getActive();
+  (p.cells || []).forEach(c => {
+    const sh = ss.getSheetByName(c.tab); if(!sh || !c.row || !c.col) return;
+    const r = sh.getRange(c.row, c.col);
+    if(c.on) r.setBackground(YELLOW);
+    else if(isYellow(r.getBackground())) r.setBackground(null);
+  });
+  return out({ ok:true });
+}
+function isYellow(hex){
+  const m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex || "");
+  if(!m) return false;
+  const r = parseInt(m[1],16), g = parseInt(m[2],16), b = parseInt(m[3],16);
+  return r > 230 && g > 200 && b < 215 && r - b > 40;
+}
+function out(o){ return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }`;
+      }
+      function openLinkSetup(){
+        const cur = LS.get(SCRIPT_KEY, null);
+        const same = cur && cur.sheetId === gsCurrent().id;
+        const key = same && cur.key ? cur.key : Array.from(crypto.getRandomValues(new Uint8Array(12)), b => b.toString(16).padStart(2, "0")).join("");
+        let m = document.getElementById("avLinkModal");
+        if(!m){ m = document.createElement("div"); m.id = "avLinkModal"; m.className = "modal"; m.setAttribute("aria-hidden", "true"); document.body.appendChild(m); }
+        m.innerHTML = `<div class="modalCard avLinkCard" role="dialog" aria-label="Link highlights with the Google Sheet">
+          <div class="avLinkHead"><h3>Link highlights with the Sheet view</h3><button type="button" class="btnGhost" data-avl="close">Close</button></div>
+          <p class="note">Once linked, clicking a number here turns that cell <b style="background:#ffff00;color:#3a2a00;padding:0 4px;border-radius:3px;">yellow</b> in the Google Sheet, and anything someone colors yellow in the Sheet view shows as highlighted here. Free — it uses a small Google Apps Script on your sheet. One-time setup, about 2 minutes, done by someone who can edit the sheet.</p>
+          ${same && cur.url ? `<div class="avLinkOk">✅ Linked${cur.by ? ` by ${escapeHtml(cur.by)}` : ""}. <button type="button" class="tinyBtn" data-avl="test">Test link</button> <button type="button" class="tinyBtn danger" data-avl="unlink">Unlink</button> <span data-avl-msg></span></div>` : ""}
+          <ol class="avLinkSteps">
+            <li>Open the sheet in Google Sheets → <b>Extensions → Apps Script</b>.</li>
+            <li>Delete what's there and paste this code: <button type="button" class="tinyBtn" data-avl="copy">Copy code</button>
+              <textarea class="avLinkCode" readonly rows="7">${escapeHtml(scriptCode(key))}</textarea></li>
+            <li>Click <b>Deploy → New deployment</b> → type <b>Web app</b>. Set <b>Execute as: Me</b> and <b>Who has access: Anyone</b> → <b>Deploy</b>, then allow access when Google asks.</li>
+            <li>Copy the <b>Web app URL</b> and paste it here:
+              <div class="avLinkRow"><input type="url" data-avl="url" placeholder="https://script.google.com/macros/s/…/exec" value="${escapeHtml(same && cur.url ? cur.url : "")}"><button type="button" class="btn" data-avl="save">Save link</button></div>
+              <div class="note" data-avl-msg2></div></li>
+          </ol>
+        </div>`;
+        const close = () => { m.classList.remove("active"); m.setAttribute("aria-hidden", "true"); };
+        m.onclick = async (e) => {
+          if(e.target === m) return close();
+          const b = e.target.closest("[data-avl]"); if(!b) return;
+          const a = b.dataset.avl;
+          if(a === "close") close();
+          else if(a === "copy"){ const ta = m.querySelector(".avLinkCode"); try { await navigator.clipboard.writeText(ta.value); showToast("Code copied"); } catch(_){ ta.select(); document.execCommand && document.execCommand("copy"); showToast("Code copied"); } }
+          else if(a === "save"){
+            const url = (m.querySelector('[data-avl="url"]').value || "").trim();
+            const msg = m.querySelector("[data-avl-msg2]");
+            if(!/^https:\/\/script\.google\.com\/macros\/s\/[\w-]+\/exec/.test(url)){ msg.textContent = "That should be the Web app URL — it starts with https://script.google.com/macros/s/ and ends in /exec."; return; }
+            msg.textContent = "Checking the link…";
+            const ok = await ping(url, key);
+            if(ok === false){ msg.textContent = "The script answered, but the key didn't match — paste the code above again (it has this link's key), redeploy, and retry."; return; }
+            LS.set(SCRIPT_KEY, { url, key, sheetId: gsCurrent().id, by: (getUser() && getUser().name) || "", at: Date.now() });
+            close(); showToast(ok ? "Linked — highlights now match the Sheet view" : "Saved — highlights will sync with the sheet");
+            refresh(true);
+          }
+          else if(a === "test"){ const out = m.querySelector("[data-avl-msg]"); out.textContent = "Testing…"; const ok = await ping(cur.url, cur.key); out.textContent = ok ? "Working ✓" : ok === false ? "Key doesn't match the script" : "Couldn't confirm (Google may block the check) — try highlighting a cell"; }
+          else if(a === "unlink"){ if(!confirm("Unlink highlights from the Google Sheet for everyone?")) return; LS.set(SCRIPT_KEY, null); close(); render(); }
+        };
+        m.classList.add("active"); m.setAttribute("aria-hidden", "false");
+      }
+      // true = script answered with the right key, false = wrong key, null = couldn't tell
+      async function ping(url, key){
+        try { const r = await fetch(url + (url.includes("?") ? "&" : "?") + "key=" + encodeURIComponent(key)); const j = await r.json(); return !!j.ok; }
+        catch(_){ return null; }
       }
       const fmtShort = (ymd) => { const d = parseDate(ymd); return d ? d.toLocaleDateString(undefined, { weekday:"short", month:"short", day:"numeric" }) : ymd; };
       const whoWhen = (h) => { if(!h) return ""; const ago = timeAgoShort(h.at || Date.now()); return `Highlighted${h.by ? " by " + h.by : ""} · ${ago}`; };
@@ -9312,13 +9446,14 @@
           (!filters.vendor || i.vendor === filters.vendor) &&
           (!q || n0(i.name + " " + i.vendor + " " + i.section + " " + i.notes).includes(q)) &&
           (!filters.onlyAvail || Object.keys(i.values).length) &&
-          (!filters.onlyHl || Object.keys(i.values).some(d => hl[hlKey(i, d)])));
+          (!filters.onlyHl || Object.keys(i.values).some(d => hlState(i, d, hl).on)));
         const todayWk = fmtDate(startOfWeek(new Date()));
         const dates = data.dates.filter(d => d >= fmtDate(addDays(startOfWeek(new Date()), -7)) || items.some(i => i.values[d]));
         const maxQty = Math.max(1, ...items.flatMap(i => Object.values(i.values).map(v => v.qty || (v.racks || 0) * 150)));
         const availCount = data.items.filter(i => Object.keys(i.values).length).length;
         let hlCount = 0;
-        data.items.forEach(i => Object.keys(i.values).forEach(d => { if(hl[hlKey(i, d)]) hlCount++; }));
+        data.items.forEach(i => Object.keys(i.values).forEach(d => { if(hlState(i, d, hl).on) hlCount++; }));
+        const isLinked = !!linked();
         // group by tab > vendor > section
         const groups = new Map();
         items.forEach(i => { const g = `${i.tab}|||${i.vendor}`; if(!groups.has(g)) groups.set(g, []); groups.get(g).push(i); });
@@ -9335,8 +9470,8 @@
                 const v = i.values[d];
                 if(!v) return `<td class="avCell${d === todayWk ? " now" : ""}"></td>`;
                 const strength = v.note ? 0.18 : Math.min(1, Math.sqrt((v.qty || (v.racks || 0) * 150) / maxQty));
-                const h = hl[hlKey(i, d)];
-                return `<td class="avCell has${h ? " hl" : ""}${d === todayWk ? " now" : ""}" style="--heat:${(0.12 + 0.6 * strength).toFixed(2)}" role="button" tabindex="0" aria-pressed="${h ? "true" : "false"}" data-av-cell="${escapeHtml(i.id)}" data-av-date="${d}" title="${escapeHtml(i.vendor + " · " + i.name + " · " + fmtShort(d) + ": " + v.raw + (h ? "\n" + whoWhen(h) + " — click to clear" : "\nClick to highlight for the team"))}">${escapeHtml(v.racks ? `${v.racks} ${v.unit === "Pallet" ? "pal" : "racks"}` : v.raw)}${h && h.by ? `<i class="avHlBy" aria-hidden="true">${escapeHtml(initials(h.by))}</i>` : ""}</td>`;
+                const st = hlState(i, d, hl), h = st.on ? (st.e || { sheet:true }) : null;
+                return `<td class="avCell has${h ? " hl" : ""}${d === todayWk ? " now" : ""}" style="--heat:${(0.12 + 0.6 * strength).toFixed(2)}" role="button" tabindex="0" aria-pressed="${h ? "true" : "false"}" data-av-cell="${escapeHtml(i.id)}" data-av-date="${d}" title="${escapeHtml(i.vendor + " · " + i.name + " · " + fmtShort(d) + ": " + v.raw + (h ? "\n" + (h.sheet ? "Highlighted in the Google Sheet" : whoWhen(h)) + " — click to clear" : "\nClick to highlight for the team"))}">${escapeHtml(v.racks ? `${v.racks} ${v.unit === "Pallet" ? "pal" : "racks"}` : v.raw)}${h && h.by ? `<i class="avHlBy" aria-hidden="true">${escapeHtml(initials(h.by))}</i>` : ""}</td>`;
               }).join("") + `</tr>`;
           });
         });
@@ -9354,8 +9489,9 @@
             <label class="avToggle"><input type="checkbox" data-av="onlyavail" ${filters.onlyAvail ? "checked" : ""}> Only available</label>
             <label class="avToggle"><input type="checkbox" data-av="onlyhl" ${filters.onlyHl ? "checked" : ""}> Only highlighted</label>
           </div>
-          <div class="avHint"><span class="avHlSwatch" aria-hidden="true"></span> Click a number to highlight it for the whole team — click it again to clear.
-            ${hlCount ? `<span class="avHlCount"><b>${hlCount}</b> highlighted</span><button type="button" class="tinyBtn" data-av="clearhl">Clear all</button>` : ""}</div>
+          <div class="avHint"><span class="avHlSwatch" aria-hidden="true"></span> Click a number to highlight it for the whole team — click it again to clear.${isLinked ? " Matches the yellow cells in the Sheet view." : " Yellow cells in the Sheet view show here too."}
+            ${hlCount ? `<span class="avHlCount"><b>${hlCount}</b> highlighted</span><button type="button" class="tinyBtn" data-av="clearhl">Clear all</button>` : ""}
+            <button type="button" class="tinyBtn avLinkBtn${isLinked ? " on" : ""}" data-av="linksetup" title="${isLinked ? "Highlights are linked with the Google Sheet" : "Make clicks here color the cells in the Google Sheet too"}">${isLinked ? "🔗 Linked to Sheet view" : "🔗 Link with Sheet view"}</button></div>
           <div class="avGridWrap"><table class="avGrid"><thead>${head}</thead><tbody>${body || `<tr><td colspan="${dates.length + 1}" class="avNone">Nothing matches.</td></tr>`}</tbody></table></div>`;
         // keep the search box focused while typing
         if(render._refocus){ const inp = root.querySelector('[data-av="q"]'); if(inp){ inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); } render._refocus = false; }
@@ -9374,11 +9510,21 @@
           const act = t.closest("[data-av]"); if(!act) return;
           const a = act.dataset.av;
           if(a === "refresh") refresh(true);
+          else if(a === "linksetup") openLinkSetup();
           else if(a === "clearhl"){
-            const all = hlAll(), sheet = gsCurrent().id + "|";
-            const mine = Object.keys(all).filter(k => k.startsWith(sheet));
-            if(!mine.length || !confirm(`Clear all ${mine.length} highlight${mine.length === 1 ? "" : "s"} for everyone?`)) return;
-            mine.forEach(k => delete all[k]); LS.set(HL_KEY, all); render();
+            const all = hlAll(), on = [];
+            data.items.forEach(i => Object.keys(i.values).forEach(d => { const st = hlState(i, d, all); if(st.on) on.push({ i, d, st }); }));
+            if(!on.length) return;
+            const isLinked = !!linked(), sheetOnly = on.filter(x => x.st.sheet && !x.st.e).length;
+            if(!confirm(`Clear all ${on.length} highlight${on.length === 1 ? "" : "s"} for everyone?${!isLinked && sheetOnly ? `\n\n${sheetOnly} of them are yellow in the Google Sheet itself and have to be cleared there (or link the sheet with 🔗).` : ""}`)) return;
+            const now = Date.now(), who = (getUser() && getUser().name) || "";
+            if(isLinked){
+              on.forEach(x => { all[hlKey(x.i, x.d)] = { on:false, by: who, at: now }; });
+              sendToSheet(on.filter(x => x.i.row && x.i.cols && x.i.cols[x.d]).map(x => cellRef(x.i, x.d, false)));
+            } else {
+              const sheet = gsCurrent().id + "|"; Object.keys(all).filter(k => k.startsWith(sheet)).forEach(k => delete all[k]);
+            }
+            tidy(all); LS.set(HL_KEY, all); render();
           }
         });
         root.addEventListener("keydown", (e) => {
@@ -9419,11 +9565,14 @@
         clearInterval(timer);
         if(smart) timer = setInterval(() => { if(currentPage === "avail" && viewMode() === "smart" && !document.hidden) refresh(false); }, REFRESH_MS);
       }
-      document.querySelectorAll("[data-avview]").forEach(b => b.addEventListener("click", () => { prefSet(VIEW_KEY, b.dataset.avview); applyView(); }));
+      document.querySelectorAll("[data-avview]").forEach(b => b.addEventListener("click", () => {
+        const was = viewMode(); prefSet(VIEW_KEY, b.dataset.avview); applyView();
+        if(was === "sheet" && viewMode() === "smart") refresh(true);   // pick up anything highlighted in the Sheet view
+      }));
       // ⟳ in the bar reloads whichever view is showing
       document.getElementById("gsReloadBtn")?.addEventListener("click", (e) => { if(viewMode() === "smart"){ e.stopImmediatePropagation(); refresh(true); } }, true);
       window.addEventListener("focus", () => { if(typeof currentPage !== "undefined" && currentPage === "avail" && viewMode() === "smart" && data && Date.now() - data.fetchedAt > 60000) refresh(false); });
-      return { applyView, refresh, render, get data(){ return data; }, parseWorkbook, HL_KEY };
+      return { applyView, refresh, render, get data(){ return data; }, parseWorkbook, HL_KEY, SCRIPT_KEY, openLinkSetup, isYellowHex };
     })();
     window.AvSmart = AvSmart;
     // Availability page entry: show whichever view this person last used.
@@ -10361,7 +10510,7 @@
     // their own per-week "poImports" collection (see below) rather than this flat
     // list — one workbook can be too big to lump in with everything else here.
     const SYNC_KEYS = [
-      "hpa_alert_settings_v1", "hpa_alert_sent_v1", "hpa_st_library_v1", "hpa_item_catalog_v1", "hpa_scan_memory_v1", "hpa_sku_book_v1", "hpa_sku_links_v1", "hpa_sku_defaults_v1", "hpa_av_highlights_v1",
+      "hpa_alert_settings_v1", "hpa_alert_sent_v1", "hpa_st_library_v1", "hpa_item_catalog_v1", "hpa_scan_memory_v1", "hpa_sku_book_v1", "hpa_sku_links_v1", "hpa_sku_defaults_v1", "hpa_av_highlights_v1", "hpa_av_script_v1",
       LS.trucksKey, LS.issuesKey,
       LS.trainingKey, LS.adsKey, LS.labelsKey, LS.availLinkKey, LS.catalogKey, LS.checkinKey,
       LS.availKey, LS.availOrdersKey, LS.availAmountsKey, LS.availSpecOverridesKey,
@@ -10970,7 +11119,7 @@
           else if(k === "photos" && key === LS.catalogKey) renderPhotosTab();
           else if(k === "avail" && (key === LS.availKey || key === LS.availOrdersKey || key === LS.availAmountsKey || key === LS.availSpecOverridesKey)) renderAvailability();
           else if(key === LS.availLinkKey && typeof gsApplyLink === "function") gsApplyLink();
-          else if(k === "avail" && key === "hpa_av_highlights_v1" && window.AvSmart) AvSmart.render();
+          else if(k === "avail" && (key === "hpa_av_highlights_v1" || key === "hpa_av_script_v1") && window.AvSmart) AvSmart.render();
           else if(k === "prebook" && (key === LS.prebookKey || key === LS.tagKey)) renderPrebook();
           else if(k === "ads" && key === LS.adsKey) renderAds();
           else if(k === "dashboard" && window.HPAExtras && [LS.trucksKey, LS.issuesKey, LS.checkinKey, LS.labelsKey].includes(key)) window.HPAExtras.renderDashboard();
