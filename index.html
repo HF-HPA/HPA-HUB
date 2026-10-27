@@ -2109,6 +2109,28 @@
       .navSub{ margin-left:4px; }
       .poTable{ min-width:0; }
     }
+
+    /* Scan check-in: UPC / SKU / Retail verification */
+    .smVerify{ display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin:8px 0 4px; }
+    .smV{ display:inline-flex; align-items:baseline; gap:5px; padding:4px 10px; border-radius:999px; font-size:12.5px; font-weight:700; border:1px solid transparent; }
+    .smV small{ font-weight:500; font-size:11.5px; opacity:.9; }
+    .smV.ok{ background:rgba(43,212,154,.16); color:#0d6b4a; border-color:rgba(22,168,119,.4); }
+    .smV.bad{ background:rgba(224,86,63,.14); color:#a8341f; border-color:rgba(224,86,63,.5); }
+    .smV.na{ background:rgba(0,0,0,.05); color:var(--ink-2); }
+    html[data-theme="dark"] .smV.ok{ color:#7ee8bf; } html[data-theme="dark"] .smV.bad{ color:#ffb4a5; } html[data-theme="dark"] .smV.na{ background:rgba(255,255,255,.06); }
+    .smVerifyActions{ display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+    .smResult .smVerify, .smResult .smVerifyActions, .smResult .smInfoLine{ flex:0 0 100%; width:100%; }
+    .smV{ align-items:center; line-height:1.3; }
+    .smAct{ min-height:42px; padding:8px 14px; border-radius:12px; border:1px solid rgba(224,86,63,.5); background:#fff; color:#a8341f; font-weight:700; font-size:13.5px; cursor:pointer; }
+    .smAct.ghost{ border-color:var(--line); color:var(--ink); background:transparent; }
+    html[data-theme="dark"] .smAct{ background:rgba(255,255,255,.06); color:#ffb4a5; } html[data-theme="dark"] .smAct.ghost{ color:var(--ink); }
+
+    /* Scan check-in: sticker reading */
+    .smOcrToggle{ position:absolute; left:12px; bottom:12px; z-index:3; display:none; padding:7px 12px; border-radius:999px; border:1px solid rgba(255,255,255,.35); background:rgba(0,0,0,.45); color:#fff; font-weight:700; font-size:12.5px; backdrop-filter:blur(6px); cursor:pointer; }
+    .smCam.on .smOcrToggle{ display:inline-flex; }
+    .smOcrToggle.off{ opacity:.7; }
+    .smThumb{ height:54px; max-width:120px; object-fit:cover; border-radius:8px; border:1px solid var(--line); margin-right:4px; }
+    .smReading{ display:inline-flex; align-items:center; gap:8px; font-weight:700; }
   </style>
 </head>
 <body class="density-comfortable atmos">
@@ -8645,8 +8667,8 @@
       trucks.forEach(t => {
         const pu = parseDate(t.pickupDate);
         const puLabel = pu ? pu.toLocaleDateString() : (t.pickupDate || "");
-        (t.vendorBlocks || []).forEach(vb => {
-          (vb.items || []).forEach(it => {
+        (t.vendorBlocks || []).forEach((vb, vIdx) => {
+          (vb.items || []).forEach((it, iIdx) => {
             if(!it || !(it.item || it.qty || it.racks || it.cases)) return;
             const vendor = (vb.name || "").trim();
             const po = (vb.po || "").trim();
@@ -8658,6 +8680,8 @@
             const skuHit = window.SkuBook ? SkuBook.forLine(it) : null;
             rows.push({
               key, vendor, item, po, sku: skuHit ? skuHit.e.sku : "", upc: skuHit ? skuHit.e.upc : "",
+              retail: skuHit && skuHit.e.retail != null && skuHit.e.retail !== "" ? Number(skuHit.e.retail) : null,
+              skuHow: skuHit ? skuHit.how : "", ref: { tid: t.id, v: vIdx, i: iIdx },
               comment: it.notes || "",
               qty: Number(it.qty) || 0,
               cells: {
@@ -12825,6 +12849,7 @@ function out(o){ return ContentService.createTextOutput(JSON.stringify(o)).setMi
             <div class="smCamIdle" id="smCamIdle"><button type="button" class="btn" data-sm="camera">📷 Start camera scanner</button><small>Point at a UPC or PO barcode. Or type a code below.</small></div>
             <button type="button" class="smIcon smCamStop" data-sm="stopcam" aria-label="Stop camera" hidden>■</button>
             <button type="button" class="smIcon smTorch" data-sm="torch" aria-label="Flashlight" hidden>🔦</button>
+            <button type="button" class="smOcrToggle" data-sm="ocr" aria-pressed="true" title="Also read the SKU and price printed on the sticker">🔎 Read sticker: On</button>
           </section>
           <div class="smResult" id="smResult" hidden></div>
           <form class="smCodeRow" id="smCodeForm" autocomplete="off">
@@ -12872,6 +12897,8 @@ function out(o){ return ContentService.createTextOutput(JSON.stringify(o)).setMi
         if(a === "stopcam") return stopCamera();
         if(a === "torch") return toggleTorch();
         if(a === "clearpo"){ poFilter = ""; renderList(); return; }
+        if(a === "vforce" || a === "vflag" || a === "vfix" || a === "vskip"){ resolvePending(a); return; }
+        if(a === "ocr"){ try { localStorage.setItem(OCR_PREF, ocrOn() ? "off" : "on"); } catch(_){} syncOcrBtn(); if(ocrOn() && stream) ocrWorker().catch(() => {}); return; }
         if(a === "undo" && undo){ setRow(undo.key, { checked: undo.prev }); undo = null; showResult("info", "Undone"); renderList(); return; }
         if(a === "photo" && row){ photoFor = row.dataset.smRow; el.querySelector("#smPhoto").click(); return; }
         if(row && !t.closest("button")){ const k = row.dataset.smRow; const cur = !!(state()[k] || {}).checked; setRow(k, { checked: !cur }); buzz(cur ? 15 : [20, 40, 20]); renderList(); }
@@ -12881,11 +12908,13 @@ function out(o){ return ContentService.createTextOutput(JSON.stringify(o)).setMi
         const vals = [r.item, r.po, ...Object.values(r.cells || {}).map(v => (v instanceof Date) ? "" : String(v ?? ""))].map(norm).filter(Boolean);
         return vals.some(v => v === c || (c0.length >= 6 && strip0(v) === c0) || (c.length >= 6 && v.split(/[^a-z0-9]+/).some(tok => tok === c || (c0.length >= 6 && strip0(tok) === c0))));
       }
-      function handleCode(code, source){
+      function handleCode(code, source, box){
         code = String(code).trim();
         const now = Date.now();
+        if(source === "camera" && (busy || pending)) return;                            // still reading the last sticker / waiting on a decision
         if(source === "camera" && code === lastCode && now - lastAt < 2500) return;   // same barcode still in view
         lastCode = code; lastAt = now;
+        const frame = source === "camera" && ocrOn() ? grabFrame(box) : null;       // the sticker, exactly as it was when the barcode read
         const all = rows();
         const poHits = all.filter(r => r.po && (norm(r.po) === norm(code) || strip0(norm(r.po)) === strip0(norm(code))));
         if(poHits.length){ poFilter = poHits[0].po; filter = "all"; beep(660); buzz(30); showResult("info", `PO ${escapeHtml(poHits[0].po)} · ${poHits.length} line${poHits.length === 1 ? "" : "s"} — tap each one as it comes off the truck.`); renderList(); return; }
@@ -12896,12 +12925,12 @@ function out(o){ return ContentService.createTextOutput(JSON.stringify(o)).setMi
           const st0 = state();
           if(res.hits.every(r => (st0[r.key] || {}).checked)){
             const open = rankRows(all, res.info).filter(r => !(st0[r.key] || {}).checked && !res.hits.includes(r));
-            if(open.length && !pick) return openPicker(code, res.info, open);
+            if(open.length && !pick) return openPicker(code, res.info, open, frame);
           }
         }
-        if(res.hits.length) return checkHits(res.hits, res.info, res.how);
+        if(res.hits.length) return checkHits(res.hits, res.info, res.how, code, frame);
         if(pick) return;                          // a question is already open
-        openPicker(code, res.info, res.candidates);
+        openPicker(code, res.info, res.candidates, frame);
       }
       /* ---- smarter matching: learned barcodes + item list (UPC/SKU) ---- */
       const MEM_KEY = "hpa_scan_memory_v1";
@@ -12947,8 +12976,8 @@ function out(o){ return ContentService.createTextOutput(JSON.stringify(o)).setMi
       }
       const infoLine = (info) => info ? `<span class="smInfoLine">${escapeHtml(info.desc)}${info.sku ? ` · SKU ${escapeHtml(info.sku)}` : ""}${info.retail ? ` · $${Number(info.retail).toFixed(2)}` : ""}</span>` : "";
       let pick = null;
-      function openPicker(code, info, candidates){
-        pick = { code, info, candidates: candidates || [], q: "" };
+      function openPicker(code, info, candidates, frame){
+        pick = { code, info, candidates: candidates || [], q: "", frame: frame || null };
         beep(520, .15); buzz([30, 50, 30]);
         renderPicker();
       }
@@ -12979,18 +13008,209 @@ function out(o){ return ContentService.createTextOutput(JSON.stringify(o)).setMi
         const M = mem();
         M[codeKey(pick.code)] = { k: skuKey(r.item), label: r.item, desc: pick.info ? pick.info.desc : "", by: (getUser() && getUser().name) || "", at: Date.now() };
         LS.set(MEM_KEY, M);
-        const info = pick.info; pick = null; renderPicker();
-        checkHits([r], info, "learned now");
+        const info = pick.info, code = pick.code, frame = pick.frame; pick = null; renderPicker();
+        checkHits([r], info, "learned now", code, frame);
       }
-      function checkHits(hits, info, how){
+      /* ---- sticker reading: free on-device text recognition (Tesseract.js) ---- */
+      const OCR_PREF = "hpa_scan_ocr";                 // per device: on (default) | off
+      const ocrOn = () => { try { return localStorage.getItem(OCR_PREF) !== "off"; } catch(_){ return true; } };
+      let ocrWorkerP = null, busy = false;
+      function ocrWorker(){
+        if(ocrWorkerP) return ocrWorkerP;
+        ocrWorkerP = (async () => {
+          if(!window.Tesseract) await new Promise((res, rej) => { const sc = document.createElement("script"); sc.src = "https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"; sc.onload = res; sc.onerror = () => rej(new Error("Couldn't load the sticker reader (offline?)")); document.head.appendChild(sc); });
+          const w = await Tesseract.createWorker("eng");
+          await w.setParameters({ tessedit_pageseg_mode: "11" });   // sparse text: stickers are scattered bits of text
+          return w;
+        })();
+        ocrWorkerP.catch(() => { ocrWorkerP = null; });
+        return ocrWorkerP;
+      }
+      function grabFrame(box){
+        const v = el && el.querySelector("#smVideo");
+        if(!v || v.readyState < 2 || !v.videoWidth) return null;
+        const W = v.videoWidth, H = v.videoHeight;
+        let x = 0, y = 0, w = W, h = H;
+        if(box && box.width > 20){
+          // the sticker surrounds the barcode — take a generous area around it (price/SKU sit above or below)
+          const cx = box.x + box.width / 2, cy = box.y + box.height / 2;
+          w = Math.min(W, box.width * 2.4); h = Math.min(H, Math.max(box.height * 5, box.width * 1.7));
+          x = Math.max(0, Math.min(W - w, cx - w / 2)); y = Math.max(0, Math.min(H - h, cy - h / 2));
+        }
+        const scale = Math.min(2.5, Math.max(1, 1400 / w));
+        const c = document.createElement("canvas"); c.width = Math.round(w * scale); c.height = Math.round(h * scale);
+        const g = c.getContext("2d", { willReadFrequently:true });
+        g.drawImage(v, x, y, w, h, 0, 0, c.width, c.height);
+        const img = g.getImageData(0, 0, c.width, c.height), d = img.data;
+        let lo = 255, hi = 0;
+        for(let i = 0; i < d.length; i += 4){ const L = d[i] * 0.3 + d[i + 1] * 0.59 + d[i + 2] * 0.11; d[i] = L; if(L < lo) lo = L; if(L > hi) hi = L; }
+        const span = Math.max(40, hi - lo);
+        for(let i = 0; i < d.length; i += 4){ const L = Math.max(0, Math.min(255, (d[i] - lo) * 255 / span)); d[i] = d[i + 1] = d[i + 2] = L; }
+        g.putImageData(img, 0, 0);
+        return c;
+      }
+      async function ocrFrame(canvas){
+        const t0 = document.createElement("canvas"), k = Math.min(1, 220 / canvas.width);
+        t0.width = Math.round(canvas.width * k); t0.height = Math.round(canvas.height * k); t0.getContext("2d").drawImage(canvas, 0, 0, t0.width, t0.height);
+        const thumb = t0.toDataURL("image/jpeg", 0.7);
+        try {
+          const w = await ocrWorker();
+          const r = await Promise.race([w.recognize(canvas), new Promise((_, rej) => setTimeout(() => rej(new Error("Sticker read timed out")), 9000))]);
+          return { text: (r && r.data && r.data.text) || "", thumb };
+        } catch(e){ return { text: "", thumb, err: (e && e.message) || "Couldn't read the sticker" }; }
+      }
+      // Pull the SKU and the price out of whatever text the camera read.
+      function readSticker(stk, exp, upc){
+        const out = { sku:"", price:null, skuOk:null, priceOk:null, skuWhy:"", priceWhy:"" };
+        if(!stk || !stk.text) { out.skuWhy = out.priceWhy = stk && stk.err ? stk.err : "No text found on the sticker"; return out; }
+        // common OCR slips inside numbers: O→0, l/I/|→1, S→5, B→8
+        const t = stk.text.replace(/(?<=\d)[Oo]|[Oo](?=\d)/g, "0").replace(/(?<=\d)[lI|]|[lI|](?=\d)/g, "1").replace(/(?<=\d)S(?=\d)/g, "5").replace(/(?<=\d)B(?=\d)/g, "8");
+        const flat = t.replace(/\s+/g, " ");
+        // price: $12.98 / 12.98 / 12,98
+        const prices = [...flat.matchAll(/(\$)?\s?(\d{1,3})\s?[.,]\s?(\d{2})(?!\d)/g)].map(m => ({ v: Number(m[2] + "." + m[3]), dollar: !!m[1] })).filter(p => p.v > 0 && p.v < 1000);
+        if(exp.retail != null){
+          const hit = prices.find(p => Math.abs(p.v - exp.retail) < 0.005);
+          if(hit){ out.price = hit.v; out.priceOk = true; }
+          else if(prices.length){ const p = prices.find(x => x.dollar) || prices[0]; out.price = p.v; out.priceOk = false; }
+          else out.priceWhy = "Couldn't find a price on the sticker";
+        } else if(prices.length){ out.price = (prices.find(x => x.dollar) || prices[0]).v; out.priceWhy = "This line has no retail on file to compare"; }
+        // SKU: a 6–10 digit number that isn't part of the UPC
+        const upcD = String(upc || "").replace(/\D+/g, "");
+        const allDigits = flat.replace(/[^0-9]/g, "");
+        const runs = [...flat.matchAll(/(?<!\d)\d{6,10}(?!\d)/g)].map(m => m[0]).filter(r => !(upcD && upcD.length >= 11 && upcD.includes(r)));
+        if(exp.sku){
+          const want = String(exp.sku).replace(/\D+/g, "");
+          if(runs.includes(want) || (want.length >= 6 && allDigits.replace(upcD, "").includes(want))){ out.sku = exp.sku; out.skuOk = true; }
+          else {
+            const same = runs.filter(r => r.length === want.length);          // only compare numbers shaped like a SKU
+            if(same.length){ out.sku = same[0]; out.skuOk = false; }
+            else out.skuWhy = "Couldn't find the SKU on the sticker";
+          }
+        } else if(runs.length){ out.sku = runs[0]; out.skuWhy = "This line has no SKU on file to compare"; }
+        return out;
+      }
+
+      /* ---- verification: the scanned plant's UPC, SKU and retail must match the line ---- */
+      const dg = (v) => strip0(String(v ?? "").replace(/\D+/g, ""));
+      const money = (n) => n == null || isNaN(n) ? "" : "$" + Number(n).toFixed(2);
+      function expectedFor(r){
+        const cell = (re) => { const h = Object.keys(r.cells || {}).find(k => re.test(k.trim())); return h ? String(r.cells[h] ?? "").trim() : ""; };
+        const upc = r.upc || cell(/^(upc|upc code|customer item|upc #)$/i);
+        const sku = r.sku || cell(/^(sku|sku #|item ?#|item number)$/i);
+        // Retail comes from the item list (Customer Item Export — the system the stickers are printed from).
+        // The Homestead SKU/Cost file's retail is only a fallback; the two disagree on some SKUs.
+        let retail = null;
+        if(sku && window.ItemCatalog){ const e = ItemCatalog.lookup(sku); if(e && dg(e.sku) === dg(sku) && Number(e.retail) > 0) retail = Number(e.retail); }
+        const fileRetail = r.retail != null && Number(r.retail) > 0 ? Number(r.retail) : (Number(String(cell(/retail/i)).replace(/[^0-9.]/g, "")) || null);
+        if(retail == null) retail = fileRetail;
+        return { upc, sku, retail, fileRetail };
+      }
+      function verify(r, info, code, sticker){
+        const exp = expectedFor(r), scanned = dg(code);
+        const got = {
+          upc: info && info.upc ? String(info.upc) : (scanned.length >= 11 ? String(code).trim() : ""),
+          sku: info && info.sku ? String(info.sku) : (exp.sku && scanned && scanned === dg(exp.sku) ? exp.sku : ""),
+          retail: info && Number(info.retail) > 0 ? Number(info.retail) : null
+        };
+        const same = (a, b) => (!a || !b) ? null : dg(a) === dg(b);
+        const skuOk = same(exp.sku, got.sku);
+        // a SKU can carry more than one UPC: the scanned UPC counts if it's registered to the line's SKU
+        let upcOk = same(exp.upc, got.upc);
+        if(upcOk === false && skuOk === true) upcOk = true;
+        if(upcOk === null && got.upc && skuOk === true) upcOk = true;
+        if(upcOk === null && got.upc && exp.sku && skuOk === false) upcOk = false;
+        const retailOk = (exp.retail == null || got.retail == null) ? null : Math.abs(exp.retail - got.retail) < 0.005;
+        const checks = [
+          { k:"UPC", ok: upcOk, exp: exp.upc, got: got.upc },
+          { k:"SKU", ok: skuOk, exp: exp.sku, got: got.sku },
+          { k:"Retail", ok: retailOk, exp: money(exp.retail), got: money(got.retail) }
+        ];
+        if(sticker){
+          const rd = readSticker(sticker, exp, got.upc || code);
+          checks.push({ k:"Sticker SKU", ok: rd.skuOk, exp: exp.sku, got: rd.sku, sticker:true, why: rd.skuWhy });
+          let pWhy = rd.priceWhy;
+          if(rd.priceOk === false && exp.fileRetail != null && rd.price != null && Math.abs(rd.price - exp.fileRetail) < 0.005 && Math.abs(exp.fileRetail - exp.retail) >= 0.005)
+            pWhy = `Sticker shows ${money(rd.price)} — the Homestead SKU/Cost file's price — but the item list says ${money(exp.retail)}`;
+          checks.push({ k:"Sticker $", ok: rd.priceOk, exp: money(exp.retail), got: money(rd.price), sticker:true, why: pWhy });
+        }
+        return { checks, bad: checks.some(c => c.ok === false), unknown: checks.filter(c => c.ok === null).length, exp, got, thumb: sticker && sticker.thumb, stickerErr: sticker && sticker.err };
+      }
+      function verifyHtml(v){
+        return `<div class="smVerify">${v.thumb ? `<img class="smThumb" src="${v.thumb}" alt="What the camera read">` : ""}${v.checks.map(c => `<span class="smV ${c.ok === true ? "ok" : c.ok === false ? "bad" : "na"}" title="${escapeHtml(c.why || (c.ok === null ? (c.exp ? "Scanned item isn't in the item list" : "Not on file for this line") : `Line: ${c.exp || "—"} · ${c.sticker ? "Sticker" : "Scanned"}: ${c.got || "—"}`))}">${c.ok === true ? "✓" : c.ok === false ? "✕" : "–"} ${c.k}${c.ok === false ? `<small>line ${escapeHtml(c.exp || "—")} · ${c.sticker ? "sticker" : "scanned"} ${escapeHtml(c.got || "—")}</small>` : c.ok === true && c.k === "Retail" ? ` <small>${escapeHtml(c.exp)}</small>` : c.ok === null && c.sticker ? ` <small>couldn't read</small>` : ""}</span>`).join("")}${v.stickerErr ? `<span class="smV na">${escapeHtml(v.stickerErr)}</span>` : ""}</div>`;
+      }
+      let pending = null;   // a scan that didn't match, waiting for a decision
+      async function checkHits(hits, info, how, code, frame, stickerPre){
+        let sticker = stickerPre || null;
+        if(!sticker && frame){
+          busy = true;
+          showResult("info", `<span class="smReading">🔎 Reading the sticker…</span>`, true);
+          try { sticker = await ocrFrame(frame); } finally { busy = false; }
+        }
         const st = state();
         const target = hits.find(r => !(st[r.key] || {}).checked) || hits[0];
-        if((st[target.key] || {}).checked){ beep(440); buzz(40); showResult("warn", `Already checked in: <b>${escapeHtml(target.item || "line")}</b>${hits.length > 1 ? ` (all ${hits.length} matching lines are done)` : ""}${info ? "<br>" + infoLine(info) : ""}`); highlight(target.key); return; }
+        const v = verify(target, info, code != null ? code : lastCode, sticker);
+        if((st[target.key] || {}).checked){ beep(440); buzz(40); showResult("warn", `Already checked in: <b>${escapeHtml(target.item || "line")}</b>${hits.length > 1 ? ` (all ${hits.length} matching lines are done)` : ""}${verifyHtml(v)}${info ? infoLine(info) : ""}`); highlight(target.key); return; }
+        if(v.bad){
+          pending = { key: target.key, row: target, info, how, code: code != null ? code : lastCode, v, sticker };
+          beep(300, .35); buzz([80, 60, 80, 60, 80]);
+          const canFix = mode === "homestead" && target.ref && v.got.sku && v.checks[1].ok === false && window.SkuBook && SkuBook.book().bySku.has(String(v.got.sku));   // only SKUs still on the active list
+          showResult("err", `✕ Doesn't match <b>${escapeHtml(target.item || "line")}</b> · ${escapeHtml(target.vendor || "")}${target.po ? " · PO " + escapeHtml(target.po) : ""}
+            ${verifyHtml(v)}${info ? infoLine(info) : ""}
+            <div class="smVerifyActions">
+              <button type="button" class="smAct" data-sm="vflag">⚠ Flag label error</button>
+              ${canFix ? `<button type="button" class="smAct" data-sm="vfix" title="This line's SKU was ${escapeHtml(target.skuHow === "auto" ? "auto-matched" : "set")} to ${escapeHtml(v.exp.sku)} — switch it to the scanned SKU">Use scanned SKU ${escapeHtml(v.got.sku)}</button>` : ""}
+              <button type="button" class="smAct ghost" data-sm="vforce">Check in anyway</button>
+              <button type="button" class="smAct ghost" data-sm="vskip">Skip</button>
+            </div>`, true);
+          highlight(target.key);
+          return;
+        }
+        pending = null;
         undo = { key: target.key, prev: false };
         setRow(target.key, { checked: true });
         beep(880); buzz([20, 40, 20]);
-        showResult("ok", `✓ Checked in <b>${escapeHtml(target.item || "line")}</b> · ${escapeHtml(target.vendor || "")}${target.qty ? ` · ${Number(target.qty).toLocaleString()}` : ""}${how === "learned now" ? " · barcode saved" : ""} <button type="button" class="smUndo" data-sm="undo">Undo</button>${info ? "<br>" + infoLine(info) : ""}`);
+        showResult("ok", `✓ Checked in <b>${escapeHtml(target.item || "line")}</b> · ${escapeHtml(target.vendor || "")}${target.qty ? ` · ${Number(target.qty).toLocaleString()}` : ""}${how === "learned now" ? " · barcode saved" : ""} <button type="button" class="smUndo" data-sm="undo">Undo</button>${verifyHtml(v)}${info ? infoLine(info) : ""}`);
         renderList(); highlight(target.key);
+      }
+      function mismatchText(v){ return v.checks.filter(c => c.ok === false).map(c => `${c.k} line ${c.exp || "—"} vs scanned ${c.got || "—"}`).join("; "); }
+      function resolvePending(action){
+        const pd = pending; if(!pd) return;
+        pending = null;
+        const who = (getUser() && getUser().name) || "Unknown", today = fmtDate(new Date());
+        if(action === "vskip"){ showResult("info", "Skipped — nothing checked in"); return; }
+        if(action === "vforce"){
+          undo = { key: pd.key, prev: false };
+          setRow(pd.key, { checked: true });
+          appendIssueNoteToCheckin(wk, pd.key, `Scan mismatch checked in anyway by ${who}: ${mismatchText(pd.v)}`);
+          beep(660); buzz(30);
+          showResult("warn", `Checked in <b>${escapeHtml(pd.row.item || "line")}</b> despite the mismatch — noted on the line. <button type="button" class="smUndo" data-sm="undo">Undo</button>`);
+          renderList(); highlight(pd.key); return;
+        }
+        if(action === "vflag"){
+          const r = pd.row, truckId = window.HPALinks ? HPALinks.truckIdForCheckinRow(r, wk) : "";
+          const t = truckId ? loadTrucks().find(x => x.id === truckId) : null;
+          const note = `Label/item mismatch at check-in (scanned ${pd.code}): ${mismatchText(pd.v)}`;
+          const issues = loadIssues();
+          issues.push({ id: cryptoRandomId(), date: today, status:"Open", type:"Label Error", vendor: r.vendor || "", truckId: truckId || "",
+            truckLabel: t ? `${t.pickupDate} • ${t.region || "—"} • ${orderTypeLabel(t.orderType || "CC")}` : "", item: r.item || "", notes: note,
+            photoId:"", photoDataUrl:"", checkinWeek: wk, checkinRowKey: r.key, checkinMode: mode,
+            createdAt: new Date().toISOString(), history:[{ date: today, status:"Open", user: who }] });
+          saveIssues(issues); markTabChanged("issues");
+          setRow(pd.key, { hasIssue: true });
+          appendIssueNoteToCheckin(wk, pd.key, note); markTabChanged("checkin");
+          beep(660); buzz(40);
+          showResult("warn", `⚠ Label error logged for <b>${escapeHtml(r.item || "line")}</b>. Not checked in.`);
+          renderList(); highlight(pd.key); return;
+        }
+        if(action === "vfix"){
+          const trucks = loadTrucks(), t = trucks.find(x => x.id === pd.row.ref.tid);
+          const it = t && t.vendorBlocks?.[pd.row.ref.v]?.items?.[pd.row.ref.i];
+          if(!it){ showResult("err", "Couldn't find that line on the order any more."); return; }
+          it.sku = String(pd.v.got.sku);
+          saveTrucks(trucks); markTabChanged("order");
+          const fresh = rows().find(x => x.key === pd.key) || pd.row;
+          checkHits([fresh], pd.info, pd.how, pd.code, null, pd.sticker);
+        }
       }
       function renderInfo(){
         const box = el.querySelector("#smInfoPanel");
@@ -13009,10 +13229,10 @@ function out(o){ return ContentService.createTextOutput(JSON.stringify(o)).setMi
       }
       function highlight(key){ const r = el.querySelector(`[data-sm-row="${CSS.escape(key)}"]`); if(r){ r.scrollIntoView({ block:"center", behavior:"smooth" }); r.classList.remove("smPulse"); void r.offsetWidth; r.classList.add("smPulse"); } }
       let resultT = null;
-      function showResult(kind, html){
+      function showResult(kind, html, sticky){
         const box = el.querySelector("#smResult");
         box.className = "smResult " + kind; box.innerHTML = html; box.hidden = false;
-        clearTimeout(resultT); resultT = setTimeout(() => { box.hidden = true; }, kind === "ok" ? 6000 : 8000);
+        clearTimeout(resultT); if(!sticky) resultT = setTimeout(() => { box.hidden = true; }, kind === "ok" ? 6000 : 8000);
       }
       function renderList(){
         const all = rows(), st = state();
@@ -13061,6 +13281,7 @@ function out(o){ return ContentService.createTextOutput(JSON.stringify(o)).setMi
         renderList();
       }
       /* ---- camera ---- */
+      function syncOcrBtn(){ const b = el && el.querySelector('[data-sm="ocr"]'); if(b){ const on = ocrOn(); b.textContent = `🔎 Read sticker: ${on ? "On" : "Off"}`; b.setAttribute("aria-pressed", on ? "true" : "false"); b.classList.toggle("off", !on); } }
       async function startCamera(){
         if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){ showResult("err", "This browser can't use the camera here (it needs the https app link). You can still type or use a Bluetooth scanner."); return; }
         try {
@@ -13070,6 +13291,8 @@ function out(o){ return ContentService.createTextOutput(JSON.stringify(o)).setMi
         v.srcObject = stream; await v.play().catch(() => {});
         el.querySelector("#smCam").classList.add("on");
         el.querySelector("#smCamIdle").hidden = true;
+        syncOcrBtn();
+        if(ocrOn()) ocrWorker().catch(() => {});   // warm the sticker reader up while you aim
         el.querySelector('[data-sm="stopcam"]').hidden = false;
         const track = stream.getVideoTracks()[0];
         try { if(track.getCapabilities && track.getCapabilities().torch) el.querySelector('[data-sm="torch"]').hidden = false; } catch(_){}
@@ -13083,13 +13306,18 @@ function out(o){ return ContentService.createTextOutput(JSON.stringify(o)).setMi
         try {
           if(!window.ZXing) await new Promise((res, rej) => { const s = document.createElement("script"); s.src = "https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js"; s.onload = res; s.onerror = () => rej(new Error("scanner library didn't load")); document.head.appendChild(s); });
           zxing = new ZXing.BrowserMultiFormatReader();
-          zxing.decodeFromStream(stream, v, (result) => { if(result) handleCode(result.getText(), "camera"); });
+          zxing.decodeFromStream(stream, v, (result) => {
+            if(!result) return;
+            let box = null;
+            try { const pts = result.getResultPoints() || []; if(pts.length){ const xs = pts.map(p => p.getX()), ys = pts.map(p => p.getY()); const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys); box = { x: x0, y: y0 - 30, width: Math.max(60, x1 - x0), height: Math.max(60, y1 - y0 + 60) }; } } catch(_){}
+            handleCode(result.getText(), "camera", box);
+          });
         } catch(err){ showResult("err", "Couldn't start the barcode reader: " + escapeHtml(err.message) + ". Typing codes still works."); }
       }
       async function nativeLoop(v){
         while(loopOn && detector){
           try {
-            if(v.readyState >= 2){ const found = await detector.detect(v); if(found && found.length) handleCode(found[0].rawValue, "camera"); }
+            if(v.readyState >= 2){ const found = await detector.detect(v); if(found && found.length) handleCode(found[0].rawValue, "camera", found[0].boundingBox); }
           } catch(_){}
           await new Promise(r => setTimeout(r, 180));
         }
@@ -13139,7 +13367,7 @@ function out(o){ return ContentService.createTextOutput(JSON.stringify(o)).setMi
       }
       document.addEventListener("keydown", (e) => { if(e.key === "Escape" && el && el.classList.contains("active")) close(); });
       document.addEventListener("visibilitychange", () => { if(document.hidden && stream) stopCamera(); });
-      return { open, close, handleCode, get open_(){ return !!(el && el.classList.contains("active")); } };
+      return { open, close, handleCode, get open_(){ return !!(el && el.classList.contains("active")); }, _sticker: { readSticker, ocrFrame } };
     })();
     window.ScanMode = ScanMode;
     document.getElementById("checkinScanBtn")?.addEventListener("click", () => ScanMode.open());
