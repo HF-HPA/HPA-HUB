@@ -13020,73 +13020,167 @@ function out(o){ return ContentService.createTextOutput(JSON.stringify(o)).setMi
         ocrWorkerP = (async () => {
           if(!window.Tesseract) await new Promise((res, rej) => { const sc = document.createElement("script"); sc.src = "https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"; sc.onload = res; sc.onerror = () => rej(new Error("Couldn't load the sticker reader (offline?)")); document.head.appendChild(sc); });
           const w = await Tesseract.createWorker("eng");
-          await w.setParameters({ tessedit_pageseg_mode: "11" });   // sparse text: stickers are scattered bits of text
           return w;
         })();
         ocrWorkerP.catch(() => { ocrWorkerP = null; });
         return ocrWorkerP;
       }
+      // Sticker text reads best at a modest size, without the barcode stripes and without the
+      // background around the sticker — so: grab the area around the barcode, white-out the
+      // barcode itself, trim to the bright sticker, and hand the reader a few small versions.
+      function grayStretch(c){
+        const g = c.getContext("2d", { willReadFrequently:true });
+        const img = g.getImageData(0, 0, c.width, c.height), d = img.data;
+        const hist = new Array(256).fill(0);
+        for(let i = 0; i < d.length; i += 4){ const L = Math.round(d[i] * 0.3 + d[i + 1] * 0.59 + d[i + 2] * 0.11); d[i] = L; hist[L]++; }
+        const total = d.length / 4; let acc = 0, lo = 0, hi = 255;
+        for(let k = 0; k < 256; k++){ acc += hist[k]; if(acc >= total * 0.02){ lo = k; break; } }
+        acc = 0; for(let k = 255; k >= 0; k--){ acc += hist[k]; if(acc >= total * 0.02){ hi = k; break; } }
+        const span = Math.max(40, hi - lo);
+        for(let i = 0; i < d.length; i += 4){ const L = Math.max(0, Math.min(255, (d[i] - lo) * 255 / span)); d[i] = d[i + 1] = d[i + 2] = L; }
+        g.putImageData(img, 0, 0);
+      }
+      function brightBox(c, near){
+        // bounding box of the bright (paper) area that contains the barcode
+        const g = c.getContext("2d", { willReadFrequently:true }), W = c.width, H = c.height;
+        const d = g.getImageData(0, 0, W, H).data;
+        const cols = new Array(W).fill(0), rows = new Array(H).fill(0);
+        for(let y = 0; y < H; y += 2) for(let x = 0; x < W; x += 2){ if(d[(y * W + x) * 4] > 190){ cols[x]++; rows[y]++; } }
+        const colMin = H / 2 * 0.18, rowMin = W / 2 * 0.18;
+        const grow = (arr, from, min) => { let a = from, b = from; while(a > 0 && (arr[a - 1] >= min || arr[a - 2] >= min)) a--; while(b < arr.length - 1 && (arr[b + 1] >= min || arr[b + 2] >= min)) b++; return [a, b]; };
+        const cx = Math.round(near.x + near.width / 2) & ~1, cy = Math.round(near.y + near.height / 2) & ~1;
+        const [x0, x1] = grow(cols, Math.min(W - 1, cx), colMin), [y0, y1] = grow(rows, Math.min(H - 1, cy), rowMin);
+        const bw = x1 - x0, bh = y1 - y0;
+        if(bw < near.width * 0.9 || bw > W * 0.98 && bh > H * 0.98) return null;          // didn't find a sticker edge — use the whole area
+        return { x: Math.max(0, x0 - 6), y: Math.max(0, y0 - 6), w: Math.min(W, bw + 12), h: Math.min(H, bh + 12) };
+      }
+      function scaled(src, sx, sy, sw, sh, targetW){
+        const k = targetW / sw, o = document.createElement("canvas");
+        o.width = Math.max(1, Math.round(sw * k)); o.height = Math.max(1, Math.round(sh * k));
+        const g = o.getContext("2d"); g.imageSmoothingQuality = "high";
+        g.fillStyle = "#fff"; g.fillRect(0, 0, o.width, o.height);
+        g.drawImage(src, sx, sy, sw, sh, 0, 0, o.width, o.height);
+        return o;
+      }
       function grabFrame(box){
         const v = el && el.querySelector("#smVideo");
         if(!v || v.readyState < 2 || !v.videoWidth) return null;
         const W = v.videoWidth, H = v.videoHeight;
-        let x = 0, y = 0, w = W, h = H;
+        const base = document.createElement("canvas"); base.width = W; base.height = H;
+        base.getContext("2d", { willReadFrequently:true }).drawImage(v, 0, 0, W, H);
+        grayStretch(base);
+        const variants = [];
+        let thumbSrc = base, tb = { x:0, y:0, w:W, h:H };
         if(box && box.width > 20){
-          // the sticker surrounds the barcode — take a generous area around it (price/SKU sit above or below)
+          // white-out the bars (keeps the reader from seeing them as text)
+          const g = base.getContext("2d"); g.fillStyle = "#fff";
+          g.fillRect(box.x - box.width * 0.04, box.y - box.height * 0.08, box.width * 1.08, box.height * 1.16);
           const cx = box.x + box.width / 2, cy = box.y + box.height / 2;
-          w = Math.min(W, box.width * 2.4); h = Math.min(H, Math.max(box.height * 5, box.width * 1.7));
-          x = Math.max(0, Math.min(W - w, cx - w / 2)); y = Math.max(0, Math.min(H - h, cy - h / 2));
+          const w = Math.min(W, box.width * 3.2), h = Math.min(H, Math.max(box.height * 7, box.width * 2.4));
+          const x = Math.max(0, Math.min(W - w, cx - w / 2)), y = Math.max(0, Math.min(H - h, cy - h / 2));
+          const area = scaled(base, x, y, w, h, w);
+          const bb = brightBox(area, { x: box.x - x, y: box.y - y, width: box.width, height: box.height }) || { x:0, y:0, w: area.width, h: area.height };
+          tb = { x: x + bb.x, y: y + bb.y, w: bb.w, h: bb.h };
+          [420, 620, 300].forEach(tw => variants.push(scaled(base, tb.x, tb.y, tb.w, tb.h, tw)));
         }
-        const scale = Math.min(2.5, Math.max(1, 1400 / w));
-        const c = document.createElement("canvas"); c.width = Math.round(w * scale); c.height = Math.round(h * scale);
-        const g = c.getContext("2d", { willReadFrequently:true });
-        g.drawImage(v, x, y, w, h, 0, 0, c.width, c.height);
-        const img = g.getImageData(0, 0, c.width, c.height), d = img.data;
-        let lo = 255, hi = 0;
-        for(let i = 0; i < d.length; i += 4){ const L = d[i] * 0.3 + d[i + 1] * 0.59 + d[i + 2] * 0.11; d[i] = L; if(L < lo) lo = L; if(L > hi) hi = L; }
-        const span = Math.max(40, hi - lo);
-        for(let i = 0; i < d.length; i += 4){ const L = Math.max(0, Math.min(255, (d[i] - lo) * 255 / span)); d[i] = d[i + 1] = d[i + 2] = L; }
-        g.putImageData(img, 0, 0);
-        return c;
+        [900, 1300].forEach(tw => variants.push(scaled(base, 0, 0, W, H, tw)));          // whole picture, last resort
+        const thumb = scaled(thumbSrc, tb.x, tb.y, tb.w, tb.h, 220);
+        return { variants, thumb };
       }
-      async function ocrFrame(canvas){
-        const t0 = document.createElement("canvas"), k = Math.min(1, 220 / canvas.width);
-        t0.width = Math.round(canvas.width * k); t0.height = Math.round(canvas.height * k); t0.getContext("2d").drawImage(canvas, 0, 0, t0.width, t0.height);
-        const thumb = t0.toDataURL("image/jpeg", 0.7);
+      // Reads the sticker several ways (sizes × layouts) and stops as soon as it has found what the
+      // line expects; everything read is pooled, so one clear read of each number is enough.
+      async function ocrFrame(frame, exp){
+        if(frame && frame.getContext) frame = { variants: [frame], thumb: frame };
+        const thumb = frame.thumb ? frame.thumb.toDataURL("image/jpeg", 0.7) : "";
+        const started = Date.now();
+        let text = "";
         try {
           const w = await ocrWorker();
-          const r = await Promise.race([w.recognize(canvas), new Promise((_, rej) => setTimeout(() => rej(new Error("Sticker read timed out")), 9000))]);
-          return { text: (r && r.data && r.data.text) || "", thumb };
-        } catch(e){ return { text: "", thumb, err: (e && e.message) || "Couldn't read the sticker" }; }
+          const read = async (c, psm) => {
+            await w.setParameters({ tessedit_pageseg_mode: psm });
+            const r = await Promise.race([w.recognize(c), new Promise((_, rej) => setTimeout(() => rej(new Error("Sticker read timed out")), 6000))]);
+            return (r && r.data && r.data.text) || "";
+          };
+          const want = exp || {};
+          const done = () => {
+            const q = stickerBits(text), digits = text.replace(/\D+/g, "");
+            const skuDone = want.sku ? digits.includes(String(want.sku).replace(/\D+/g, "")) : q.skus.length > 0;
+            const priceDone = want.retail != null ? q.prices.some(p => Math.abs(p.v - want.retail) < 0.005) : q.prices.length > 0;
+            return skuDone && priceDone;
+          };
+          // also stop when two reads in a row agree on a price and a SKU (that's a confident "different")
+          const upcD = String(want.upc || "").replace(/\D+/g, "");
+          const sig = (t) => {
+            const q = stickerBits(t), sk = q.skus.filter(x => !(upcD.length >= 11 && upcD.includes(x.d))), pr = q.prices.filter(p => p.dollar);
+            return pr.length && sk.length ? pr[0].v + "|" + sk[0].d : "";
+          };
+          let lastSig = "", passes = 0;
+          for(const c of frame.variants){
+            for(const psm of ["3", "11"]){
+              const t = await read(c, psm).catch(() => "");
+              text += "\n" + t; passes++;
+              if(done() || Date.now() - started > 9000) return { text, thumb, passes };
+              const sg = sig(t);
+              if(sg && sg === lastSig) return { text, thumb, passes };
+              if(sg) lastSig = sg;
+            }
+          }
+          return { text, thumb };
+        } catch(e){ return { text, thumb, err: (e && e.message) || "Couldn't read the sticker" }; }
       }
-      // Pull the SKU and the price out of whatever text the camera read.
+      // Find prices and SKU-shaped numbers in raw sticker text.
+      //  Prices: anything with a $ (OCR often drops the dot: "$1298" = $12.98, or reads $ as S).
+      //  SKUs:   ###### · ###-### · ########## · ####-###-###
+      function stickerBits(raw){
+        let t = String(raw || "");
+        // common OCR slips next to digits: O→0, l/I/|→1, B→8; a $ read as "S" right before a price
+        t = t.replace(/(?<=\d)[Oo]|[Oo](?=\d)/g, "0").replace(/(?<=\d)[lI|]|[lI|](?=\d)/g, "1").replace(/(?<=\d)B(?=\d)/g, "8");
+        t = t.replace(/(^|[^A-Za-z0-9])S\s?(?=\d{1,3}[.,]\d{2}(?!\d))/g, "$1$$");
+        const flat = t.replace(/[ \t]+/g, " ");
+        const prices = [];
+        for(const m of flat.matchAll(/\$\s?(\d{1,3})(?:\s?[.,·:]\s?(\d{2})|\s?(\d{2}))?(?![\d])/g)){
+          const dollars = m[1], cents = m[2] || m[3];
+          let v;
+          if(cents) v = Number(dollars + "." + cents);
+          else if(dollars.length >= 3) v = Number(dollars.slice(0, -2) + "." + dollars.slice(-2));   // "$998" → 9.98
+          else v = Number(dollars);
+          if(v > 0 && v < 1000) prices.push({ v, dollar:true });
+        }
+        if(!prices.length){
+          for(const m of flat.matchAll(/(?<![\d.,])(\d{1,3})[.,](\d{2})(?![\d])/g)){ const v = Number(m[1] + "." + m[2]); if(v > 0 && v < 1000) prices.push({ v, dollar:false }); }
+        }
+        const SEP = "[-–—_ ]?";
+        const skus = [];
+        const add = (digits, shape) => { if(!skus.some(x => x.d === digits)) skus.push({ d: digits, shape }); };
+        for(const m of flat.matchAll(new RegExp(`(?<![\\d$.,])(\\d{4})${SEP}(\\d{3})${SEP}(\\d{3})(?![\\d.,])`, "g"))) add(m[1] + m[2] + m[3], 10);
+        for(const m of flat.matchAll(new RegExp(`(?<![\\d$.,])(\\d{3})${SEP}(\\d{3})(?![\\d.,])`, "g"))) add(m[1] + m[2], 6);
+        return { prices, skus, flat };
+      }
       function readSticker(stk, exp, upc){
         const out = { sku:"", price:null, skuOk:null, priceOk:null, skuWhy:"", priceWhy:"" };
-        if(!stk || !stk.text) { out.skuWhy = out.priceWhy = stk && stk.err ? stk.err : "No text found on the sticker"; return out; }
-        // common OCR slips inside numbers: O→0, l/I/|→1, S→5, B→8
-        const t = stk.text.replace(/(?<=\d)[Oo]|[Oo](?=\d)/g, "0").replace(/(?<=\d)[lI|]|[lI|](?=\d)/g, "1").replace(/(?<=\d)S(?=\d)/g, "5").replace(/(?<=\d)B(?=\d)/g, "8");
-        const flat = t.replace(/\s+/g, " ");
-        // price: $12.98 / 12.98 / 12,98
-        const prices = [...flat.matchAll(/(\$)?\s?(\d{1,3})\s?[.,]\s?(\d{2})(?!\d)/g)].map(m => ({ v: Number(m[2] + "." + m[3]), dollar: !!m[1] })).filter(p => p.v > 0 && p.v < 1000);
+        if(!stk || !stk.text){ out.skuWhy = out.priceWhy = stk && stk.err ? stk.err : "No text found on the sticker"; return out; }
+        const { prices, skus, flat } = stickerBits(stk.text);
+        const upcD = String(upc || "").replace(/\D+/g, "");
+        const skuList = skus.filter(s => !(upcD.length >= 11 && upcD.includes(s.d)));      // digits that are just the printed UPC
+        // price
         if(exp.retail != null){
           const hit = prices.find(p => Math.abs(p.v - exp.retail) < 0.005);
           if(hit){ out.price = hit.v; out.priceOk = true; }
           else if(prices.length){ const p = prices.find(x => x.dollar) || prices[0]; out.price = p.v; out.priceOk = false; }
-          else out.priceWhy = "Couldn't find a price on the sticker";
+          else out.priceWhy = "Couldn't find a $ price on the sticker";
         } else if(prices.length){ out.price = (prices.find(x => x.dollar) || prices[0]).v; out.priceWhy = "This line has no retail on file to compare"; }
-        // SKU: a 6–10 digit number that isn't part of the UPC
-        const upcD = String(upc || "").replace(/\D+/g, "");
-        const allDigits = flat.replace(/[^0-9]/g, "");
-        const runs = [...flat.matchAll(/(?<!\d)\d{6,10}(?!\d)/g)].map(m => m[0]).filter(r => !(upcD && upcD.length >= 11 && upcD.includes(r)));
+        // SKU
         if(exp.sku){
           const want = String(exp.sku).replace(/\D+/g, "");
-          if(runs.includes(want) || (want.length >= 6 && allDigits.replace(upcD, "").includes(want))){ out.sku = exp.sku; out.skuOk = true; }
+          const allDigits = flat.replace(/\D+/g, "").split(upcD || "\u0000").join("");
+          if(skuList.some(s => s.d === want) || (want.length >= 6 && allDigits.includes(want))){ out.sku = exp.sku; out.skuOk = true; }
           else {
-            const same = runs.filter(r => r.length === want.length);          // only compare numbers shaped like a SKU
-            if(same.length){ out.sku = same[0]; out.skuOk = false; }
-            else out.skuWhy = "Couldn't find the SKU on the sticker";
+            const same = skuList.filter(s => s.shape === want.length);          // only compare numbers shaped like this SKU
+            if(same.length){ out.sku = same[0].d; out.skuOk = false; }
+            else if(skuList.length){ out.sku = skuList[0].d; out.skuOk = false; }
+            else out.skuWhy = "Couldn't find a SKU number on the sticker";
           }
-        } else if(runs.length){ out.sku = runs[0]; out.skuWhy = "This line has no SKU on file to compare"; }
+        } else if(skuList.length){ out.sku = skuList[0].d; out.skuWhy = "This line has no SKU on file to compare"; }
         return out;
       }
 
@@ -13141,13 +13235,14 @@ function out(o){ return ContentService.createTextOutput(JSON.stringify(o)).setMi
       let pending = null;   // a scan that didn't match, waiting for a decision
       async function checkHits(hits, info, how, code, frame, stickerPre){
         let sticker = stickerPre || null;
+        let st = state();
+        let target = hits.find(r => !(st[r.key] || {}).checked) || hits[0];
         if(!sticker && frame){
           busy = true;
           showResult("info", `<span class="smReading">🔎 Reading the sticker…</span>`, true);
-          try { sticker = await ocrFrame(frame); } finally { busy = false; }
+          try { sticker = await ocrFrame(frame, expectedFor(target)); } finally { busy = false; }
+          st = state(); target = hits.find(r => !(st[r.key] || {}).checked) || hits[0];
         }
-        const st = state();
-        const target = hits.find(r => !(st[r.key] || {}).checked) || hits[0];
         const v = verify(target, info, code != null ? code : lastCode, sticker);
         if((st[target.key] || {}).checked){ beep(440); buzz(40); showResult("warn", `Already checked in: <b>${escapeHtml(target.item || "line")}</b>${hits.length > 1 ? ` (all ${hits.length} matching lines are done)` : ""}${verifyHtml(v)}${info ? infoLine(info) : ""}`); highlight(target.key); return; }
         if(v.bad){
@@ -13317,7 +13412,7 @@ function out(o){ return ContentService.createTextOutput(JSON.stringify(o)).setMi
       async function nativeLoop(v){
         while(loopOn && detector){
           try {
-            if(v.readyState >= 2){ const found = await detector.detect(v); if(found && found.length) handleCode(found[0].rawValue, "camera", found[0].boundingBox); }
+            if(v.readyState >= 2 && !busy){ const found = await detector.detect(v); if(found && found.length) handleCode(found[0].rawValue, "camera", found[0].boundingBox); }
           } catch(_){}
           await new Promise(r => setTimeout(r, 180));
         }
@@ -13367,7 +13462,7 @@ function out(o){ return ContentService.createTextOutput(JSON.stringify(o)).setMi
       }
       document.addEventListener("keydown", (e) => { if(e.key === "Escape" && el && el.classList.contains("active")) close(); });
       document.addEventListener("visibilitychange", () => { if(document.hidden && stream) stopCamera(); });
-      return { open, close, handleCode, get open_(){ return !!(el && el.classList.contains("active")); }, _sticker: { readSticker, ocrFrame } };
+      return { open, close, handleCode, get open_(){ return !!(el && el.classList.contains("active")); }, _sticker: { readSticker, ocrFrame, stickerBits, grabFrame } };
     })();
     window.ScanMode = ScanMode;
     document.getElementById("checkinScanBtn")?.addEventListener("click", () => ScanMode.open());
