@@ -927,7 +927,13 @@
     .skuChip{ display:inline-flex; align-items:center; margin-left:6px; padding:1px 7px; border-radius:6px; border:1px solid var(--line); background:var(--paper-2); font:600 10.5px ui-monospace, Menlo, Consolas, monospace; color:var(--ink-2); cursor:pointer; vertical-align:1px; }
     .skuChip:hover{ border-color:var(--mint-deep); color:var(--moss); }
     .skuChip.auto{ border-style:dashed; }
-    .skuChip.item, .skuChip.line{ border-color:rgba(31,92,67,.45); color:var(--moss); background:rgba(43,212,154,.10); }
+    .skuChip.item, .skuChip.line, .skuChip.notes{ border-color:rgba(31,92,67,.45); color:var(--accent-text, var(--moss)); background:rgba(43,212,154,.10); }
+    .skuChip.notes{ border-style:dotted; }
+    .skuChip.quiet{ font-family:var(--sans); color:var(--ink-2); border-style:dashed; }
+    .skuNoteOnly{ margin-top:6px; font-size:12px; color:var(--ink-2); }
+    .skuMakeDef{ font:600 10.5px var(--sans); color:var(--accent-text, var(--moss)); border:1px dashed var(--line); border-radius:5px; padding:1px 6px; width:max-content; cursor:pointer; }
+    .skuMakeDef:hover{ border-style:solid; background:var(--rowHover); }
+    .skuDef.team{ color:var(--info-fg, #245f86); background:var(--info-bg, #e6f1f8); }
     .skuChip.none{ font-family:var(--sans); color:#a8341f; border-color:rgba(208,69,58,.35); }
     .skuCard{ width:min(860px, calc(100vw - 24px)); max-height:calc(100vh - 40px); display:flex; flex-direction:column; }
     .skuBody{ display:flex; flex-direction:column; min-height:0; overflow:hidden; }
@@ -1714,6 +1720,280 @@
     html[data-theme="dark"] .emptyState{ background:linear-gradient(180deg, var(--paper-2), var(--paper-3)); }
     html[data-theme="dark"] .logo{ filter:brightness(1.05); }
     #themeToggleBtn .iconSvg{ display:block; }
+    /* =====================================================================
+       HPA DESIGN SYSTEM v2 — one set of tokens + components for the whole
+       app. Loaded last so it wins over the older per-feature styles.
+       Same jungle-green / cream identity, tightened and made consistent.
+       ===================================================================== */
+    :root{
+      --ds-h:36px; --ds-h-sm:30px; --ds-r:10px; --ds-r-sm:8px; --ds-r-lg:16px;
+      --accent-text:var(--moss);
+      --ok-fg:var(--state-ok-fg, #0d7a55);       --ok-bg:var(--state-ok-bg, #e6f6ee);       --ok-bd:var(--state-ok-bd, #7fcfa8);
+      --warn-fg:var(--state-warn-fg, #8a6200);   --warn-bg:var(--state-warn-bg, #fff4d6);   --warn-bd:var(--state-warn-bd, #e8c464);
+      --bad-fg:var(--state-danger-fg, #a8341f);  --bad-bg:var(--state-danger-bg, #fde9e4);  --bad-bd:var(--state-danger-bd, #eaa293);
+      --info-fg:var(--state-info-fg, #245f86);   --info-bg:var(--state-info-bg, #e6f1f8);   --info-bd:var(--state-info-bd, #9cc4e0);
+      --muted-fg:var(--ink-2);
+      --focus-ring:0 0 0 3px rgba(43,212,154,.45);
+      --ds-shadow-1:0 1px 2px rgba(8,29,22,.06), 0 4px 14px rgba(8,29,22,.06);
+      --ds-shadow-pop:0 18px 48px rgba(4,18,12,.22);
+    }
+    html[data-theme="dark"]{
+      --accent-text:#8ad9b6;
+      --ink-2:#b4cbbb;
+      --thead:#22362a;
+      --ds-shadow-1:0 1px 2px rgba(0,0,0,.3), 0 4px 14px rgba(0,0,0,.25);
+      --ds-shadow-pop:0 18px 48px rgba(0,0,0,.55);
+    }
+
+    /* ---------- typography & numbers ---------- */
+    .main h2, .orderHead h2, .toolbar h2, .dashHeader h2{ font-family:var(--display); font-weight:700; font-size:26px; letter-spacing:-.01em; color:var(--ink); }
+    .main table td, .main table th, .num, .pillMini, .xlTileN, .statNum, .skuMoney{ font-variant-numeric:tabular-nums; }
+    .nowrap{ white-space:nowrap; }
+
+    /* ---------- focus & motion ---------- */
+    :where(button, a, input, select, textarea, summary, [tabindex], .xlink):focus-visible{ outline:2px solid var(--mint); outline-offset:2px; box-shadow:none; }
+    .page.pageEnter{ animation:pageFadeIn .16s ease-out; }
+    @media (prefers-reduced-motion: reduce){ *, *::before, *::after{ animation-duration:.001ms !important; animation-iteration-count:1 !important; transition-duration:.001ms !important; scroll-behavior:auto !important; } }
+
+    /* ---------- buttons ---------- */
+    .btn{ display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:40px; border-radius:var(--ds-r); font-weight:700; }
+    .btn .iconSvg, .btnGhost .iconSvg, .tinyBtn .iconSvg, .tmItem .iconSvg, .gsSegBtn .iconSvg{ margin:0; width:15px; height:15px; flex:none; }
+    .tools .btn, .toolbar .btn, .otcActions .btn, .prebookToolbar .btn, #prebookAddBtn, .avCartActions .btn, .stImpBtns .btn, .apBtns .btn, .checkinScanBtn{ width:auto; }
+    .btnGhost, .tinyBtn{ display:inline-flex; align-items:center; justify-content:center; gap:6px; color:var(--accent-text); background:var(--paper-2); border:1px solid var(--line); font-family:var(--sans); font-weight:600; line-height:1.1; white-space:nowrap; cursor:pointer; transition:background .15s, border-color .15s, color .15s, transform .08s; }
+    .btnGhost{ min-height:var(--ds-h); padding:0 14px; font-size:13px; border-radius:var(--ds-r); }
+    .tinyBtn{ min-height:var(--ds-h-sm); padding:0 10px; font-size:12.5px; border-radius:var(--ds-r-sm); }
+    .btnGhost:hover, .tinyBtn:hover{ background:var(--rowHover); border-color:rgba(22,168,119,.45); }
+    .btnGhost:active, .tinyBtn:active{ transform:translateY(1px); }
+    .tinyIcon{ width:var(--ds-h-sm); min-width:var(--ds-h-sm); padding:0 !important; }
+    .tinyBtn.danger, .btnGhost.danger, .tmItem.danger{ color:var(--bad-fg); }
+    .tinyBtn.danger, .btnGhost.danger{ background:var(--bad-bg); border-color:var(--bad-bd); }
+    html[data-theme="dark"] .btnGhost, html[data-theme="dark"] .tinyBtn{ background:var(--paper-3); border-color:#3d5446; }
+    html[data-theme="dark"] .btnGhost:hover, html[data-theme="dark"] .tinyBtn:hover{ background:#2c4436; }
+    html[data-theme="dark"] .btn{ color:#04231a; }
+
+    /* ---------- inputs ---------- */
+    input, select, textarea{ border-radius:var(--ds-r); }
+    input:focus, select:focus, textarea:focus{ border-color:var(--mint-deep); box-shadow:var(--focus-ring); }
+    .tools input, .tools select, .toolbar input, .toolbar select, .prebookToolbar input, .prebookToolbar select{ width:auto; min-height:var(--ds-h); padding:0 12px; font-size:13.5px; }
+    .tools input[type="search"], #checkinSearch, #prebookSearch, #trainingSearch, .tools input[placeholder*="Search"]{ flex:1 1 220px; min-width:180px; }
+    .tools select, .toolbar select, .prebookToolbar select{ min-width:150px; flex:0 0 auto; }
+    html[data-theme="dark"] input, html[data-theme="dark"] select, html[data-theme="dark"] textarea{ background:#17271e; border-color:#3d5446; color:var(--ink); }
+    html[data-theme="dark"] input::placeholder, html[data-theme="dark"] textarea::placeholder{ color:#8aa596; }
+
+    /* ---------- page headers: title left, actions right ---------- */
+    .toolbar{ align-items:center; gap:10px 14px; padding-bottom:14px; margin-bottom:16px; }
+    .toolbar h2{ margin:0; }
+    .tools{ gap:8px; justify-content:flex-end; flex:1 1 420px; }
+    .orderHead h2{ margin:0 0 12px; }
+
+    /* ---------- chips, pills & statuses (one system) ---------- */
+    .pillMini, .statusPill, .statusChip, .xlChip, .stChip, .xlJumpBtn, .stWeekPill{ display:inline-flex; align-items:center; gap:5px; min-height:24px; padding:0 10px; border-radius:999px; font-family:var(--sans); font-size:11.5px; font-weight:600; line-height:1; white-space:nowrap; border:1px solid var(--line); background:var(--paper-2); color:var(--ink-2); }
+    .pillMini .iconSvg, .statusPill .iconSvg, .xlChip .iconSvg, .stChip .iconSvg, .xlJumpBtn .iconSvg, .stWeekPill .iconSvg{ width:13px; height:13px; margin:0; }
+    button.pillMini, button.statusPill, button.statusChip, .xlChip, .stChip, .xlJumpBtn, .stWeekPill, .editablePill{ cursor:pointer; }
+    .statusPill.statusConfirmed, .statusChip.statusResolved, .xlChip.ok, .stChip.good, .stWeekPill.good, .stBig.good + *{ color:var(--ok-fg); background:var(--ok-bg); border-color:var(--ok-bd); }
+    .statusPill.statusOpen, .statusChip.statusOpen, .xlChip, .stChip.ok, .stWeekPill.ok{ color:var(--warn-fg); background:var(--warn-bg); border-color:var(--warn-bd); }
+    .statusPill.statusSubmitted, .statusChip.statusSubmitted, .xlChip.info{ color:var(--info-fg); background:var(--info-bg); border-color:var(--info-bd); }
+    .xlChip.warn, .stChip.low, .stWeekPill.low{ color:var(--bad-fg); background:var(--bad-bg); border-color:var(--bad-bd); }
+    .xlChip.ok{ color:var(--ok-fg); background:var(--ok-bg); border-color:var(--ok-bd); }
+    .statusToggleBtn{ font-family:var(--sans); }
+    .stTot.good{ color:var(--ok-fg); } .stTot.ok{ color:var(--warn-fg); } .stTot.low{ color:var(--bad-fg); }
+
+    /* ---------- cards & tables ---------- */
+    .main{ padding:22px 24px; }
+    .table, .sheetTable, .poTable, .stTable, .vsTable{ border-color:var(--line); }
+    .table th, .poTable th, .sheetTable th{ background:var(--thead); color:var(--ink-2); font-size:11px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; }
+    .table td{ vertical-align:middle; }
+    .table tbody tr:hover td, .poTable tbody tr:hover td{ background:var(--rowHover); }
+    html[data-theme="dark"] .table th, html[data-theme="dark"] .poTable th, html[data-theme="dark"] .sheetTable th{ background:var(--thead) !important; background-image:none !important; color:var(--ink-2) !important; }
+    .rowActions{ display:flex; align-items:center; gap:6px; justify-content:flex-end; }
+    .issueActionsCell{ width:1%; white-space:nowrap; }
+    .issueNotesCell{ color:var(--ink-2); max-width:280px; }
+
+    /* ---------- menus (Tools, ⋯) ---------- */
+    details.toolsMenu, details.rowMenu{ position:relative; display:inline-block; }
+    details.toolsMenu > summary, details.rowMenu > summary{ list-style:none; }
+    details.toolsMenu > summary::-webkit-details-marker, details.rowMenu > summary::-webkit-details-marker{ display:none; }
+    .tmCaret .iconSvg{ width:13px; height:13px; opacity:.7; transition:transform .15s; }
+    details[open] > summary .tmCaret .iconSvg{ transform:rotate(180deg); }
+    .toolsMenuPanel{ position:absolute; top:calc(100% + 6px); right:0; z-index:40; min-width:220px; padding:6px; border-radius:12px; border:1px solid var(--line); background:var(--paper-2); box-shadow:var(--ds-shadow-pop); display:flex; flex-direction:column; animation:smIn .14s ease-out; }
+    .rowMenuPanel{ min-width:170px; }
+    .tmLabel{ font-size:10.5px; font-weight:800; text-transform:uppercase; letter-spacing:.07em; color:var(--ink-2); padding:8px 10px 4px; }
+    .tmLabel:not(:first-child){ border-top:1px solid var(--line-soft); margin-top:4px; padding-top:10px; }
+    .tmItem{ display:flex; align-items:center; gap:10px; width:100%; padding:9px 10px; border:none; border-radius:8px; background:transparent; color:var(--ink); font:500 13.5px var(--sans); text-align:left; cursor:pointer; white-space:nowrap; }
+    .tmItem:hover{ background:var(--rowHover); }
+    .tmItem .iconSvg{ color:var(--ink-2); }
+    .tmItem.otcSkipBtn.isActive{ color:var(--bad-fg); }
+
+    /* ---------- top bar ---------- */
+    .topbar .chip{ min-height:32px; display:inline-flex; align-items:center; gap:6px; }
+    #statusChip.isIdle{ visibility:hidden; }
+    .alertBell .iconSvg{ width:15px; height:15px; margin:0; }
+    body[data-screen="login"] #syncChip, body[data-screen="login"] #presenceChip, body[data-screen="login"] #alertBellBtn, body[data-screen="login"] #userChip,
+    body[data-screen="splash"] #syncChip, body[data-screen="splash"] #presenceChip, body[data-screen="splash"] #alertBellBtn, body[data-screen="splash"] #userChip{ display:none !important; }
+
+    /* ---------- login ---------- */
+    #login .card{ width:min(420px, 92vw); padding:32px 30px 26px; border-radius:20px; box-shadow:0 30px 80px rgba(0,0,0,.45); }
+    #login .card::before{ content:""; display:block; width:46px; height:46px; margin:0 0 14px; border-radius:14px; background:linear-gradient(135deg, var(--mint), var(--fern)) center/24px no-repeat; -webkit-mask:none;
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23062a1c' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.5 19 2c1 2 2 4.2 2 8 0 5.5-4.8 10-10 10z'/%3E%3Cpath d='M2 21c0-3 1.9-5.4 5.1-6'/%3E%3C/svg%3E"), linear-gradient(135deg, var(--mint), var(--mint-deep)); background-size:24px, cover; background-position:center; background-repeat:no-repeat; box-shadow:0 8px 20px rgba(22,168,119,.35); }
+    #login .card h2{ font-size:26px; margin:0 0 4px !important; }
+    #login .card h2 + label{ margin-top:16px; }
+    #login .note{ color:var(--ink-2); font-size:12px; text-align:center; margin-top:14px; }
+
+    /* ---------- Order Tracker: slim sticky week bar ---------- */
+    #page-order .periodPicker{ position:sticky; top:-22px; z-index:6; display:grid; grid-template-columns:auto minmax(0, 1fr); grid-template-areas:"year months" "weeks weeks"; align-items:center; gap:8px 14px; padding:10px 12px; margin:0 0 14px; border-radius:var(--ds-r-lg); box-shadow:var(--ds-shadow-1); background:color-mix(in srgb, var(--paper-2) 92%, transparent); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); }
+    #page-order .periodPicker .ppStep{ display:contents; }
+    #page-order .periodPicker > *, #page-order .ppYearRow, #page-order .monthBar, #page-order .ppWeekRow, #page-order .weekChips{ min-width:0; max-width:100%; }
+    #page-order .ppYearRow{ grid-area:year; gap:6px; display:flex; align-items:center; }
+    #page-order .ppYearRow .ppToday{ margin-left:4px; padding:0 12px; min-height:30px; font-size:12.5px; }
+    #page-order .periodPicker .monthBar{ grid-area:months; flex-wrap:nowrap; overflow-x:auto; gap:4px; scrollbar-width:none; }
+    #page-order .periodPicker .monthBar::-webkit-scrollbar{ display:none; }
+    #page-order .ppWeekRow{ grid-area:weeks; display:flex; align-items:center; gap:6px; }
+    #page-order .ppArrow{ width:30px; height:30px; font-size:17px; border-radius:8px; color:var(--accent-text); background:var(--paper-2); }
+    #page-order .ppYear{ font-size:18px; min-width:52px; }
+    #page-order .monthBtn{ padding:4px 10px !important; font-size:12px !important; min-height:26px; }
+    #page-order .weekChip{ flex-direction:row; align-items:baseline; gap:6px; padding:5px 11px; border-radius:9px; }
+    #page-order .weekChip .wcRange{ font-size:11px; }
+    #page-order .orderTitleCard{ padding:16px 18px; border-radius:var(--ds-r-lg); }
+    #page-order .otcWeekTitle{ font-size:22px; }
+    #page-order .otcActions{ gap:8px; }
+    #page-order .otcActions{ display:flex; flex-direction:row; flex-wrap:wrap; align-items:center; gap:8px; }
+    #page-order .otcActionsMain{ display:flex; flex-direction:row; flex-wrap:wrap; gap:8px; flex:1 1 380px; align-items:center; }
+    #page-order .otcActionsMain .btn{ width:auto; padding:0 18px; flex:0 0 auto; }
+    #page-order .otcActionsMain .filterInput{ flex:1 1 220px; width:auto; height:40px; min-height:40px; max-height:40px; margin:0; }
+    .ppToday, .monthBtn, .ppArrow{ color:var(--accent-text); }
+    html[data-theme="dark"] .ppToday{ background:rgba(43,212,154,.12); }
+
+    /* truck & vendor blocks */
+    .pickupHead{ gap:8px 12px; }
+    .pickupTitle{ display:flex; align-items:center; gap:6px; font-size:16px; }
+    .ptPrefix{ font:800 10.5px var(--sans); letter-spacing:.06em; padding:3px 6px; border-radius:6px; background:rgba(31,92,67,.10); color:var(--accent-text); }
+    .pickupRight{ display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+    .pickupRight .rowMenuPanel{ right:0; }
+    html[data-theme="dark"] .pickupHead{ background:color-mix(in srgb, var(--truckAccent, #2bd49a) 12%, var(--paper-2)) !important; border-bottom-color:var(--line); color:var(--ink); }
+    html[data-theme="dark"] .pickupTitle{ color:var(--ink); }
+    html[data-theme="dark"] .ptPrefix{ background:rgba(43,212,154,.16); }
+    .itemNotes{ color:var(--ink-2); }
+
+    /* ---------- Check-In rows ---------- */
+    .ciCheckCell{ width:1%; }
+    .ciCheckWrap{ display:flex; align-items:center; gap:8px; }
+    .ciActions{ display:flex; gap:4px; align-items:center; }
+    .ciActions .checkinIssueFlagPill{ margin:0; }
+    .ciCheckWrap .poChk{ width:20px; height:20px; margin:0; flex:none; }
+    .poTable td{ vertical-align:middle; }
+    .poTable .poNotes{ min-height:34px; height:34px; resize:vertical; }
+    #page-order .sheetTable th{ top:0 !important; }   /* the block clips, so an offset only pushed the header over row 1 */
+    .poTable td[data-label="Item"], .poTable td[data-label="Item Description"]{ min-width:150px; }
+    .poTable td.poDetails{ min-width:90px; }
+    .poTable td[data-label="Notes"]{ min-width:180px; }
+    .poTable .poNotes{ width:100%; min-width:160px; }
+
+    /* ---------- Dashboard ---------- */
+    .dashGrid{ grid-template-columns:repeat(7, minmax(0, 1fr)); }
+    @media (max-width:1280px){ .dashGrid{ grid-template-columns:repeat(4, minmax(0, 1fr)); } }
+    @media (max-width:640px){ .dashGrid{ grid-template-columns:repeat(2, minmax(0, 1fr)); } }
+    .statSub{ color:var(--ink-2) !important; }
+    .dashTrends{ margin:14px 0 4px; }
+    .dashHeader{ align-items:center; }
+    .dashHeader .tools{ flex:0 0 auto; }
+    .dtHead{ display:flex; align-items:baseline; gap:10px; margin:0 2px 8px; }
+    .dtHead h3{ margin:0; font-family:var(--display); font-size:17px; color:var(--ink); }
+    .dtRange{ font-size:12px; color:var(--ink-2); }
+    .dtGrid{ display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:10px; }
+    @media (max-width:900px){ .dtGrid{ grid-template-columns:repeat(2, minmax(0, 1fr)); } }
+    .dtCard{ display:flex; flex-direction:column; gap:2px; text-align:left; padding:12px 14px 10px; border:1px solid var(--line); border-radius:var(--ds-r-lg); background:var(--paper-2); box-shadow:var(--ds-shadow-1); cursor:pointer; color:var(--ink); font-family:var(--sans); transition:transform .1s, box-shadow .15s; }
+    .dtCard:hover{ transform:translateY(-1px); box-shadow:0 8px 22px rgba(8,29,22,.12); }
+    .dtTitle{ font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-2); }
+    .dtVal{ font:700 24px var(--display); }
+    .dtSvg{ width:100%; height:56px; margin:4px 0 2px; overflow:visible; }
+    .dtBar{ fill:rgba(22,168,119,.35); } .dtBar.cur{ fill:var(--mint-deep); }
+    .dtBad .dtBar{ fill:rgba(224,86,63,.35); } .dtBad .dtBar.cur{ fill:#e0563f; }
+    .dtBase{ stroke:var(--line); stroke-width:1; }
+    .dtLine{ fill:none; stroke:var(--mint-deep); stroke-width:2; stroke-linejoin:round; stroke-linecap:round; vector-effect:non-scaling-stroke; }
+    .dtArea{ fill:rgba(43,212,154,.14); }
+    .dtDot{ fill:var(--mint-deep); stroke:var(--paper-2); stroke-width:2; vector-effect:non-scaling-stroke; }
+    .tGold .dtLine{ stroke:#c9a227; } .tGold .dtArea{ fill:rgba(201,162,39,.14); } .tGold .dtDot{ fill:#c9a227; }
+    .tBlue .dtLine{ stroke:#3f7dbf; } .tBlue .dtArea{ fill:rgba(63,125,191,.13); } .tBlue .dtDot{ fill:#3f7dbf; }
+    .dtDelta{ font-size:11.5px; font-weight:600; color:var(--ink-2); } .dtDelta.up{ color:var(--ok-fg); } .dtDelta.down{ color:var(--bad-fg); }
+    .dtBad .dtDelta.up{ color:var(--bad-fg); } .dtBad .dtDelta.down{ color:var(--ok-fg); }
+    .xlAttn, .vsDash{ border-radius:var(--ds-r-lg); box-shadow:var(--ds-shadow-1); }
+
+    /* ---------- modals ---------- */
+    .modalCard{ border-radius:var(--ds-r-lg); box-shadow:var(--ds-shadow-pop); }
+    .modalHead{ align-items:center; gap:10px; }
+    .modalHead h3{ font-family:var(--display); font-size:20px; margin:0; }
+
+    /* ---------- dark mode: things that kept light backgrounds / dark text ---------- */
+    html[data-theme="dark"] .prebookSeasonSectionHead{ background:var(--paper-3) !important; color:var(--ink); }
+    html[data-theme="dark"] .prebookSeasonSectionHead h3{ color:var(--ink); }
+    html[data-theme="dark"] :is(.otcEyebrow, .otcStatLabel, .otcTotalsLabel, .sectionTitle, .collapseBtn, .monthBtn, .ppToday, .weekChip .wcRange, .gsSegBtn, .avTab, .stTabs button, .skuSecs button, .apTabs button, .vsSort button, .subTab, .monthBarYear){ color:var(--accent-text); }
+    html[data-theme="dark"] :is(.otcStatValue, .otcWeekTitle, .ppYear){ color:var(--ink); }
+    html[data-theme="dark"] .weekChip.active, html[data-theme="dark"] .monthBtn.active{ color:#06251a !important; background:var(--mint-deep) !important; border-color:var(--mint-deep) !important; }
+    html[data-theme="dark"] .weekChip.active .wcRange{ color:#06251a; }
+    html[data-theme="dark"] :is(.gsSegBtn.active, .avTab.on, .stTabs button.on, .skuSecs button.on, .apTabs button.on, .vsSort button.on, .prebookSeasonTab.active){ color:#06251a; background:var(--mint-deep); border-color:var(--mint-deep); }
+
+    /* ---------- phone ---------- */
+    @media (max-width:760px){
+      #page-order .periodPicker{ position:static; grid-template-columns:minmax(0, 1fr); grid-template-areas:"year" "months" "weeks"; }
+      .main h2, .orderHead h2, .toolbar h2, .dashHeader h2{ font-size:23px; }
+      .tools{ justify-content:flex-start; flex-basis:100%; }
+      .tools > *{ flex:1 1 auto; }
+      .tools input[type="search"], #checkinSearch, #prebookSearch, #trainingSearch{ flex-basis:100%; }
+      /* tables become stacked cards */
+      .table thead, .poTable thead, .sheetTable thead{ display:none; }
+      .table, .table tbody, .poTable, .poTable tbody, .sheetTable, .sheetTable tbody{ display:block; width:100%; }
+      .table tr, .poTable tbody tr{ display:grid; grid-template-columns:1fr 1fr; gap:6px 12px; padding:12px; margin:0 0 10px; border:1px solid var(--line); border-radius:var(--ds-r-lg); background:var(--paper-2); box-shadow:var(--ds-shadow-1); }
+      .table td, .poTable td{ display:flex; flex-direction:column; gap:2px; padding:0 !important; border:none !important; background:none !important; min-width:0; }
+      .table td[data-label]::before, .poTable td[data-label]::before{ content:attr(data-label); font-size:10.5px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--ink-2); }
+      .table td:empty, .poTable td:empty{ display:none; }
+      .issueActionsCell, .ciCheckCell{ grid-column:1 / -1; order:-1; width:auto !important; }
+      .issueActionsCell .rowActions{ justify-content:flex-start; }
+      .issueNotesCell, .poTable td[data-label="Notes"], .poTable td[data-label="Item"], .poTable td[data-label="Item Description"]{ grid-column:1 / -1; }
+      .poTable .poNotes{ width:100%; }
+      .sheetTable tr.itemRow{ display:grid; grid-template-columns:auto 1fr auto; grid-template-areas:"chk name qty" "chk racks notes"; align-items:center; gap:2px 10px; padding:10px 6px; border-bottom:1px solid var(--line-soft); }
+      .sheetTable tr.itemRow td{ display:block; padding:0 !important; border:none !important; }
+      .sheetTable tr.itemRow .itemCheckCell{ grid-area:chk; }
+      .sheetTable tr.itemRow .itemNameCell{ grid-area:name; font-weight:600; }
+      .sheetTable tr.itemRow td[data-label="Plants"]{ grid-area:qty; font-weight:700; }
+      .sheetTable tr.itemRow td[data-label="Plants"]::after{ content:" plants"; font-weight:500; color:var(--ink-2); font-size:12px; }
+      .sheetTable tr.itemRow td.num:not([data-label="Plants"]){ grid-area:racks; text-align:left; font-size:12px; color:var(--ink-2); }
+      .sheetTable tr.itemRow td.num:not([data-label="Plants"])::after{ content:" " attr(data-label); }
+      .sheetTable tr.itemRow td.itemNotes{ grid-area:notes; text-align:right; font-size:12px; }
+      .sheetTable tr.itemRow td:empty{ display:none; }
+      /* pop-ups slide up from the bottom */
+      .modal{ align-items:flex-end !important; padding:0 !important; }
+      .modal .modalCard{ width:100% !important; max-width:100% !important; max-height:92vh !important; border-radius:20px 20px 0 0 !important; padding-bottom:max(20px, env(safe-area-inset-bottom)) !important; animation:smUp .22s ease-out; }
+      /* bottom nav: 5 tabs + More */
+      .navList .navBtn.navSecondary{ display:none !important; }
+      .navList .navBtn{ font-size:10px; }
+      #navMoreBtn{ width:56px; }
+      .side.moreOpen .navFooter .morePages{ display:flex; flex-direction:column; gap:2px; padding-bottom:8px; margin-bottom:6px; border-bottom:1px solid rgba(255,255,255,.1); }
+      .side.moreOpen .navFooter .morePageBtn .navIcon{ font-size:18px; margin-right:10px; }
+      .dashHeader .tools, .dashHeaderMain{ flex-wrap:wrap; }
+    }
+    .morePages{ display:none; }
+
+    /* ---------- contrast fixes found by the automated audit ---------- */
+    .main .chip{ background:var(--paper-3); color:var(--ink); border:1px solid var(--line); backdrop-filter:none; -webkit-backdrop-filter:none; font-family:var(--sans); font-weight:600; }
+    html[data-theme="dark"] .avCell.has{ background:rgba(43,212,154, calc(var(--heat, .2) * .55)); color:#eafff4; }
+    html[data-theme="dark"] .avCell.sel{ background:var(--mint-deep); color:#06251a; }
+    html[data-theme="dark"] .pillMini{ background:var(--paper-3); color:var(--ink-2); border-color:#3d5446; }
+    html[data-theme="dark"] .totalsStrip .pillMini{ color:var(--ink); }
+    html[data-theme="dark"] .totalsStrip{ background:var(--paper-3) !important; border-color:var(--line) !important; }
+    .vsOpen{ color:var(--bad-fg) !important; }
+    #checkinResetWeekBtn{ color:var(--bad-fg) !important; border-color:var(--bad-bd) !important; }
+    .checkinIssueFlagPill{ color:var(--bad-fg); background:var(--bad-bg); border-color:var(--bad-bd); display:inline-flex; align-items:center; gap:4px; }
+    .checkinIssueFlagPill .iconSvg{ width:13px; height:13px; margin:0 3px 0 0; }
+
+    /* ---------- loading placeholders ---------- */
+    .skeleton{ position:relative; overflow:hidden; background:var(--paper-3); border-radius:8px; }
+    .skeleton::after{ content:""; position:absolute; inset:0; transform:translateX(-100%); background:linear-gradient(90deg, transparent, rgba(255,255,255,.45), transparent); animation:skel 1.2s infinite; }
+    html[data-theme="dark"] .skeleton::after{ background:linear-gradient(90deg, transparent, rgba(255,255,255,.07), transparent); }
+    @keyframes skel{ to{ transform:translateX(100%); } }
+    .avSkel{ display:flex; flex-direction:column; gap:10px; padding:6px 4px; text-align:left; }
+    .avSkelRow{ display:grid; grid-template-columns:240px repeat(6, 1fr); gap:10px; }
+    .avSkelRow .skeleton{ height:22px; display:block; }
+    .avSkelNote{ text-align:center; font-size:12.5px; color:var(--ink-2); margin-top:4px; }
   </style>
 </head>
 <body class="density-comfortable atmos">
@@ -1727,7 +2007,7 @@
     <div style="display:flex; gap:10px; pointer-events:none;">
       <div id="syncChip" class="chip subtle" role="button" tabindex="0" title="Team sync" style="pointer-events:auto; cursor:pointer;">Sync: off</div>
       <div id="presenceChip" class="chip subtle" role="button" tabindex="0" title="No one else is online right now" style="pointer-events:auto; cursor:pointer;"><span data-icon="people" aria-hidden="true"></span> 0</div>
-      <button id="alertBellBtn" class="chip alertBell" type="button" title="Alerts" aria-label="Alerts" style="pointer-events:auto;">🔔<span id="alertBadge" class="alertBadge" hidden>0</span></button>
+      <button id="alertBellBtn" class="chip alertBell" type="button" title="Alerts" aria-label="Alerts" style="pointer-events:auto;"><span data-icon="bell" aria-hidden="true"></span><span id="alertBadge" class="alertBadge" hidden>0</span></button>
       <button id="themeToggleBtn" class="chip" type="button" title="Switch to dark mode" style="pointer-events:auto; display:flex; align-items:center; justify-content:center; width:32px; height:32px; padding:0;"><span data-icon="moon" aria-hidden="true"></span></button>
       <div id="userChip" class="chip subtle">Not signed in</div>
     </div>
@@ -1801,8 +2081,7 @@
           <div class="dashUnified">
             <div class="dashGrid" id="dashStats"></div>
           </div>
-          <div id="dashAttention"></div>
-          <div id="dashScores"></div>
+          <div id="dashTrends" class="dashTrends"></div>
           <div id="dashLabelTracker"></div>
         </div>
         <div id="page-order" class="page">
@@ -1846,7 +2125,7 @@
                     <span class="otcStatValue" id="weekMetaLabel" title="Store grades shipping, HPA store count and Tropical store count for this week"></span>
                   </div>
                 </div>
-                <button id="editWeekBtn" class="tinyBtn otcEditBtn" type="button" title="Set store grades shipping, HPA store count and Tropical store count for this week">✏️ Edit Week</button>
+                <button id="editWeekBtn" class="tinyBtn otcEditBtn" type="button" title="Set store grades shipping, HPA store count and Tropical store count for this week"><span data-icon="edit" aria-hidden="true"></span>Edit week</button>
               </div>
               <div class="otcWeekTotals" id="otcWeekTotals">
                 <span class="otcTotalsLabel">Week Totals</span>
@@ -1857,19 +2136,22 @@
                   <button id="newTruckBtn" class="btn" type="button"><span data-icon="plus" aria-hidden="true"></span> New Order</button>
                   <input id="orderFilter" class="filterInput" placeholder="Search vendor, item, PO, location, type..." />
                 </div>
-                <details class="exportMenu">
-                  <summary class="btnGhost">⬇ Export</summary>
-                  <div class="exportMenuPanel">
-                    <button id="exportTruckBtn" class="btnGhost" type="button">Truck Order</button>
-                    <button id="exportCCBtn" class="btnGhost" type="button">CC Order</button>
-                    <button id="exportBreakdownBtn" class="btnGhost" type="button">Order Breakdown</button>
-                    <button id="exportTruckBreakdownBtn" class="btnGhost" type="button">Truck Breakdown</button>
+                <button id="stByTruckBtn" class="btnGhost" type="button" title="Projected sell-through for every truck this week"><span data-icon="chart" aria-hidden="true"></span>ST by truck</button>
+                <details class="toolsMenu">
+                  <summary class="btnGhost" title="Exports, look-ups and week options"><span data-icon="tools" aria-hidden="true"></span>Tools<span class="tmCaret" data-icon="chevronDown" aria-hidden="true"></span></summary>
+                  <div class="toolsMenuPanel" role="menu">
+                    <div class="tmLabel">Export</div>
+                    <button id="exportTruckBtn" class="tmItem" type="button"><span data-icon="download" aria-hidden="true"></span>Truck order</button>
+                    <button id="exportCCBtn" class="tmItem" type="button"><span data-icon="download" aria-hidden="true"></span>CC order</button>
+                    <button id="exportBreakdownBtn" class="tmItem" type="button"><span data-icon="download" aria-hidden="true"></span>Order breakdown</button>
+                    <button id="exportTruckBreakdownBtn" class="tmItem" type="button"><span data-icon="download" aria-hidden="true"></span>Truck breakdown</button>
+                    <div class="tmLabel">Look up</div>
+                    <button id="plantHistoryBtn" class="tmItem" type="button"><span data-icon="history" aria-hidden="true"></span>Plant history</button>
+                    <button id="skuSearchBtn" class="tmItem" type="button" data-sku-open title="Search SKUs, UPCs, cost and retail"><span data-icon="tag" aria-hidden="true"></span>SKU search</button>
+                    <div class="tmLabel">This week</div>
+                    <button id="skipWeekBtn" class="tmItem otcSkipBtn" type="button"><span data-icon="ban" aria-hidden="true"></span>Mark as skip week</button>
                   </div>
                 </details>
-                <button id="plantHistoryBtn" class="btnGhost" type="button"><span data-icon="search" aria-hidden="true"></span> Plant History</button>
-                <button id="stByTruckBtn" class="btnGhost" type="button" title="Projected sell-through for every truck this week">📈 ST by Truck</button>
-                <button id="skuSearchBtn" class="btnGhost" type="button" data-sku-open title="Search SKUs, UPCs, cost and retail">🔎 SKU search</button>
-                <button id="skipWeekBtn" class="btnGhost otcSkipBtn" type="button">🚫 Mark as Skip Week</button>
               </div>
             </div>
             <div id="orderSheet" class="orderSheet"></div>
@@ -1930,16 +2212,16 @@
               </div>
               <div class="gsActions">
                 <div class="gsSeg gsViewSeg" role="group" aria-label="Availability view">
-                  <button type="button" class="gsSegBtn" data-avview="smart" title="Availability grid read from the sheet: pick lines and build an order">📊 Smart view</button>
-                  <button type="button" class="gsSegBtn" data-avview="sheet" title="The live Google Sheet, editable">📗 Sheet</button>
+                  <button type="button" class="gsSegBtn" data-avview="smart" title="Availability grid read from the sheet: pick lines and build an order"><span data-icon="bars" aria-hidden="true"></span>Smart view</button>
+                  <button type="button" class="gsSegBtn" data-avview="sheet" title="The live Google Sheet, editable"><span data-icon="grid" aria-hidden="true"></span>Sheet</button>
                 </div>
                 <div class="gsSeg gsModeSeg" role="group" aria-label="Sheet view">
-                  <button type="button" class="gsSegBtn active" data-gsmode="edit" title="Full Google Sheets editor with menus and toolbar">✏️ Editor</button>
-                  <button type="button" class="gsSegBtn" data-gsmode="clean" title="Clean, distraction-free grid (still editable)">🧼 Clean</button>
+                  <button type="button" class="gsSegBtn active" data-gsmode="edit" title="Full Google Sheets editor with menus and toolbar">Editor</button>
+                  <button type="button" class="gsSegBtn" data-gsmode="clean" title="Clean, distraction-free grid (still editable)">Clean</button>
                 </div>
-                <button type="button" class="gsIconBtn" id="gsReloadBtn" title="Reload the sheet (R)" aria-label="Reload sheet">⟳</button>
-                <button type="button" class="gsIconBtn" id="gsFullBtn" title="Full screen (F)" aria-label="Full screen">⛶</button>
-                <button type="button" class="gsIconBtn" id="gsLinkBtn" title="Change which sheet this page shows" aria-label="Change sheet">⚙</button>
+                <button type="button" class="gsIconBtn" id="gsReloadBtn" title="Reload the sheet (R)" aria-label="Reload sheet"><span data-icon="refresh" aria-hidden="true"></span></button>
+                <button type="button" class="gsIconBtn" id="gsFullBtn" title="Full screen (F)" aria-label="Full screen"><span data-icon="expand" aria-hidden="true"></span></button>
+                <button type="button" class="gsIconBtn" id="gsLinkBtn" title="Change which sheet this page shows" aria-label="Change sheet"><span data-icon="gear" aria-hidden="true"></span></button>
                 <a class="btn gsOpenBtn" id="gsOpenBtn" href="#" target="_blank" rel="noopener"><span data-icon="externalLink" aria-hidden="true"></span> Open in Google Sheets</a>
               </div>
             </div>
@@ -2013,7 +2295,7 @@
             </button>
           </div>
           <div class="prebookToolbar" id="prebookToolbarTools" style="display:none;">
-            <button id="prebookSwitchModeBtn" class="btnGhost" title="Choose a different Booking view">🔄 Switch View</button>
+            <button id="prebookSwitchModeBtn" class="btnGhost" title="Choose a different Booking view"><span data-icon="swap" aria-hidden="true"></span>Switch view</button>
             <input id="prebookSearch" placeholder="Search vendor or item..." />
             <select id="prebookStatusFilter" title="Filter">
               <option value="">All statuses</option>
@@ -2031,12 +2313,12 @@
           <div class="toolbar">
             <h2>Order Check-In <span class="chip" id="checkinModeChip" style="display:none;"></span></h2>
             <div class="tools" id="checkinToolbarTools" style="display:none;">
-              <button id="checkinSwitchModeBtn" class="btnGhost" title="Choose a different Check-In view">🔄 Switch View</button>
-              <button id="checkinScanBtn" class="btn checkinScanBtn" type="button" title="Phone-friendly check-in with barcode scanning and damage photos">📱 Scan mode</button>
+              <button id="checkinSwitchModeBtn" class="btnGhost" title="Choose a different Check-In view"><span data-icon="swap" aria-hidden="true"></span>Switch view</button>
+              <button id="checkinScanBtn" class="btn checkinScanBtn" type="button" title="Phone-friendly check-in with barcode scanning and damage photos"><span data-icon="scan" aria-hidden="true"></span>Scan mode</button>
               <button id="checkinPrevWeek" class="btnGhost" title="Previous week">‹</button>
               <div class="chip" id="checkinWeekLabel">Week</div>
               <button id="checkinNextWeek" class="btnGhost" title="Next week">›</button>
-              <input id="checkinSearch" placeholder="🔍 Search vendor, item, PO..." />
+              <input id="checkinSearch" type="search" placeholder="Search vendor, item, PO…" />
               <button id="checkinImportBtn" class="btnGhost">Import PO Analysis</button>
               <input id="checkinImportFile" type="file" accept=".xlsx,.xls" style="display:none;">
               <select id="checkinSort" title="Sort">
@@ -2805,6 +3087,12 @@
       if(!y||!m||!dd) return null;
       return new Date(y, m-1, dd);
     };
+    // "2026-10-26" → "Mon Oct 26" (adds the year only when it isn't this year)
+    function prettyDay(ymd){
+      const d = parseDate(ymd); if(!d) return ymd || "—";
+      const sameYear = d.getFullYear() === new Date().getFullYear();
+      return d.toLocaleDateString(undefined, { weekday:"short", month:"short", day:"numeric", ...(sameYear ? {} : { year:"numeric" }) });
+    }
     function startOfWeek(date){
       const d = new Date(date);
       const day = (d.getDay()+6)%7;
@@ -2972,7 +3260,29 @@
       receipt: '<path d="M6 2h12v20l-2-1.5L14 22l-2-1.5L10 22l-2-1.5L6 22z"/><line x1="9" y1="7" x2="15" y2="7"/><line x1="9" y1="11" x2="15" y2="11"/><line x1="9" y1="15" x2="12" y2="15"/>',
       sun: '<circle cx="12" cy="12" r="4.5"/><path d="M12 2.5v2.5M12 19v2.5M4.4 4.4l1.8 1.8M17.8 17.8l1.8 1.8M2.5 12H5M19 12h2.5M4.4 19.6l1.8-1.8M17.8 6.2l1.8-1.8"/>',
       moon: '<path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z"/>',
-      dollar: '<path d="M12 3v18"/><path d="M17 7.5c0-2-2.2-3.5-5-3.5s-5 1.5-5 3.5 2.2 3 5 3 5 1 5 3.5-2.2 3.5-5 3.5-5-1.5-5-3.5"/>'
+      dollar: '<path d="M12 3v18"/><path d="M17 7.5c0-2-2.2-3.5-5-3.5s-5 1.5-5 3.5 2.2 3 5 3 5 1 5 3.5-2.2 3.5-5 3.5-5-1.5-5-3.5"/>',
+      scan: '<path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 8v8M10 8v8M13 8v8M16 8v8"/>',
+      tag: '<path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/>',
+      bell: '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/>',
+      chart: '<path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/>',
+      bars: '<path d="M3 21h18"/><rect x="5" y="11" width="3" height="7"/><rect x="10.5" y="6" width="3" height="12"/><rect x="16" y="9" width="3" height="9"/>',
+      edit: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',
+      history: '<path d="M3 12a9 9 0 1 0 3-6.7"/><polyline points="3,3 3,8 8,8"/><path d="M12 7v5l3 2"/>',
+      copy: '<rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/>',
+      swap: '<path d="M7 4 3 8l4 4"/><path d="M3 8h14"/><path d="m17 20 4-4-4-4"/><path d="M21 16H7"/>',
+      refresh: '<path d="M21 12a9 9 0 1 1-2.6-6.4"/><polyline points="21,3 21,9 15,9"/>',
+      camera: '<path d="M4 7h3l2-3h6l2 3h3a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="4"/>',
+      tools: '<line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="9" cy="6" r="2" fill="var(--paper-2)"/><circle cx="15" cy="12" r="2" fill="var(--paper-2)"/><circle cx="7" cy="18" r="2" fill="var(--paper-2)"/>',
+      gear: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
+      alert: '<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
+      ban: '<circle cx="12" cy="12" r="9"/><line x1="5.6" y1="5.6" x2="18.4" y2="18.4"/>',
+      grid: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/>',
+      expand: '<polyline points="15,3 21,3 21,9"/><polyline points="9,21 3,21 3,15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>',
+      x: '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>',
+      chevron: '<polyline points="9,6 15,12 9,18"/>',
+      chevronDown: '<polyline points="6,9 12,15 18,9"/>',
+      leaf: '<path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.5 19 2c1 2 2 4.2 2 8 0 5.5-4.8 10-10 10z"/><path d="M2 21c0-3 1.9-5.4 5.1-6"/>',
+      link: '<path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/>'
     };
     function icon(name, extraClass){
       const body = ICONS[name];
@@ -3213,6 +3523,7 @@
     function showScreen(which){
       [splash, login, app].forEach(s => s.classList.remove("active"));
       which.classList.add("active");
+      document.body.dataset.screen = which.id || "";
       document.body.classList.toggle("atmos", which !== app);
     }
     function setUser(name){
@@ -3580,13 +3891,18 @@
       setSkipWeek(wk, !isSkipWeek(wk));
       renderOrder();
     });
+    document.addEventListener("click", (e) => {
+      document.querySelectorAll("details.toolsMenu[open], details.rowMenu[open]").forEach(d => {
+        if(!d.contains(e.target) || e.target.closest(".tmItem")) d.removeAttribute("open");
+      });
+    });
     function updateSkipWeekUI(){
       const wk = weekKeyFromDate(weekAnchor);
       const flagged = isSkipWeek(wk);
       weekLabelEl.classList.toggle("isSkipWeek", flagged);
       if(skipWeekBtn){
         skipWeekBtn.classList.toggle("isActive", flagged);
-        skipWeekBtn.textContent = flagged ? "🚫 Skip Week (click to unflag)" : "🚫 Mark as Skip Week";
+        skipWeekBtn.innerHTML = icon("ban") + (flagged ? "Skip week — click to unflag" : "Mark as skip week");
       }
     }
 
@@ -4837,7 +5153,7 @@
       weekLabelEl.textContent = weekLabel(weekAnchor);
       if(requestDateLabelEl) requestDateLabelEl.textContent = requestDateLabel(weekAnchor);
       const exportTruckBreakdownBtnEl = document.getElementById("exportTruckBreakdownBtn");
-      if(exportTruckBreakdownBtnEl) exportTruckBreakdownBtnEl.textContent = `Truck Breakdown WK ${isoWeekNumOf(weekAnchor)}`;
+      if(exportTruckBreakdownBtnEl) exportTruckBreakdownBtnEl.innerHTML = icon("download") + `Truck breakdown · Wk ${isoWeekNumOf(weekAnchor)}`;
       updateSkipWeekUI();
       updateWeekMetaUI();
 
@@ -4969,7 +5285,7 @@
           pickup.innerHTML = `
             <div class="pickupHead">
               <div class="pickupLeft">
-                <div class="pickupTitle"><span class="truckDot"></span>${dateBadgePrefix(t.region)} ${escapeHtml(t.pickupDate || "—")}</div>
+                <div class="pickupTitle"><span class="truckDot"></span><span class="ptPrefix">${dateBadgePrefix(t.region)}</span> ${escapeHtml(prettyDay(t.pickupDate))}</div>
                 <div class="pickupChips">
                   <span class="pillMini editablePill" data-action="editTrucking" title="Click to edit trucking company">${escapeHtml(t.trucking || "Trucking —")}</span>
                   <span class="pillMini editablePill" data-action="editPrice" title="Click to edit truck price">${money(t.price || 0)}</span>
@@ -4979,10 +5295,15 @@
               </div>
               <div class="pickupRight">
                 <button type="button" class="${t.invoicePaid ? "statusPill statusConfirmed" : "statusPill statusOpen"} statusToggle" data-action="toggleInvoicePaid" title="Click to toggle whether this truck's invoice has been paid">${t.invoicePaid ? "✅ Invoice Paid" : "💲 Invoice Unpaid"}</button>
-                <button class="tinyBtn" data-action="togglePickup" aria-expanded="true">Collapse</button>
-                <button class="tinyBtn tinyBtnIcon" data-action="history" title="History — date, change, and user for this order" aria-label="History"><span aria-hidden="true">🕘</span></button>
-                <button class="tinyBtn" data-action="duplicate">Duplicate</button>
-                <button class="tinyBtn" data-action="edit">Edit</button>
+                <button class="tinyBtn" data-action="edit">${icon("edit")}Edit</button>
+                <details class="rowMenu">
+                  <summary class="tinyBtn tinyIcon" title="More actions" aria-label="More actions for this truck">${icon("more")}</summary>
+                  <div class="toolsMenuPanel rowMenuPanel" role="menu">
+                    <button class="tmItem" type="button" data-action="togglePickup" aria-expanded="true">${icon("chevronDown")}Collapse</button>
+                    <button class="tmItem" type="button" data-action="history">${icon("history")}History</button>
+                    <button class="tmItem" type="button" data-action="duplicate">${icon("copy")}Duplicate</button>
+                  </div>
+                </details>
               </div>
             </div>
             <div class="pickupBody"></div>
@@ -5002,7 +5323,7 @@
           pickupToggle.addEventListener("click", () => {
             const collapsed = pickup.classList.toggle("pickupCollapsed");
             pickupToggle.setAttribute("aria-expanded", String(!collapsed));
-            pickupToggle.textContent = collapsed ? "Expand" : "Collapse";
+            pickupToggle.innerHTML = icon(collapsed ? "chevron" : "chevronDown") + (collapsed ? "Expand" : "Collapse");
           });
 
           const pickupBody = pickup.querySelector(".pickupBody");
@@ -5065,11 +5386,11 @@
                       ? items.map((it, iIdx) => `
                         <tr class="itemRow${it.substituted ? " substituted" : ""}${it.checked ? " itemChecked" : ""}" data-tid="${t.id}" data-vidx="${vIdx}" data-iidx="${iIdx}">
                           <td class="itemCheckCell"><input type="checkbox" class="itemCheckBox" data-tid="${t.id}" data-vidx="${vIdx}" data-iidx="${iIdx}" ${it.checked ? "checked" : ""} title="Mark as added to the order"></td>
-                          <td class="itemNameCell" title="Click to substitute this item">${escapeHtml(it.item || "—")}${window.SkuBook && it.item ? " " + SkuBook.chip(t, vIdx, iIdx, it) : ""}</td>
-                          ${showRacks ? `<td class="num">${rackCellText(it)}</td>` : ``}
-                          ${showCases ? `<td class="num">${Number(it.cases || 0) ? Number(it.cases).toLocaleString() : ""}</td>` : ``}
-                          <td class="num">${Number(it.qty || 0) ? Number(it.qty).toLocaleString() : ""}</td>
-                          <td>${escapeHtml(it.notes || "")}</td>
+                          <td class="itemNameCell" data-label="Item" title="Click to substitute this item">${escapeHtml(it.item || "—")}${window.SkuBook && it.item ? " " + SkuBook.chip(t, vIdx, iIdx, it) : ""}</td>
+                          ${showRacks ? `<td class="num" data-label="${escapeHtml(rackInfo.label)}">${rackCellText(it)}</td>` : ``}
+                          ${showCases ? `<td class="num" data-label="Cases">${Number(it.cases || 0) ? Number(it.cases).toLocaleString() : ""}</td>` : ``}
+                          <td class="num" data-label="Plants">${Number(it.qty || 0) ? Number(it.qty).toLocaleString() : ""}</td>
+                          <td class="itemNotes" data-label="Notes">${escapeHtml(it.notes || "")}</td>
                         </tr>
                       `).join("")
                       : `<tr><td colspan="${colCount}" style="color:var(--ink-2); font-weight:600;">No lines.</td></tr>`
@@ -7637,7 +7958,7 @@
       const takeLabel = p.type === "tag" ? "Take" : "Claim";
       row.innerHTML = `
         <div class="prebookLineVendor">${p.vendor ? xl("vendor", p.vendor, p.vendor) : "—"}</div>
-        <div class="prebookLineItem">${h ? `<span class="prebookHolidayDot" title="${escapeHtml(h.name)}">${h.emoji}</span>` : ""}${p.item ? xl("item", p.item, p.item) : "Item"}${p.orderTruckId && loadTrucks().some(t => t.id === p.orderTruckId) ? `<button type="button" class="xlJumpBtn" data-xl-jump-truck="${escapeHtml(p.orderTruckId)}" title="Open the order this was booked from">🚛 On order</button>` : ""}${p.location ? `<span class="prebookLineLoc" title="Location">📍 ${escapeHtml(p.location)}</span>` : ""}</div>
+        <div class="prebookLineItem">${h ? `<span class="prebookHolidayDot" title="${escapeHtml(h.name)}">${h.emoji}</span>` : ""}${p.item ? xl("item", p.item, p.item) : "Item"}${p.orderTruckId && loadTrucks().some(t => t.id === p.orderTruckId) ? `<button type="button" class="xlJumpBtn" data-xl-jump-truck="${escapeHtml(p.orderTruckId)}" title="Open the order this was booked from">${icon("truck")}On order</button>` : ""}${p.location ? `<span class="prebookLineLoc" title="Location">📍 ${escapeHtml(p.location)}</span>` : ""}</div>
         <div class="prebookLineQty">${totalQty || "—"}</div>
         <div class="prebookLineDate">${escapeHtml(dateLabel)}</div>
         <div class="prebookClaimWrap">
@@ -7991,25 +8312,31 @@
         tr.dataset.issueId = i.id;
         const truckExists = i.truckId && loadTrucks().some(t => t.id === i.truckId);
         const truckCell = truckExists
-          ? `<button type="button" class="xlJumpBtn" data-xl-jump-truck="${escapeHtml(i.truckId)}" title="Open this order">🚛 ${escapeHtml(i.truckLabel || "Order")}</button>`
+          ? `<button type="button" class="xlJumpBtn" data-xl-jump-truck="${escapeHtml(i.truckId)}" title="Open this order">${icon("truck")}${escapeHtml(i.truckLabel ? prettyDay(String(i.truckLabel).split(" ")[0]) : "Order")}</button>`
           : escapeHtml(i.truckLabel || "—");
         const checkinCell = i.checkinWeek
-          ? `<button type="button" class="xlJumpBtn" data-xl-jump-checkin="${escapeHtml(i.checkinWeek)}" data-xl-mode="${escapeHtml(i.checkinMode || "")}" data-xl-row="${escapeHtml(i.checkinRowKey || "")}" title="Open the Check-In line this was flagged from">✅ Check-In</button>`
+          ? `<button type="button" class="xlJumpBtn" data-xl-jump-checkin="${escapeHtml(i.checkinWeek)}" data-xl-mode="${escapeHtml(i.checkinMode || "")}" data-xl-row="${escapeHtml(i.checkinRowKey || "")}" title="Open the Check-In line this was flagged from">${icon("checkCircle")}Check-in</button>`
           : "";
         tr.innerHTML = `
-          <td>${escapeHtml(i.date)}</td>
-          <td><span class="${statusClass(i.status)}">${escapeHtml(i.status)}</span></td>
-          <td>${i.vendor ? xl("vendor", i.vendor, i.vendor) : ""}</td>
-          <td>${truckCell}${checkinCell}</td>
-          <td>${i.item ? xl("item", i.item, i.item) : ""}</td>
-          <td>${escapeHtml(i.type)}</td>
-          <td class="issueNotesCell">${escapeHtml(i.notes || "—")}</td>
+          <td data-label="Date" class="nowrap">${escapeHtml(prettyDay(i.date))}</td>
+          <td data-label="Status"><button type="button" class="${statusClass(i.status)} statusToggleBtn iv_toggle" title="Click to move to the next status">${escapeHtml(i.status)}</button></td>
+          <td data-label="Vendor">${i.vendor ? xl("vendor", i.vendor, i.vendor) : ""}</td>
+          <td data-label="Truck">${truckCell}${checkinCell}</td>
+          <td data-label="Item">${i.item ? xl("item", i.item, i.item) : ""}</td>
+          <td data-label="Type">${escapeHtml(i.type)}</td>
+          <td data-label="Notes" class="issueNotesCell">${escapeHtml(i.notes || "—")}</td>
           <td class="issueActionsCell">
-            <button class="tinyBtn iv_edit">Edit</button>
-            ${hasPhoto ? `<button class="tinyBtn iv_photo">Photo</button>` : ``}
-            <button class="tinyBtn iv_toggle">Toggle Status</button>
-            <button class="tinyBtn iv_history">History</button>
-            <button class="tinyBtn danger iv_del">Delete</button>
+            <div class="rowActions">
+              <button class="tinyBtn iv_edit">${icon("edit")}Edit</button>
+              ${hasPhoto ? `<button class="tinyBtn tinyIcon iv_photo" title="View photo" aria-label="View photo">${icon("camera")}</button>` : ``}
+              <details class="rowMenu">
+                <summary class="tinyBtn tinyIcon" title="More actions" aria-label="More actions">${icon("more")}</summary>
+                <div class="toolsMenuPanel rowMenuPanel" role="menu">
+                  <button class="tmItem iv_history" type="button">${icon("history")}History</button>
+                  <button class="tmItem danger iv_del" type="button">${icon("x")}Delete issue</button>
+                </div>
+              </details>
+            </div>
           </td>
         `;
         const editBtn = tr.querySelector(".iv_edit");
@@ -8476,7 +8803,7 @@
         const bodyCells = headers.map(h => {
           if(h === notesHeader){
             const notesVal = (s.notes !== undefined) ? s.notes : cleanCellText(String(r.cells[h] ?? ""));
-            return `<td><textarea class="poNotes" placeholder="Notes...">${escapeHtml(notesVal)}</textarea></td>`;
+            return `<td data-label="Notes"><textarea class="poNotes" placeholder="Notes…">${escapeHtml(notesVal)}</textarea></td>`;
           }
           const isNumericCol = /ordered|qty|racks|cases|price|total|open|received|returned/i.test(h);
           const isVendorCol = /^vendor name$|^vendor$/i.test(h);
@@ -8487,18 +8814,18 @@
           if(raw && isVendorCol) inner = xl("vendor", r.vendor || raw, raw);
           else if(raw && /^po number$/i.test(h)) inner = xl("po", r.po || raw, raw);
           else if(raw && /^item description$|^item$/i.test(h)) inner = xl("item", r.item || raw, display);
-          return `<td class="${cls}">${inner}</td>`;
+          return `<td class="${cls}" data-label="${escapeHtml(h)}">${inner}</td>`;
         }).join("");
         // Below the checkbox: an "Add Issue" button (turns into a small
         // "Flagged" pill once clicked, which highlights the whole line red
         // via checkinIssueRow and can be cleared again with its ×).
         const issueCellHtml = s.hasIssue
-          ? `<div class="checkinIssueFlagPill" title="Flagged — click × to clear"><span>⚠ Flagged</span><button type="button" class="checkinClearIssueBtn" aria-label="Clear issue flag">×</button></div>`
-          : `<button type="button" class="tinyBtn danger checkinAddIssueBtn">⚠ Add Issue</button>`;
+          ? `<div class="checkinIssueFlagPill" title="Flagged — click × to clear"><span>${icon("alert")}Flagged</span><button type="button" class="checkinClearIssueBtn" aria-label="Clear issue flag">×</button></div>`
+          : `<button type="button" class="tinyBtn tinyIcon danger checkinAddIssueBtn" title="Flag an issue on this line" aria-label="Add issue">${icon("alert")}</button>`;
         const rowTruckId = window.HPALinks ? HPALinks.truckIdForCheckinRow(r, wk) : "";
-        const truckJumpHtml = rowTruckId ? `<button type="button" class="xlJumpBtn" data-xl-jump-truck="${escapeHtml(rowTruckId)}" title="Open this line's order on the Order Tracker">🚛 Order</button>` : "";
+        const truckJumpHtml = rowTruckId ? `<button type="button" class="tinyBtn tinyIcon" data-xl-jump-truck="${escapeHtml(rowTruckId)}" title="Open this line's order on the Order Tracker" aria-label="Open order">${icon("truck")}</button>` : "";
         tr.dataset.rowKey = r.key;
-        tr.innerHTML = `<td><input type="checkbox" class="poChk" ${s.checked ? "checked" : ""}>${issueCellHtml}${truckJumpHtml}</td>${bodyCells}`;
+        tr.innerHTML = `<td class="ciCheckCell"><div class="ciCheckWrap"><input type="checkbox" class="poChk" aria-label="Checked in" ${s.checked ? "checked" : ""}><div class="ciActions">${issueCellHtml}${truckJumpHtml}</div></div></td>${bodyCells}`;
         const chk = tr.querySelector(".poChk");
         const notesEl = tr.querySelector(".poNotes");
         const persist = () => {
@@ -8645,7 +8972,7 @@
         else hub.requestFullscreen?.().catch(() => window.open(gsOpenUrl(gsCurrent()), "_blank", "noopener"));
       });
       document.addEventListener("fullscreenchange", () => {
-        fullBtn.textContent = document.fullscreenElement === hub ? "🗗" : "⛶";
+        fullBtn.innerHTML = icon(document.fullscreenElement === hub ? "x" : "expand");
         fullBtn.title = document.fullscreenElement === hub ? "Exit full screen (F)" : "Full screen (F)";
       });
       document.getElementById("gsLinkBtn").addEventListener("click", () => {
@@ -8928,7 +9255,7 @@
           : data ? `Synced from Google Sheets · ${escapeHtml(timeAgoShort(data.fetchedAt))}` : "Not loaded yet";
         if(!data){
           root.innerHTML = `<div class="avTop"><span class="avStatus">${status}</span></div>
-            <div class="avEmpty">${loading ? "Reading your availability sheet…" : `Couldn't load the sheet yet. ${lastErr ? escapeHtml(lastErr) : ""}<br><button type="button" class="btn" data-av="refresh" style="width:auto;margin-top:12px;">Try again</button>`}</div>`;
+            <div class="avEmpty">${loading ? `<div class="avSkel">${Array.from({ length:7 }, (_, i) => `<div class="avSkelRow"><span class="skeleton" style="width:${150 + (i * 37) % 90}px"></span>${Array.from({ length:6 }, (_, j) => `<span class="skeleton" style="opacity:${(i + j) % 3 ? .55 : 1}"></span>`).join("")}</div>`).join("")}<div class="avSkelNote">Reading your availability sheet…</div></div>` : `Couldn't load the sheet yet. ${lastErr ? escapeHtml(lastErr) : ""}<br><button type="button" class="btn" data-av="refresh" style="width:auto;margin-top:12px;">Try again</button>`}</div>`;
           return;
         }
         const vendors = [...new Set(data.items.map(i => i.vendor))].sort();
@@ -9928,10 +10255,13 @@
       const wrap = document.getElementById("dashLabelTracker");
       if(!wrap) return;
       const state = loadLabels();
-      const vendorNames = Object.keys(state.vendors || {}).sort((a,b) => a.localeCompare(b));
+      // Only Homestead vendors show here (matches "ANCHOR", "J&D Nursery", "Omega Farms"…).
+      // Other vendors' sticker counts are kept, just not listed.
+      const isHomesteadVendor = (name) => { const t = String(name || "").trim().toLowerCase(); return HOMESTEAD_VENDORS.some(v => { const k = v.toLowerCase(); return t === k || t.startsWith(k + " ") || k.startsWith(t + " ") || t.startsWith(k); }); };
+      const vendorNames = Object.keys(state.vendors || {}).filter(isHomesteadVendor).sort((a,b) => a.localeCompare(b));
       const cardsHtml = vendorNames.length
         ? vendorNames.map(name => renderLabelVendorCard(name, state.vendors[name])).join("")
-        : `<div class="labelTrackerEmpty">No vendor label trackers yet — add one to start tracking UPC stickers by nursery.</div>`;
+        : `<div class="labelTrackerEmpty">No Homestead vendor label trackers yet — add one to start tracking UPC stickers by nursery.</div>`;
       wrap.innerHTML = `
         <div class="labelTrackerCard">
           <div class="labelTrackerHead">
@@ -10019,7 +10349,7 @@
     // their own per-week "poImports" collection (see below) rather than this flat
     // list — one workbook can be too big to lump in with everything else here.
     const SYNC_KEYS = [
-      "hpa_alert_settings_v1", "hpa_alert_sent_v1", "hpa_st_library_v1", "hpa_item_catalog_v1", "hpa_scan_memory_v1", "hpa_sku_book_v1", "hpa_sku_links_v1",
+      "hpa_alert_settings_v1", "hpa_alert_sent_v1", "hpa_st_library_v1", "hpa_item_catalog_v1", "hpa_scan_memory_v1", "hpa_sku_book_v1", "hpa_sku_links_v1", "hpa_sku_defaults_v1",
       LS.trucksKey, LS.issuesKey,
       LS.trainingKey, LS.adsKey, LS.labelsKey, LS.availLinkKey, LS.catalogKey, LS.checkinKey,
       LS.availKey, LS.availOrdersKey, LS.availAmountsKey, LS.availSpecOverridesKey,
@@ -10950,8 +11280,7 @@
             <div class="statSub">${escapeHtml(s.sub)}</div>
           </div>`
         ).join("");
-        if(window.HPALinks) HPALinks.renderAttention(wk);
-        if(window.VendorScores) VendorScores.renderDashboard();
+        if(window.DashTrends) DashTrends.render();
       },
       // "Arriving this week" and the "Recent activity" feed have been
       // removed from the Dashboard. renderActivity() is kept as a safe
@@ -11724,8 +12053,12 @@
      *********************************************************/
     const SKU_BOOK_BUILTIN = { file:"HOMESTEAD SKU_COST_2026.xlsx", rows: [["1013332788","FOL","40IN","Vining Plants 4in","GP",1.5,4.98,"651840122515",0,"Foliage","4\" Foliage",""],["1014951357","FOL","40IN","IVY VINING 4IN","GP",1.5,4.98,"651840126582",0,"Foliage","4\" Foliage",""],["451480","FOL","40IN","Foliage","GP",1.5,5.98,"651840112172",1,"Foliage","4\" Foliage",""],["1008594506","FOL","40IN","Premium Foliage Asst 4in","PC",2.5,7.98,"651840152710",0,"Foliage","4\" Foliage",""],["1015077335","FOL","40IN","MINI NURSERY KNOCKOUTS 4IN","PC",2.5,7.98,"651840126636",0,"Foliage","4\" Foliage",""],["1005837398","FOL","60VG","Vigoro Aglaonema Maria 6\"","SLEEVE",4.95,14.98,"651840642624",0,"Foliage","6\" Foliage","AGLAONEMA"],["1014933172","FOL","60VD","VIG DND AGLAONEMA CRETA 6IN","SLEEVE",4.95,14.98,"651840125950",0,"Foliage","6\" Foliage","AGLAONEMA"],["1014933182","FOL","60VD","VIG DND AGLAONEMA SILVER BAY 6IN","SLEEVE",4.95,14.98,"651840125929",1,"Foliage","6\" Foliage","AGLAONEMA"],["1014933200","FOL","60VD","VIG DND AGLAONEMA WISHES 6IN","SLEEVE",4.95,14.98,"651840125936",0,"Foliage","6\" Foliage","AGLAONEMA"],["1014933217","FOL","60VD","VIG DND AGLAONEMA MARY ANN 6IN","SLEEVE",4.95,14.98,"651840125943",0,"Foliage","6\" Foliage","AGLAONEMA"],["1005837416","FOL","60VG","Vigoro Alocasia Regal Shield 6\"","SLEEVE",4.95,14.98,"651840642631",0,"Foliage","6\" Foliage","ALOCASIA"],["1006110487","FOL","60VG","Alocasia Green 6 Inch","SLEEVE",4.95,14.98,"651840975517",1,"Foliage","6\" Foliage","ALOCASIA"],["1006807139","FOL","60VG","6\" Vigoro Anthurium","SLEEVE",4.95,14.98,"651840852221",0,"Foliage","6\" Foliage","ANTHURIUM"],["1014933232","FOL","60VD","VIG DND ANTHURIUM 6IN","SLEEVE",4.95,14.98,"651840125998",1,"Foliage","6\" Foliage","ANTHURIUM"],["1011387514","FOL","60VG","Vigoro Aphelandra Zebra 6in","SLEEVE",4.95,14.98,"651840146023",1,"Foliage","6\" Foliage","APHELANDRA"],["1003237721","FOL","60IN","Aralia","GROWER POT",2.95,9.98,"651840502133",0,"Foliage","6\" Foliage","ARALIA"],["1006807152","FOL","60VG","6\" Vigoro Aralia Stump","SLEEVE",4.95,14.98,"651840852177",0,"Foliage","6\" Foliage","ARALIA"],["1014933176","FOL","60VD","VIG DND ARALIA STUMP 6IN","SLEEVE",4.95,14.98,"651840125981",1,"Foliage","6\" Foliage","ARALIA"],["1008594554","FOL","60VG","Vigoro Rex Begonia 6in","SLEEVE",3.95,12.98,"651840152369",1,"Foliage","6\" Foliage","BEGONIA"],["1005837401","FOL","60VG","Vigoro Calathea Rattlesnake 6\"","SLEEVE",4.59,12.98,"651840642440",0,"Foliage","6\" Foliage","CALATHEA"],["1006110500","FOL","60VG","Vigoro Calathea Zabrina 6 inch","SLEEVE",4.59,12.98,"651840128067",0,"Foliage","6\" Foliage","CALATHEA"],["1014951360","FOL","60VD","VIG DND CALATHEA ZEBRINA 6IN","SLEEVE",4.59,12.98,"651840126049",0,"Foliage","6\" Foliage","CALATHEA"],["1014951363","FOL","60VD","VIG DND CALATHEA MAUI QUEEN 6IN","SLEEVE",4.59,12.98,"651840126063",0,"Foliage","6\" Foliage","CALATHEA"],["1014951373","FOL","60VD","VIG DND CALATHEA RATTLESNAKE 6IN","SLEEVE",4.59,12.98,"651840126032",1,"Foliage","6\" Foliage","CALATHEA"],["1014951374","FOL","60VD","VIG DND CALATHEA RUFIBARBA 6IN","SLEEVE",4.59,12.98,"651840126056",0,"Foliage","6\" Foliage","CALATHEA"],["1014951377","FOL","60VD","VIG DND CALATHEA ROYAL STANDARD 6IN","SLEEVE",4.59,12.98,"651840126070",0,"Foliage","6\" Foliage","CALATHEA"],["1014951389","FOL","60VD","VIG DND CALATHEA PEACOCK 6IN","SLEEVE",4.59,12.98,"651840126018",0,"Foliage","6\" Foliage","CALATHEA"],["1014951393","FOL","60VD","VIG DND CALATHEA BEAUTY STAR 6IN","SLEEVE",4.59,12.98,"651840126001",0,"Foliage","6\" Foliage","CALATHEA"],["1014951397","FOL","60VD","VIG DND CALATHEA FREDDIE 6IN","SLEEVE",4.59,12.98,"651840126025",0,"Foliage","6\" Foliage","CALATHEA"],["1006110481","FOL","60VG","Calathea Burl Marx 6 inch","SLEEVE",4.59,12.98,"651840975746",0,"Foliage","6\" Foliage","CALATHEA"],["1006110507","FOL","60VG","Calathea Medallion 6 inch","SLEEVE",4.59,12.98,"651840975722",0,"Foliage","6\" Foliage","CALATHEA"],["1006110512","FOL","60VG","Calathea Pinstripe 6 inch","SLEEVE",4.59,12.98,"651840975739",0,"Foliage","6\" Foliage","CALATHEA"],["1005847052","FOL","60IN","China Doll","GROWER POT",2.95,9.98,"651840502140",1,"Foliage","6\" Foliage","CHINA DOLL"],["1006807141","FOL","60VG","6\" Vigoro Coffee Plant","SLEEVE",3.95,12.98,"651840852191",1,"Foliage","6\" Foliage","COFFEE PLANT"],["1005837419","FOL","60IN","Cordyline 6 inch","SLEEVE",3.95,12.98,"651840642365",1,"Foliage","6\" Foliage","CORDYLINE"],["1006110509","FOL","60IN","Cordyline Ruby 6 inch","SLEEVE",3.95,12.98,"651840975654",0,"Foliage","6\" Foliage","CORDYLINE"],["360888","FOL","60IN","Croton","GROWER POT",2.95,9.98,"651840131012",1,"Foliage","6\" Foliage","CROTON"],["1006110480","FOL","60IN","Croton Mammy 6 inch","GROWER POT",2.95,9.98,"651840975708",0,"Foliage","6\" Foliage","CROTON"],["1006110496","FOL","60IN","Croton Gold Dust 6 inch","GROWER POT",2.95,9.98,"651840975715",0,"Foliage","6\" Foliage","CROTON"],["1006110505","FOL","60IN","Croton Petra 6 inch","GROWER POT",2.95,9.98,"651840975692",0,"Foliage","6\" Foliage","CROTON"],["246510","FOL","60IN","Dieffenbachia","SLEEVE",3.95,12.98,"651840130992",0,"Foliage","6\" Foliage","DIEFFENBACHIA"],["1006110466","FOL","60IN","Dieffenbachia Camille 6 inch","SLEEVE",3.95,12.98,"651840128081",0,"Foliage","6\" Foliage","DIEFFENBACHIA"],["1014951347","FOL","60VD","VIG DND DIEFFENBACHIA SNOW 6IN","SLEEVE",3.95,12.98,"651840126285",0,"Foliage","6\" Foliage","DIEFFENBACHIA"],["1014951369","FOL","60VD","VIG DND DIEFFENBACHIA COMPACTA 6IN","SLEEVE",3.95,12.98,"651840126261",0,"Foliage","6\" Foliage","DIEFFENBACHIA"],["1014951376","FOL","60VD","VIG DND DIEFFENBACHIA PANTHER 6IN","SLEEVE",3.95,12.98,"651840126278",0,"Foliage","6\" Foliage","DIEFFENBACHIA"],["1014951384","FOL","60VD","VIG DND DIEFFENBACHIA CAMOUFLAGE 6IN","SLEEVE",3.95,12.98,"651840126308",1,"Foliage","6\" Foliage","DIEFFENBACHIA"],["1014951402","FOL","60VD","VIG DND DIEFFENBACHIA MRYAnn 6IN","SLEEVE",3.95,12.98,"651840126292",0,"Foliage","6\" Foliage","DIEFFENBACHIA"],["244657","FOL","60IN","Warneckii","GROWER POT",2.95,9.98,"651840130916",0,"Foliage","6\" Foliage","DRACAENA"],["247533","FOL","60IN","Dracaena","GROWER POT",2.95,9.98,"651840131067",0,"Foliage","6\" Foliage","DRACAENA"],["1006110464","FOL","60IN","Dracaena Janet Craig Compacta 6 inch","GROWER POT",2.95,9.98,"651840975753",0,"Foliage","6\" Foliage","DRACAENA"],["1006110476","FOL","60IN","Dracaena Lemon Lime 6 inch","GROWER POT",2.95,9.98,"651840975609",0,"Foliage","6\" Foliage","DRACAENA"],["1006110478","FOL","60IN","Dracaena Marginata Magenta 6 inch","GROWER POT",2.95,9.98,"651840975760",0,"Foliage","6\" Foliage","DRACAENA"],["1006110504","FOL","60IN","Dracaena Marginata Bi-Color 6 inch","GROWER POT",2.95,9.98,"651840975777",0,"Foliage","6\" Foliage","DRACAENA"],["1006110511","FOL","60IN","Dracaena Cutback 6 inch","SLEEVE",3.95,12.98,"651840975593",0,"Foliage","6\" Foliage","DRACAENA"],["1005837406","FOL","60VG","Vigoro Braided Marginata 6\"","SLEEVE",4.95,14.98,"651840642518",0,"Foliage","6\" Foliage","DRACAENA"],["1014933233","FOL","60VD","VIG DND MARGINATA BRAID 6IN","SLEEVE",4.95,14.98,"651840125974",1,"Foliage","6\" Foliage","DRACAENA"],["1011387512","FOL","60VG","Vigoro Fatsia Japonica 6in","SLEEVE",4.24,14.98,"651840146030",1,"Foliage","6\" Foliage","FATSIA JAPONICA"],["157063","FOL","60IN","Staghorn Fern","GROWER POT",2.95,9.98,"651840111717",0,"Foliage","6\" Foliage","FERN"],["247324","FOL","60IN","Fern","GROWER POT",2.95,9.98,"651840131043",0,"Foliage","6\" Foliage","FERN"],["247714","FOL","60IN","Birdsnest Fern","GROWER POT",2.95,9.98,"651840131074",0,"Foliage","6\" Foliage","FERN"],["1006110469","FOL","60IN","Boston Fern 6 inch","GROWER POT",2.95,9.98,"651840975791",0,"Foliage","6\" Foliage","FERN"],["1006110471","FOL","60IN","Macho fern 6 inch","GROWER POT",2.95,9.98,"651840975548",0,"Foliage","6\" Foliage","FERN"],["1006110484","FOL","60IN","Nicholas Diamond Fern 6 inch","GROWER POT",2.95,9.98,"651840975807",0,"Foliage","6\" Foliage","FERN"],["1006110503","FOL","60IN","Kimberly Queen Fern 6 inch","GROWER POT",2.95,9.98,"651840975784",0,"Foliage","6\" Foliage","FERN"],["1008594513","FOL","60IN","Fern Nevada 6in","GROWER POT",2.95,9.98,"651840152383",0,"Foliage","6\" Foliage","FERN"],["1008594527","FOL","60IN","Fern Autumn 6in","GROWER POT",2.95,9.98,"651840152390",0,"Foliage","6\" Foliage","FERN"],["1008594529","FOL","60IN","Fern Rabbit Foot 6in","GROWER POT",2.95,9.98,"651840152376",0,"Foliage","6\" Foliage","FERN"],["1005847058","FOL","60IN","Lemon Button Fern","SLEEVE",3.95,12.98,"651840502157",0,"Foliage","6\" Foliage","FERN"],["1006110485","FOL","60IN","Silver Lace Fern 6 inch","SLEEVE",3.95,12.98,"651840975661",0,"Foliage","6\" Foliage","FERN"],["136513","FOL","60IN","Rubber Tree","SLEEVE",3.95,12.98,"651840162702",0,"Foliage","6\" Foliage","FICUS"],["1006110479","FOL","60IN","Ficus Altissma Variegated 6 inch","SLEEVE",3.95,12.98,"651840975616",0,"Foliage","6\" Foliage","FICUS"],["1006110510","FOL","60IN","Ficus Audrey 6 inch","SLEEVE",3.95,12.98,"651840975623",0,"Foliage","6\" Foliage","FICUS"],["1014951348","FOL","60VD","VIG DND FICUS TINEKE 6IN","SLEEVE",3.95,12.98,"651840126209",0,"Foliage","6\" Foliage","FICUS"],["1014951359","FOL","60VD","VIG DND FICUS AUDREY","SLEEVE",3.95,12.98,"651840126254",0,"Foliage","6\" Foliage","FICUS"],["1014951366","FOL","60VD","VIG DND FICUS BURGUNDY 6IN","SLEEVE",3.95,12.98,"651840126193",1,"Foliage","6\" Foliage","FICUS"],["1014951390","FOL","60VD","VIG DND FICUS BAMBINO 6IN","SLEEVE",3.95,12.98,"651840126186",0,"Foliage","6\" Foliage","FICUS"],["1006807153","FOL","60VG","6\"Vigoro Ficus Lyrata","SLEEVE",3.95,12.98,"651840852238",0,"Foliage","6\" Foliage","FICUS"],["1005837415","FOL","60VG","Vigoro Ficus Ginseng 6\"","SLEEVE",4.95,14.98,"651840642648",0,"Foliage","6\" Foliage","FICUS"],["1008594547","FOL","60VG","Vigoro Ficus Triangularis 6in","SLEEVE",4.95,14.98,"651840152321",0,"Foliage","6\" Foliage","FICUS"],["1014933173","FOL","60VD","VIG DND FICUS GINSENG BONSAI 6IN","SLEEVE",4.95,14.98,"651840125967",1,"Foliage","6\" Foliage","FICUS"],["1006110497","FOL","60IN","Emerald Gem 6 inch","GROWER POT",2.95,9.98,"651840975524",0,"Foliage","6\" Foliage","HOMALOMENA"],["1008594498","FOL","60VG","Vig Homalomena Purple Sword 6in","SLEEVE",4.95,14.98,"651840152352",0,"Foliage","6\" Foliage","HOMALOMENA"],["1008594537","FOL","60VG","Vigoro Homalomena Selby 6in","SLEEVE",4.95,14.98,"651840152338",1,"Foliage","6\" Foliage","HOMALOMENA"],["1014951401","FOL","60VD","VIG DND HOYA ASSORTED 6IN","SLEEVE",4.24,12.98,"651840126216",1,"Foliage","6\" Foliage","HOYA"],["1011387513","FOL","60IN","Hypoestes 6in","GROWER POT",2.95,9.98,"651840146047",1,"Foliage","6\" Foliage","HYPOESTES"],["244830","FOL","60IN","Ivy","GROWER POT",2.95,9.98,"651840130954",1,"Foliage","6\" Foliage","IVY"],["248072","FOL","60IN","Lipstick Plant","SLEEVE",3.95,12.98,"651840161804",1,"Foliage","6\" Foliage","LIPSTICK PLANT"],["1014951394","FOL","60VD","VIG DND MARANTA ASSORTED","SLEEVE",3.95,12.98,"651840126223",1,"Foliage","6\" Foliage","MARANTA"],["1011387511","FOL","60VG","Vigoro Maranta 6in","SLEEVE",3.95,12.98,"651840146016",0,"Foliage","6\" Foliage","MARANTA"],["1006110494","FOL","60IN","Foliage Combo 6 inch","GROWER POT",2.95,9.98,"651840975531",0,"Foliage","6\" Foliage","MISC."],["456373","FOL","60IN","Deluxe Foliage","SLEEVE",3.95,12.98,"651840112219",0,"Foliage","6\" Foliage","MISC."],["1006110468","FOL","60IN","Foliage Combo 6 inch","SLEEVE",3.95,12.98,"651840975562",0,"Foliage","6\" Foliage","MISC."],["1014951375","FOL","60VD","VIG DND TOTEM POLE 6IN","SLEEVE",4.95,14.98,"651840126346",0,"Foliage","6\" Foliage","MISC."],["1015077333","FOL","60IN","CLEARLY ROOTED 6IN","CLEAR POT",4.95,14.98,"651840126612",0,"Foliage","6\" Foliage","MISC."],["1015077332","FOL","60IN","NURSERY KNOCKOUTS 6IN","POT COVER",9.5,24.98,"651840126629",0,"Foliage","6\" Foliage","MISC."],["1006807148","FOL","60VG","6\" Vigoro Money Tree","SLEEVE",4.95,14.98,"651840852214",0,"Foliage","6\" Foliage","MONEY TREE"],["1014933180","FOL","60VD","VIG DND MONEY TREE 6IN","SLEEVE",4.95,14.98,"651840125905",1,"Foliage","6\" Foliage","MONEY TREE"],["1014951386","FOL","60VD","VIG DND MONSTERA SWISS 6IN","SLEEVE",4.24,12.98,"651840126230",1,"Foliage","6\" Foliage","MONSTERA"],["1005837379","FOL","60VG","Vigoro Monstera 6\"","SLEEVE",4.24,12.98,"651840642471",0,"Foliage","6\" Foliage","MONSTERA"],["245080","FOL","60IN","Palm","SLEEVE",3.95,12.98,"651840130961",0,"Foliage","6\" Foliage","PALM"],["1006807147","FOL","60VG","6\" Vigoro Ponytail Stump","SLEEVE",4.95,14.98,"651840852207",0,"Foliage","6\" Foliage","PALM"],["1014933230","FOL","60VD","VIG DND PONYTAIL 6IN","SLEEVE",4.95,14.98,"651840125882",1,"Foliage","6\" Foliage","PALM"],["1005837413","FOL","60IN","Pepperomia 6 inch","GROWER POT",2.95,9.98,"651840642372",0,"Foliage","6\" Foliage","PEPEROMIA"],["1006110472","FOL","60IN","Peperomia Variegated 6 inch","GROWER POT",2.95,9.98,"651840975678",0,"Foliage","6\" Foliage","PEPEROMIA"],["1006110488","FOL","60IN","Peperomia Ginny 6 inch","GROWER POT",2.95,9.98,"651840975685",1,"Foliage","6\" Foliage","PEPEROMIA"],["1008594496","FOL","60VG","Vigoro Philodendron Brasil 6in","SLEEVE",3.95,12.98,"651840152277",0,"Foliage","6\" Foliage","PHILODENDRON"],["1008594511","FOL","60VG","Vigoro Philodendron Micans 6in","SLEEVE",3.95,12.98,"651840152260",0,"Foliage","6\" Foliage","PHILODENDRON"],["1008594543","FOL","60VG","Vigoro Philodendron Florida 6in","SLEEVE",3.95,12.98,"651840152284",0,"Foliage","6\" Foliage","PHILODENDRON"],["1008594563","FOL","60VG","Vigoro Philodendron Cordatum 6in","SLEEVE",3.95,12.98,"651840152291",0,"Foliage","6\" Foliage","PHILODENDRON"],["1014951368","FOL","60VD","VIG DND PHILO PAINTED LADY 6IN","SLEEVE",3.95,12.98,"651840126322",1,"Foliage","6\" Foliage","PHILODENDRON"],["1014951382","FOL","60VD","VIG DND PHILODENDRON TRAILING 6IN","SLEEVE",3.95,12.98,"651840126315",1,"Foliage","6\" Foliage","PHILODENDRON"],["1006110467","FOL","60VG","Philodendron Little Hope 6 inch","SLEEVE",3.95,12.98,"651840975890",0,"Foliage","6\" Foliage","PHILODENDRON"],["1005837373","FOL","60VG","Vigoro Hybrid Prince of Orange 6\"","SLEEVE",4.95,14.98,"651840642464",0,"Foliage","6\" Foliage","PHILODENDRON"],["1006807144","FOL","60VG","6\" Vigoro Philodendron Birkin","SLEEVE",4.95,14.98,"651840852184",0,"Foliage","6\" Foliage","PHILODENDRON"],["1008594505","FOL","60VG","Vig Philodendron Fuzzy Petiole 6in","SLEEVE",4.95,14.98,"651840152314",0,"Foliage","6\" Foliage","PHILODENDRON"],["1008594516","FOL","60VG","Vig Philodendron Jungle Fan 6in","SLEEVE",4.95,14.98,"651840152345",0,"Foliage","6\" Foliage","PHILODENDRON"],["1014951407","FOL","60VD","VIG DND PORTULACARIA TREE 6IN","SLEEVE",4.95,14.98,"651840126353",1,"Foliage","6\" Foliage","PORTUCULARIA"],["1005837405","FOL","60VG","Vigoro Neon Pothos 6\"","SLEEVE",4.24,12.98,"651840642488",0,"Foliage","6\" Foliage","POTHOS"],["1005837408","FOL","60VG","Vigoro Silver Satin Pothos 6\"","SLEEVE",4.24,12.98,"651840642495",0,"Foliage","6\" Foliage","POTHOS"],["1014951354","FOL","60VD","VIG DND POTHOS NEON QUEEN 6IN","SLEEVE",4.24,12.98,"651840126148",0,"Foliage","6\" Foliage","POTHOS"],["1014951365","FOL","60VD","VIG DND POTHOS SILVER STREAK 6IN","SLEEVE",4.24,12.98,"651840126117",0,"Foliage","6\" Foliage","POTHOS"],["1014951370","FOL","60VD","VIG DND POTHOS HAWAIIAN 6IN","SLEEVE",4.24,12.98,"651840126094",0,"Foliage","6\" Foliage","POTHOS"],["1014951372","FOL","60VD","VIG DND POTHOS NEON 6IN","SLEEVE",4.24,12.98,"651840126100",1,"Foliage","6\" Foliage","POTHOS"],["1014951387","FOL","60VD","VIG DND POTHOS MARBLE QUEEN 6IN","SLEEVE",4.24,12.98,"651840126124",0,"Foliage","6\" Foliage","POTHOS"],["1014951398","FOL","60VD","VIG DND POTHOS SILVERY ANNE 6IN","SLEEVE",4.24,12.98,"651840126131",0,"Foliage","6\" Foliage","POTHOS"],["1014951404","FOL","60VD","VIG DND POTHOS CEBU BLUE 6IN","SLEEVE",4.24,12.98,"651840126087",0,"Foliage","6\" Foliage","POTHOS"],["1005837400","FOL","60VG","Vigoro Sanseveria Sayuri 6\"","SLEEVE",4.24,12.98,"651840642501",0,"Foliage","6\" Foliage","SANSEVIERIA"],["1006110486","FOL","60VG","Vigoro Sansevieria Moonshine 6 inch","SLEEVE",4.24,12.98,"651840128012",0,"Foliage","6\" Foliage","SANSEVIERIA"],["1006110489","FOL","60VG","Vigoro Sanseveria Black Dragon 6 inch","SLEEVE",4.24,12.98,"651840975814",0,"Foliage","6\" Foliage","SANSEVIERIA"],["1006110508","FOL","60VG","Vigoro Sanseveria Silver Flame 6 inch","SLEEVE",4.24,12.98,"651840975555",0,"Foliage","6\" Foliage","SANSEVIERIA"],["1014951349","FOL","60VD","VIG DND SANSVRIA FUTURA SUPERBA 6IN","SLEEVE",4.24,12.98,"651840126179",1,"Foliage","6\" Foliage","SANSEVIERIA"],["1014951361","FOL","60VD","VIG DND SANSEVIERIA ROBUSTA 6IN","SLEEVE",4.24,12.98,"651840126155",0,"Foliage","6\" Foliage","SANSEVIERIA"],["1014951378","FOL","60VD","VIG DND SANSEVIERIA MOONSHINE 6IN","SLEEVE",4.24,12.98,"651840126162",0,"Foliage","6\" Foliage","SANSEVIERIA"],["1005837384","FOL","60VG","Vigoro Hybrid Moonshine 6\"","SLEEVE",4.24,12.98,"651840642457",0,"Foliage","6\" Foliage","SANSEVIERIA"],["1006110477","FOL","60IN","Arboricola Trinette 6 inch","GROWER POT",2.95,9.98,"651840128074",0,"Foliage","6\" Foliage","SCHEFFLERA"],["246916","FOL","60IN","Schefflera","GROWER POT",2.95,9.98,"651840131029",1,"Foliage","6\" Foliage","SCHEFFLERA"],["1006807145","FOL","60VG","6\" Vigoro Spathiphyllum","SLEEVE",4.95,14.98,"651840852252",0,"Foliage","6\" Foliage","SPATHIPHYLLUM"],["1014933190","FOL","60VD","VIG DND SPATHIPHYLLUM 6IN","SLEEVE",4.95,14.98,"651840125899",1,"Foliage","6\" Foliage","SPATHIPHYLLUM"],["1006110465","FOL","60IN","Spider 6 inch","GROWER POT",2.95,9.98,"651840975647",1,"Foliage","6\" Foliage","SPIDER PLANT"],["1006110495","FOL","60IN","Nephtytis 6 inch","GROWER POT",2.95,9.98,"651840975579",0,"Foliage","6\" Foliage","SYNGONIUM"],["1011165453","FOL","60VG","Vigoro Syngonium 6in","SLEEVE",3.95,12.98,"651840860004",0,"Foliage","6\" Foliage","SYNGONIUM"],["1014951380","FOL","60VD","VIG DND SYNGONIUM ASSORTED 6IN","SLEEVE",3.95,12.98,"651840126247",1,"Foliage","6\" Foliage","SYNGONIUM"],["1006807143","FOL","60VG","6\" Vigoro White Bird","SLEEVE",4.24,12.98,"651840852245",1,"Foliage","6\" Foliage","STRELITZIA"],["247947","FOL","60IN","Trio Star","GROWER POT",2.95,9.98,"651840131081",1,"Foliage","6\" Foliage","STROMANTHE"],["1006110493","FOL","60IN","Yucca Tip 6 inch","GROWER POT",3.95,9.98,"651840975586",0,"Foliage","6\" Foliage","YUCCA"],["139320","FOL","60IN","Mass Cane","SLEEVE",3.95,12.98,"651840162733",0,"Foliage","6\" Foliage","YUCCA"],["1014951405","FOL","60VD","VIG DND YUCCA CANE 6IN","SLEEVE",3.95,12.98,"651840126339",1,"Foliage","6\" Foliage","YUCCA"],["1014933226","FOL","60VD","VIG DND ZZ 6IN","SLEEVE",4.95,14.98,"651840125912",1,"Foliage","6\" Foliage","ZAMIOCULCAS ZAMIIFOLIA"],["1006110475","FOL","60VG","Vigoro Black Raven ZZ 6 inch","SLEEVE",4.95,14.98,"651840128050",0,"Foliage","6\" Foliage","ZAMIOCULCAS ZAMIIFOLIA"],["1000005276","TRP","10IN","Aglaonema HF","N",7.95,24.98,"651840180140",0,"Tropical","10\" TROPICALS","AGLAONEMA"],["1013332773","TRP","10IN","Aglaonema Silver Bay 10in","N",7.95,24.98,"651840122423",0,"Tropical","10\" TROPICALS","AGLAONEMA"],["1006110474","TRP","10IN","Alocasia 10 inch","N",7.95,24.98,"651840975852",0,"Tropical","10\" TROPICALS","ALOCASIA"],["1013332772","TRP","10IN","Alocasia Calidora 10\"","N",7.95,24.98,"651840122522",0,"Tropical","10\" TROPICALS","ALOCASIA"],["1000005263","TRP","10IN","Anthurium","N",7.95,24.98,"651840180133",0,"Tropical","10\" TROPICALS","ANTHURIUM"],["1000005301","TRP","10IN","Aralia Elgantissima HF","N",5.95,19.98,"651840180430",0,"Tropical","10\" TROPICALS","ARALIA"],["1008594520","TRP","10IN","Aralia Stump 10in","Y",9.95,29.98,"651840152789",0,"Tropical","10\" TROPICALS","ARALIA"],["1000005217","TRP","10IN","Musa Banana HF","N",5.95,19.98,"651840180171",0,"Tropical","10\" TROPICALS","BANANA"],["1000005277","TRP","10IN","Calathea Lubersii HF","N",5.95,19.98,"651840180157",0,"Tropical","10\" TROPICALS","CALATHEA"],["1008594562","TRP","10IN","Calathea 10in","N",7.95,24.98,"651840152727",0,"Tropical","10\" TROPICALS","CALATHEA"],["1014951379","TRP","10IN","CHINA DOLL 10IN","N",5.95,19.98,"651840126407",0,"Tropical","10\" TROPICALS","CHINA DOLL"],["1008594514","TRP","10IN","Cissus Discolor Trellis 10in","Y",15.1,39.98,"651840152420",0,"Tropical","10\" TROPICALS","CISSUS"],["1000005215","TRP","10IN","Cordyline  HF","N",5.95,19.98,"651840180119",0,"Tropical","10\" TROPICALS","CORDYLINE"],["1014951395","TRP","10IN","CORDYLINE AUNTIE LOU 10IN","N",5.95,19.98,"651840126438",0,"Tropical","10\" TROPICALS","CORDYLINE"],["1014933181","TRP","10IN","CORDYLINE FLORICA 10IN","N",5.95,19.98,"651840125479",0,"Tropical","10\" TROPICALS","CORDYLINE"],["1014951367","TRP","10IN","CORDYLINE MARIA 10IN","N",5.95,19.98,"651840126520",0,"Tropical","10\" TROPICALS","CORDYLINE"],["1013332796","TRP","10IN","Cordyline Red Sister 10in","N",5.95,19.98,"651840122430",0,"Tropical","10\" TROPICALS","CORDYLINE"],["1008594510","TRP","10IN","Harlequin Cordyline 10in","N",7.95,24.98,"651840152758",0,"Tropical","10\" TROPICALS","CORDYLINE"],["1000005257","TRP","10IN","Croton HF","N",4.75,14.98,"651840180454",0,"Tropical","10\" TROPICALS","CROTON"],["1008594556","TRP","10IN","Ctenanthe 10in","Y",9.95,29.98,"651840152765",0,"Tropical","10\" TROPICALS","CTENANTHE"],["1000005216","TRP","10IN","Dieffenbachia HF","N",5.95,19.98,"651840180164",0,"Tropical","10\" TROPICALS","DIEFFENBACHIA"],["1000005284","TRP","10IN","Dieffenbachia Hybrid","N",5.95,19.98,"651840180201",0,"Tropical","10\" TROPICALS","DIEFFENBACHIA"],["1000005748","TRP","10IN","Dieffenbachia Panther HF","N",5.95,19.98,"651840180676",0,"Tropical","10\" TROPICALS","DIEFFENBACHIA"],["1014951356","TRP","10IN","DIEFFENBACHIA CAMOUFLAGE 10IN","N",5.95,19.98,"651840126513",0,"Tropical","10\" TROPICALS","DIEFFENBACHIA"],["1014951396","TRP","10IN","DIEFFENBACHIA SNOW 10IN","N",5.95,19.98,"651840126537",0,"Tropical","10\" TROPICALS","DIEFFENBACHIA"],["1014951358","TRP","10IN","DIEFFENBACHIA CHEETAH 10IN","N",7.95,24.98,"651840126384",0,"Tropical","10\" TROPICALS","DIEFFENBACHIA"],["1014951385","TRP","10IN","DIEFFENBACHIA STAR BRIGHT 10IN","N",7.95,24.98,"651840126377",0,"Tropical","10\" TROPICALS","DIEFFENBACHIA"],["1014951364","TRP","10IN","DRACAENA KIWI 10IN","N",4.75,14.98,"651840126360",0,"Tropical","10\" TROPICALS","DRACAENA"],["1000005261","TRP","10IN","Dracaena Marginata","N",4.75,14.98,"651840180492",0,"Tropical","10\" TROPICALS","DRACAENA"],["1013332779","TRP","10IN","Drac Hawaiian Sunshine 10in","N",5.95,19.98,"651840122492",0,"Tropical","10\" TROPICALS","DRACAENA"],["1014951353","TRP","10IN","DRACAENA MARLEY 10IN","N",5.95,19.98,"651840126544",0,"Tropical","10\" TROPICALS","DRACAENA"],["1001476045","TRP","10IN","Lemon Lime","N",5.95,19.98,"651840501105",0,"Tropical","10\" TROPICALS","DRACAENA"],["1001476048","TRP","10IN","Warneckii","N",5.95,19.98,"651840501112",0,"Tropical","10\" TROPICALS","DRACAENA"],["1000005293","TRP","10IN","Dracaena Marginata Staggered","N",7.95,24.98,"651840180362",0,"Tropical","10\" TROPICALS","DRACAENA"],["1013332795","TRP","10IN","Marginata Staggered 10in","N",9.95,29.98,"651840122485",0,"Tropical","10\" TROPICALS","DRACAENA"],["1006807151","TRP","10IN","10\" Braided Marginata","N",11.5,34.98,"651840852269",0,"Tropical","10\" TROPICALS","DRACAENA"],["1008594508","TRP","10IN","2 Ball Eugenia Topiary 10in","N",15.1,39.98,"651840152833",0,"Tropical","10\" TROPICALS","EUGENIA"],["1006110501","TRP","10IN","Kimberly Queen Fern 10 inch","N",5.95,19.98,"651840975838",0,"Tropical","10\" TROPICALS","FERN"],["1008594497","TRP","10IN","Ficus Audrey 10in","N",5.95,19.98,"651840152796",0,"Tropical","10\" TROPICALS","FICUS"],["1013332762","TRP","10IN","Ficus Burgundy 10in","N",5.95,19.98,"651840122416",0,"Tropical","10\" TROPICALS","FICUS"],["1000005300","TRP","10IN","Ficus Lyrata","N",5.95,19.98,"651840180423",0,"Tropical","10\" TROPICALS","FICUS"],["1000005208","TRP","10IN","Ficus Robusta HF","N",5.95,19.98,"651840180041",0,"Tropical","10\" TROPICALS","FICUS"],["1014951355","TRP","10IN","FICUS TINEKE 10IN","N",5.95,19.98,"651840126490",0,"Tropical","10\" TROPICALS","FICUS"],["1014951371","TRP","10IN","FIDDLE LEAF FIG 10IN","N",5.95,19.98,"651840126469",0,"Tropical","10\" TROPICALS","FICUS"],["1000005279","TRP","10IN","Ficus Alii Std HF","N",7.95,24.98,"651840180225",0,"Tropical","10\" TROPICALS","FICUS"],["1000005295","TRP","10IN","Ficus Braid HF","N",9.95,29.98,"651840180386",0,"Tropical","10\" TROPICALS","FICUS"],["1008594558","TRP","10IN","Ficus Triangularis 10in","Y",9.95,29.98,"651840152802",0,"Tropical","10\" TROPICALS","FICUS"],["1008594538","TRP","10IN","Lyrata Standard 10in","Y",11.5,34.98,"651840152734",0,"Tropical","10\" TROPICALS","FICUS"],["1008594515","TRP","10IN","Lyrata Twist 10in","Y",11.5,34.98,"651840152741",0,"Tropical","10\" TROPICALS","FICUS"],["1013332759","TRP","10IN","Braided Ficus Alii 10in","N",11.5,34.98,"651840122478",0,"Tropical","10\" TROPICALS","FICUS"],["1013332784","TRP","10IN","Braided Ficus Benjamina 10in","N",11.5,34.98,"651840122461",0,"Tropical","10\" TROPICALS","FICUS"],["1000005221","TRP","10IN","Ginger Plant HF","N",5.95,19.98,"651840180287",0,"Tropical","10\" TROPICALS","GINGER"],["1014951362","TRP","10IN","HELICONIA 10IN","N",5.95,19.98,"651840126414",0,"Tropical","10\" TROPICALS","HELICONIA"],["1000005209","TRP","10IN","Emerald Green Gem HF","N",5.95,19.98,"651840180058",0,"Tropical","10\" TROPICALS","HOMALOMENA"],["1000005259","TRP","10IN","Mass Cane 2-1 HF","N",5.95,19.98,"651840180478",0,"Tropical","10\" TROPICALS","MASS CANE"],["1013332761","TRP","10IN","Mass Cane Single Cane 10in","N",5.95,19.98,"651840122362",0,"Tropical","10\" TROPICALS","MASS CANE"],["1006110470","TRP","10IN","Mass Cane Stump 10 inch","N",5.95,19.98,"651840975821",0,"Tropical","10\" TROPICALS","MASS CANE"],["1006110490","TRP","10IN","Mass Cane Fork 10 inch","N",7.95,24.98,"651840975869",0,"Tropical","10\" TROPICALS","MASS CANE"],["1000005298","TRP","10IN","Mass Cane 3-2-1 HF","Y",9.95,29.98,"651840180409",0,"Tropical","10\" TROPICALS","MASS CANE"],["1008594531","TRP","10IN","Mass Cane combo 10in","Y",11.5,34.98,"651840152772",0,"Tropical","10\" TROPICALS","MASS CANE"],["1000023680","TRP","10IN","Deco Foliage","N",5.95,19.98,"651840901226",0,"Tropical","10\" TROPICALS","MISC."],["1000042860","TRP","10IN","Deluxe Tropical Plant","N",5.95,19.98,"651840901356",0,"Tropical","10\" TROPICALS","MISC."],["1000005210","TRP","10IN","Foliage HF","N",5.95,19.98,"651840180072",0,"Tropical","10\" TROPICALS","MISC."],["1000003903","TRP","10IN","Promo Foliage HF","N",5.95,19.98,"651840180003",0,"Tropical","10\" TROPICALS","MISC."],["1000042855","TRP","10IN","Supreme Tropical Plant","N",7.95,24.98,"651840901332",0,"Tropical","10\" TROPICALS","MISC."],["1000012229","TRP","10IN","Totem Pole","N",7.95,24.98,"651840180515",0,"Tropical","10\" TROPICALS","MISC."],["1005796170","TRP","10IN","Upscale Tropical 10 inch","Y",9.95,29.98,"651840246556",0,"Tropical","10\" TROPICALS","MISC."],["1005796168","TRP","10IN","Luxury Tropical 10 inch","Y",11.5,34.98,"651840246549",0,"Tropical","10\" TROPICALS","MISC."],["1005796171","TRP","10IN","Decorative Tropicals w/ Tin 10 inch","Y",15.1,39.98,"651840246525",0,"Tropical","10\" TROPICALS","MISC."],["1000016312","TRP","10IN","Money Tree","Y",9.95,29.98,"651840162894",0,"Tropical","10\" TROPICALS","MONEY TREE"],["1014951388","TRP","10IN","PACHIRA 10IN","Y",9.95,29.98,"651840126476",0,"Tropical","10\" TROPICALS","MONEY TREE"],["1014951383","TRP","10IN","MONSTERA DELICIOSA 10IN","N",5.95,19.98,"651840126452",0,"Tropical","10\" TROPICALS","MONSTERA"],["1000005285","TRP","10IN","Philodendron Monstera HF","N",5.95,19.98,"651840180218",0,"Tropical","10\" TROPICALS","MONSTERA"],["1008594533","TRP","10IN","Monstera Lechleriana Trellis 10in","Y",15.1,39.98,"651840152499",0,"Tropical","10\" TROPICALS","MONSTERA"],["1008594544","TRP","10IN","Monstera Peru Trellis 10in","Y",15.1,39.98,"651840152482",0,"Tropical","10\" TROPICALS","MONSTERA"],["1000005974","TRP","10IN","Cataractarum Palm HF","N",5.95,19.98,"651840180096",0,"Tropical","10\" TROPICALS","PALM"],["1000005223","TRP","10IN","Chinese Fan Palm HF","N",5.95,19.98,"651840180294",0,"Tropical","10\" TROPICALS","PALM"],["1000005283","TRP","10IN","Majesty Multi HF","N",5.95,19.98,"651840180195",0,"Tropical","10\" TROPICALS","PALM"],["1000005218","TRP","10IN","Majesty Palm HF","N",5.95,19.98,"651840180089",0,"Tropical","10\" TROPICALS","PALM"],["1014951352","TRP","10IN","TRP Majestic Palm","N",5.95,19.98,"651840126421",0,"Tropical","10\" TROPICALS","PALM"],["1000005225","TRP","10IN","Robellini Palm HF","N",5.95,19.98,"651840180263",0,"Tropical","10\" TROPICALS","PALM"],["1000005228","TRP","10IN","Sago Palm","N",7.95,24.98,"651840180249",0,"Tropical","10\" TROPICALS","PALM"],["1013332776","TRP","10IN","Spindle Palm 10in","N",9.95,29.98,"651840122447",0,"Tropical","10\" TROPICALS","PALM"],["1000042858","TRP","10IN","Ponytail Palm","Y",9.95,29.98,"651840901349",0,"Tropical","10\" TROPICALS","PALM"],["1014951381","TRP","10IN","TALL PONYTAIL PALM 10IN","Y",9.95,29.98,"651840126483",0,"Tropical","10\" TROPICALS","PALM"],["1000005750","TRP","10IN","Philodendron HF","N",5.95,19.98,"651840180669",0,"Tropical","10\" TROPICALS","PHILODENDRON"],["1000005281","TRP","10IN","Philodendron Hope HF","N",5.95,19.98,"651840180232",0,"Tropical","10\" TROPICALS","PHILODENDRON"],["1000053241","TRP","10IN","Philodendron Hybrid","N",5.95,19.98,"651840901479",0,"Tropical","10\" TROPICALS","PHILODENDRON"],["1000005943","TRP","10IN","Rojo Congo","N",7.95,24.98,"651840180683",0,"Tropical","10\" TROPICALS","PHILODENDRON"],["1008594550","TRP","10IN","Philo Burly Marx Trellis 10in","Y",15.1,39.98,"651840152444",0,"Tropical","10\" TROPICALS","PHILODENDRON"],["1008594507","TRP","10IN","Philo Ceylon Beauty Trellis 10in","Y",15.1,39.98,"651840152437",0,"Tropical","10\" TROPICALS","PHILODENDRON"],["1008594559","TRP","10IN","Philo Fuzzy Petiole Trellis 10in","Y",15.1,39.98,"651840152406",0,"Tropical","10\" TROPICALS","PHILODENDRON"],["1008594528","TRP","10IN","Philo Red Emerald Trellis 10in","Y",15.1,39.98,"651840152451",0,"Tropical","10\" TROPICALS","PHILODENDRON"],["1008594535","TRP","10IN","Philo\u00a0Silver Sword Trellis 10in","Y",15.1,39.98,"651840152413",0,"Tropical","10\" TROPICALS","PHILODENDRON"],["1008594501","TRP","10IN","Philodendron Florida Trellis 10in","Y",15.1,39.98,"651840152475",0,"Tropical","10\" TROPICALS","PHILODENDRON"],["1000005211","TRP","10IN","Sansevieria HF","N",5.95,19.98,"651840180102",0,"Tropical","10\" TROPICALS","SANSEVIERIA"],["1013332801","TRP","10IN","Sansevieria Laurentii 10in","N",5.95,19.98,"651840122409",0,"Tropical","10\" TROPICALS","SANSEVIERIA"],["1014951391","TRP","10IN","SANSEVIERIA WINTERGREEN 10IN","N",5.95,19.98,"651840126506",0,"Tropical","10\" TROPICALS","SANSEVIERIA"],["1013332790","TRP","10IN","Sansevieria Zeylanica 10in","N",5.95,19.98,"651840122393",0,"Tropical","10\" TROPICALS","SANSEVIERIA"],["1000005262","TRP","10IN","Arboricola","N",4.75,14.98,"651840180508",0,"Tropical","10\" TROPICALS","SCHEFFLERA"],["1014951392","TRP","10IN","SCHEFFLERA AMATE 10IN","N",5.95,19.98,"651840126391",0,"Tropical","10\" TROPICALS","SCHEFFLERA"],["1000005294","TRP","10IN","Schefflera Braid HF","N",7.95,24.98,"651840180379",0,"Tropical","10\" TROPICALS","SCHEFFLERA"],["1000005227","TRP","10IN","Schefflera Std HF","N",7.95,24.98,"651840180270",0,"Tropical","10\" TROPICALS","SCHEFFLERA"],["1013332791","TRP","10IN","Braided Arboricola Capella 10in","N",11.5,34.98,"651840122454",0,"Tropical","10\" TROPICALS","SCHEFFLERA"],["1013332764","TRP","10IN","Spathiphyllum Sensation 10in","N",7.95,24.98,"651840122386",0,"Tropical","10\" TROPICALS","SPATHIPHYLLUM"],["1006110465","FOL","60IN","Spider 6 inch","N",2.95,9.98,"651840975647",0,"Tropical","10\" TROPICALS","SPIDER PLANT"],["1008594519","TRP","10IN","Syngonium Trellis 10in","Y",15.1,39.98,"651840152468",0,"Tropical","10\" TROPICALS","SYNGONIUM"],["1006110482","TRP","10IN","White Bird 10 inch","N",5.95,19.98,"651840975876",0,"Tropical","10\" TROPICALS","BIRD OF PARADISE"],["1000005230","TRP","10IN","Bird of Paradise HF","N",5.95,19.98,"651840180256",0,"Tropical","10\" TROPICALS","BIRD OF PARADISE"],["1000005942","TRP","10IN","Black Stromanthe","N",5.95,19.98,"651840180690",0,"Tropical","10\" TROPICALS","STROMANTHE"],["1000005299","TRP","10IN","Trio Star HF","N",5.95,19.98,"651840180416",0,"Tropical","10\" TROPICALS","STROMANTHE"],["1000005207","TRP","10IN","Yucca Cane 2-1 HF","N",4.75,14.98,"651840180034",0,"Tropical","10\" TROPICALS","YUCCA"],["1013332786","TRP","10IN","Yucca Cane Single Cane 10in","N",4.75,14.98,"651840122379",0,"Tropical","10\" TROPICALS","YUCCA"],["1006110473","TRP","10IN","Yucca Tip 10 inch","N",4.75,14.98,"651840975845",0,"Tropical","10\" TROPICALS","YUCCA"],["1000005296","TRP","10IN","Yucca Cane 3- 2-1 HF","Y",9.95,29.98,"651840180393",0,"Tropical","10\" TROPICALS","YUCCA"],["1014951350","TRP","10IN","ZAMIOCULCAS ZAMIIFOLIA 10IN","Y",9.95,29.98,"651840126445",0,"Tropical","10\" TROPICALS","ZAMIOCULCAS ZAMIIFOLIA"],["1000005282","TRP","10IN","ZZ Plant HF","Y",9.95,29.98,"651840180188",0,"Tropical","10\" TROPICALS","ZAMIOCULCAS ZAMIIFOLIA"],["1008594540","TRP","12IN","Patio Alocasia 12in","",12,44.98,"651840152857",0,"Patio Trops","PATIO TROPICALS","ALOCASIA"],["1008594524","TRP","12IN","Patio Banana Plant 12in","",12,44.98,"651840152307",0,"Patio Trops","PATIO TROPICALS","BANANA"],["1008594548","TRP","12IN","Patio Cordyline 12in","",12,44.98,"651840152840",0,"Patio Trops","PATIO TROPICALS","CORDYLINE"],["1000052868","TRP","14IN","Patio Croton","",12,44.98,"651840901448",0,"Patio Trops","PATIO TROPICALS","CROTON"],["1000054103","TRP","12IN","Braided Marginata","",12,39.98,"651840901493",0,"Patio Trops","PATIO TROPICALS","DRACAENA"],["1008594509","TRP","12IN","Patio Ficus Triangularis 12in","",12,44.98,"651840152635",0,"Patio Trops","PATIO TROPICALS","FICUS"],["1005837380","TRP","14IN","Lyrata 14 inch","",43,129.98,"651840642327",0,"Patio Trops","PATIO TROPICALS","FICUS"],["1000005251","TRP","12IN","Tropical HF","",12,34.98,"651840180577",0,"Patio Trops","PATIO TROPICALS","MISC."],["1000014200","TRP","14IN","Pindo Palm","",12,44.98,"651840901202",0,"Patio Trops","PATIO TROPICALS","PALM"],["1000012835","TRP","12IN","Patio Palm Majesty","",12,44.98,"651840180591",0,"Patio Trops","PATIO TROPICALS","PALM"],["1000012836","TRP","14IN","Patio Palm Robellini","",12,44.98,"651840180607",0,"Patio Trops","PATIO TROPICALS","PALM"],["1000012838","TRP","14IN","Patio Palm Bottle","",12,44.98,"651840180621",0,"Patio Trops","PATIO TROPICALS","PALM"],["1000012839","TRP","14IN","Patio Queen Palm","",12,44.98,"651840180614",0,"Patio Trops","PATIO TROPICALS","PALM"],["1000012840","TRP","14IN","Patio Palm  Ponytail","",12,44.98,"651840180638",0,"Patio Trops","PATIO TROPICALS","PALM"],["1000012843","TRP","14IN","Patio Palm Sago","",12,44.98,"651840180645",0,"Patio Trops","PATIO TROPICALS","PALM"],["1000012844","TRP","14IN","Patio Fox Tail Palm","",12,44.98,"651840180652",0,"Patio Trops","PATIO TROPICALS","PALM"],["1000052859","TRP","14IN","Patio Cataractarum","",12,44.98,"651840901462",0,"Patio Trops","PATIO TROPICALS","PALM"],["1008594526","TRP","12IN","Adonidia Palm 12in","",12,44.98,"651840152826",0,"Patio Trops","PATIO TROPICALS","PALM"],["1008594546","TRP","12IN","Patio Spindle Palm 12in","",12,44.98,"651840152680",0,"Patio Trops","PATIO TROPICALS","PALM"],["1000052867","TRP","12IN","Patio Selloum","",12,44.98,"651840901431",0,"Patio Trops","PATIO TROPICALS","PHILODENDRON"],["1007844016","TRP","14IN","14IN Philodendron Tropical","",21,89.98,"651840487027",0,"Patio Trops","PATIO TROPICALS","PHILODENDRON"],["1000052858","TRP","14IN","Patio White Bird","",12,44.98,"651840901455",0,"Patio Trops","PATIO TROPICALS","BIRD OF PARADISE"],["1008594525","FHB","HBV8","Vigoro Cissus Discolor HB 8in","",8,24.98,"651840152628",0,"Baskets","Hanging Baskets","CISSUS"],["359608","FHB","HB08","Vigoro Fern HB 8 Inch","",5.25,16.98,"651840111052",0,"Baskets","Hanging Baskets","FERN"],["1008594530","FHB","HBV8","Vigoro Staghorn Fern HB 8in","",5.25,16.98,"651840152574",0,"Baskets","Hanging Baskets","FERN"],["1006807149","FHB","HBV8","8\" Vigoro Fittonia HB","",5.25,16.98,"651840852122",0,"Baskets","Hanging Baskets","FITTONIA"],["1008594504","FHB","HBV8","Vigoro Waffle HB 8in","",5.25,16.98,"651840152512",0,"Baskets","Hanging Baskets","HEMIGRAPHIS"],["1005837390","FHB","HBV8","Vigoro Hoya Basket 8\"","",5.25,16.98,"651840642426",0,"Baskets","Hanging Baskets","HOYA"],["1008594534","FHB","HBV8","Vigoro Hoya HB 8in","",8,24.98,"651840152611",0,"Baskets","Hanging Baskets","HOYA"],["359637","FHB","HB08","Vigoro Ivy HB","",5.25,16.98,"651840111069",0,"Baskets","Hanging Baskets","IVY"],["1006807142","FHB","HBV8","8\" Vigoro Maranta HB","",5.25,16.98,"651840852153",0,"Baskets","Hanging Baskets","MARANTA"],["865545","FHB","HB06","Hanging Basket","----","----",6.98,"651840112394",0,"Baskets","Hanging Baskets","MISC."],["241821","FHB","HB10","Hanging Basket","----","----",10.98,"651840162252",0,"Baskets","Hanging Baskets","MISC."],["262774","FHB","HB08","Hanging Basket","",5.25,16.98,"651840112523",0,"Baskets","Hanging Baskets","MISC."],["931208","FHB","HB08","Premium Hanging Basket","",6.5,19.98,"651840130565",0,"Baskets","Hanging Baskets","MISC."],["1006807146","FHB","HBV8","8\" Vigoro Philo Swiss Cheese HB","",5.25,16.98,"651840852160",0,"Baskets","Hanging Baskets","MONSTERA"],["1006807140","FHB","HBV8","8\" Vigoro Peperomia HB","",5.25,16.98,"651840852146",0,"Baskets","Hanging Baskets","PEPEROMIA"],["1008594512","FHB","HBV8","Vigoro Baby tear HB 8in","",5.25,16.98,"651840152581",0,"Baskets","Hanging Baskets","PEPEROMIA"],["1008594499","FHB","HBV8","Vigoro Peperomia Cupid HB 8in","",5.25,16.98,"651840152550",0,"Baskets","Hanging Baskets","PEPEROMIA"],["1008594555","FHB","HBV8","Vigoro Peperomia Diamond HB 8in","",5.25,16.98,"651840152567",0,"Baskets","Hanging Baskets","PEPEROMIA"],["247374","FHB","HB06","Philodendron Hybrid HB","----","----",9.98,"651840131050",0,"Baskets","Hanging Baskets","PHILODENDRON"],["1006807150","FHB","HBV8","8\" Vigoro Neon Philo HB","",5.25,16.98,"651840852139",0,"Baskets","Hanging Baskets","PHILODENDRON"],["359584","FHB","HB08","Philodendron HB","",5.25,16.98,"651840111045",0,"Baskets","Hanging Baskets","PHILODENDRON"],["1008594536","FHB","HBV8","Vigoro Philo Dragontail HB 8in","",5.25,16.98,"651840152536",0,"Baskets","Hanging Baskets","PHILODENDRON"],["1008594561","FHB","HBV8","Vigoro Philo Micans HB 8in","",5.25,16.98,"651840152529",0,"Baskets","Hanging Baskets","PHILODENDRON"],["1005837395","FHB","HBV8","Vigoro Philodendron Brasil Basket 8\"","",5.25,16.98,"651840642419",0,"Baskets","Hanging Baskets","PHILODENDRON"],["1013332799","FHB","HB08","Vigoro Philodendron Cordatum HB 8in","",5.25,16.98,"651840122539",0,"Baskets","Hanging Baskets","PHILODENDRON"],["1008594560","FHB","HBV8","Vigoro Philo Silver Sword HB 8in","",8,24.98,"651840152604",0,"Baskets","Hanging Baskets","PHILODENDRON"],["1005837376","FHB","HBV8","8\" Vigoro Pothos Neon HB","",5.25,16.98,"651840642402",0,"Baskets","Hanging Baskets","POTHOS"],["1005837388","FHB","HBV8","Vigoro Marble Queen Basket 8\"","",5.25,16.98,"651840642396",0,"Baskets","Hanging Baskets","POTHOS"],["1005837391","FHB","HBV8","Vigoro Pearl & Jade Basket 8\"","",5.25,16.98,"651840642433",0,"Baskets","Hanging Baskets","POTHOS"],["359533","FHB","HB08","Vigoro Pothos HB Hampshire 8\"","",5.25,16.98,"651840111038",0,"Baskets","Hanging Baskets","POTHOS"],["1008594517","FHB","HBV8","Vigoro Pothos N-Joy HB 8in","",5.25,16.98,"651840152543",0,"Baskets","Hanging Baskets","POTHOS"],["1008594522","FHB","HBV8","Vigoro Scindapsus HB 8in","",5.25,16.98,"651840152505",0,"Baskets","Hanging Baskets","SCINDAPSUS"],["1001199122","FHB","HB08","Vigoro Spider HB","",5.25,16.98,"651840100483",0,"Baskets","Hanging Baskets","SPIDER PLANT"],["1008594500","FHB","HBV8","Vigoro Syngonium HB 8in","",5.25,16.98,"651840152598",0,"Baskets","Hanging Baskets","SYNGONIUM"],["1001199125","FHB","HB08","Vigoro Tradescantia HB","",5.25,16.98,"651840100490",0,"Baskets","Hanging Baskets","TRADESCANTIA"],["657189","SPC","025I","Bromeliad","",2.6,6.98,"651840130411",0,"Bromeliads","2.5\" BROM",""],["262088","SPC","40IN","Bromeliad","",3.2,8.98,"651840112509",0,"Bromeliads","4\" BROM",""],["237027","SPC","50IN","Bromeliad","",4,12.98,"651840162320",0,"Bromeliads","5\" BROM",""],["931142","SPC","60IN","Blushing Bromeliad","",4,12.98,"651840130541",0,"Bromeliads","6\" BROM",""],["764031","SPC","60IN","Bromeliad in Basket","",6.45,16.98,"651840111571",0,"Bromeliads","6\" BROM",""],["262177","SPC","60IN","Clay pot Bromeliad","",6.45,16.98,"651840112516",0,"Bromeliads","6\" BROM",""],["591522","SPC","60IN","Bromo Clay Garden","",8,19.98,"651840121006",0,"Bromeliads","6\" BROM",""],["1011843306","SPC","10IN","DND Bromeliad Combo","",18,39.98,"651840147853",0,"Bromeliads","10\" BROM",""],["601129","SPC","10IN","Bromeliad Garden","",18,44.98,"651840130862",0,"Bromeliads","10\" BROM",""]] };
     const SkuBook = (function(){
-      const BOOK_KEY = "hpa_sku_book_v1", LINK_KEY = "hpa_sku_links_v1";
-      const ALIAS = { ag:"aglaonema", agla:"aglaonema", aglo:"aglaonema", sans:"sansevieria", sansvria:"sansevieria", snake:"sansevieria", pep:"peperomia", pepermia:"peperomia", peperomia:"peperomia",
+      const BOOK_KEY = "hpa_sku_book_v1", LINK_KEY = "hpa_sku_links_v1", DEF_KEY = "hpa_sku_defaults_v1";
+      // Team-chosen defaults: { "6\" Foliage|AGLAONEMA": { sku, by, at } } — replace the file's DEFAULT for that group
+      const defOverrides = () => LS.get(DEF_KEY, {}) || {};
+      const groupKey = (e) => `${e.sec}|${e.grp || ""}`;
+      function isDefault(e){ const o = defOverrides()[groupKey(e)]; return o ? o.sku === e.sku : !!e.def; }
+      const ALIAS = { ag:"aglaonema", ags:"aglaonema", agl:"aglaonema", agla:"aglaonema", aglo:"aglaonema", sans:"sansevieria", sansvria:"sansevieria", snake:"sansevieria", pep:"peperomia", pepermia:"peperomia", peperomia:"peperomia",
         mon:"monstera", swiss:"monstera", drac:"dracaena", dracena:"dracaena", dieff:"dieffenbachia", dief:"dieffenbachia", philo:"philodendron", spath:"spathiphyllum", peace:"spathiphyllum",
         zz:"zamioculcas", bird:"strelitzia", bop:"strelitzia", ponytail:"palm", polka:"hypoestes", prayer:"maranta", arrowhead:"syngonium", umbrella:"schefflera", ti:"cordyline",
         portulacaria:"portucularia", elephant:"portucularia", rex:"begonia", zebra:"aphelandra", stump:"aralia", calathea:"calathea", cal:"calathea", aloc:"alocasia", fig:"ficus", marginata:"dracaena", trio:"stromanthe", lily:"spathiphyllum" };
@@ -11785,7 +12118,7 @@
         let bestG = null, bestGS = 0;
         groups.forEach((list, g) => { const gw = words(g); const s = gw.length ? gw.filter(t => hit(t, iw)).length / gw.length : 0; if(s > bestGS){ bestGS = s; bestG = g; } });
         if(bestG && bestGS >= 0.5){
-          const list = groups.get(bestG), defs = list.filter(e => e.def);
+          const list = groups.get(bestG), defs = list.filter(isDefault);
           const pickFrom = defs.length ? defs : list;
           const ranked = pickFrom.map(e => ({ e, s: nameScore(iw, e) })).sort((a, b) => b.s - a.s);
           return { e: ranked[0].e, why: defs.length ? `default for ${bestG}` : `closest in ${bestG}` };
@@ -11794,18 +12127,55 @@
         const ranked = P.map(e => ({ e, s: nameScore(iw, e) })).filter(x => x.s >= 0.34).sort((a, b) => b.s - a.s || (b.e.def - a.e.def));
         if(ranked.length) return { e: ranked[0].e, why: "closest name" };
         // 3) generic lines (e.g. Assorted 4", 4" Foliage) → the section's DEFAULT
-        const defs = P.filter(e => e.def && !e.grp);
+        const defs = P.filter(e => isDefault(e) && !e.grp);
         if(defs.length === 1 && (!iw.length || iw.every(w => /foliage|assort/.test(w)))) return { e: defs[0], why: `default for ${defs[0].sec}` };
         return null;
       }
+      // A SKU named in the line's Notes: a SKU/UPC number, or variety words
+      // ("Creta", "VIG DND Aglaonema Creta") — closest name in the item's group.
+      function fromNotes(it){
+        const notes = String(it.notes || "").trim(); if(!notes) return null;
+        const b = book();
+        const nums = notes.match(/\d{6,13}/g) || [];
+        for(const d of nums){
+          const hit = b.bySku.get(d) || b.entries.find(e => e.upc && (e.upc === d || e.upc.replace(/^0+/, "") === d.replace(/^0+/, "")));
+          if(hit) return { e: hit, why: `SKU ${hit.sku} named in notes` };
+        }
+        const nw = words(notes).filter(w => w.length >= 3);
+        if(!nw.length) return null;
+        const iw = words(it.item), P = pool(it.item);
+        let groupList = null;
+        const groups = new Map(); P.forEach(e => { if(e.grp){ if(!groups.has(e.grp)) groups.set(e.grp, []); groups.get(e.grp).push(e); } });
+        let bestGS = 0;
+        groups.forEach((list, g) => { const gw = words(g); const sc = gw.length ? gw.filter(t => hit(t, iw.concat(nw))).length / gw.length : 0; if(sc > bestGS){ bestGS = sc; groupList = list; } });
+        const cands = bestGS >= 0.5 ? groupList : P;
+        let best = null;
+        cands.forEach(e => {
+          const variety = e.words.filter(w => !e.gwords.includes(w) && w.length >= 3);
+          const ov = nw.filter(t => hit(t, variety)).length;
+          if(!ov) return;
+          const sc = ov / Math.max(1, variety.length) + ov + nameScore(iw.concat(nw), e) * .5;
+          if(!best || sc > best.sc) best = { e, sc };
+        });
+        return best ? { e: best.e, why: `named in notes ("${notes.length > 30 ? notes.slice(0, 30) + "…" : notes}")` } : null;
+      }
       const lkey = (item) => window.STByTruck ? STByTruck.key(item) : n(item).trim();
       const links = () => LS.get(LINK_KEY, {}) || {};
-      function forLine(it){
+      // Canada and Apopka orders never get an automatic SKU — only one named
+      // in the line's Notes (or one picked by hand for that line).
+      const NOTES_ONLY = /^(canada|apopka)$/i;
+      function forLine(it, region){
         if(!it || !it.item) return null;
         const b = book();
         if(it.sku && b.bySku.get(String(it.sku))) return { e: b.bySku.get(String(it.sku)), how:"line", why:"picked for this line" };
+        if(NOTES_ONLY.test(String(region || "").trim())){
+          const nt = fromNotes(it);
+          return nt ? { e: nt.e, how:"notes", why: nt.why } : null;
+        }
         const L = links()[lkey(it.item)];
         if(L && b.bySku.get(L.sku)) return { e: b.bySku.get(L.sku), how:"item", why:`picked for "${it.item}"${L.by ? " by " + L.by : ""}` };
+        const nt = fromNotes(it);
+        if(nt) return { e: nt.e, how:"notes", why: nt.why };
         const a = auto(it.item);
         return a ? { e: a.e, how:"auto", why: a.why } : null;
       }
@@ -11877,7 +12247,7 @@
       function row(e, cur, sugg){
         const isCur = cur && cur.e.sku === e.sku, isSug = sugg && sugg.sku === e.sku;
         return `<button type="button" class="skuRow${isCur ? " cur" : ""}" data-sku-pick="${escapeHtml(e.sku)}">
-          <span class="skuNum">${escapeHtml(e.sku)}${e.def ? `<em class="skuDef">DEFAULT</em>` : ""}</span>
+          <span class="skuNum">${escapeHtml(e.sku)}${isDefault(e) ? `<em class="skuDef${defOverrides()[groupKey(e)] ? " team" : ""}" title="${defOverrides()[groupKey(e)] ? "Default chosen by " + escapeHtml(defOverrides()[groupKey(e)].by || "the team") : "Default in the SKU/Cost file"}">DEFAULT${defOverrides()[groupKey(e)] ? " · team" : ""}</em>` : (e.grp || e.def != null) ? `<span class="skuMakeDef" role="button" tabindex="0" data-sku-def="${escapeHtml(e.sku)}" title="Use this as the default SKU for ${escapeHtml(e.grp || e.sec)}">☆ Make default</span>` : ""}${isDefault(e) && defOverrides()[groupKey(e)] ? `<span class="skuMakeDef" role="button" tabindex="0" data-sku-defreset="${escapeHtml(groupKey(e))}" title="Go back to the SKU/Cost file's default">↺ file default</span>` : ""}</span>
           <span class="skuDesc"><b>${escapeHtml(e.desc)}</b><small>${escapeHtml([e.sec, e.grp, e.cont, e.pack].filter(Boolean).join(" · "))} · UPC ${escapeHtml(e.upc)}</small></span>
           <span class="skuMoney">${money(e.retail)}<small>cost ${money(e.cost)}</small></span>
           ${isCur ? `<span class="skuTag">current</span>` : isSug ? `<span class="skuTag sug">auto</span>` : ""}
@@ -11887,7 +12257,7 @@
         const b = book(), body = modal.querySelector("#skuBody");
         const assigning = !!ctx;
         modal.querySelector("#skuTitle").textContent = assigning ? `SKU for “${ctx.it.item}”` : "SKU search";
-        const cur = assigning ? forLine(ctx.it) : null, sugg = assigning ? (auto(ctx.it.item) || {}).e : null;
+        const cur = assigning ? forLine(ctx.it, ctx.region) : null, sugg = assigning ? (auto(ctx.it.item) || {}).e : null;
         let list = search(q, secF);
         if(assigning && !q){
           const iw = words(ctx.it.item), P = pool(ctx.it.item);
@@ -11895,7 +12265,7 @@
           list = top.length ? top : list;
         }
         body.innerHTML = `
-          ${assigning ? `<div class="skuNow">${cur ? `Now: <b>${escapeHtml(cur.e.sku)}</b> · ${escapeHtml(cur.e.desc)} <small>(${escapeHtml(cur.why)})</small>` : "No SKU linked yet."}
+          ${assigning ? `<div class="skuNow">${cur ? `Now: <b>${escapeHtml(cur.e.sku)}</b> · ${escapeHtml(cur.e.desc)} <small>(${escapeHtml(cur.why)})</small>` : "No SKU linked yet."}${NOTES_ONLY.test(ctx.region) ? `<div class="skuNoteOnly">${escapeHtml(ctx.region)} order: no automatic SKU. Only a SKU named in the line's Notes, or one you pick here for this line.</div>` : ""}
             <div class="skuScope"><label><input type="radio" name="skuScope" value="item" ${scope === "item" ? "checked" : ""}> Every “${escapeHtml(ctx.it.item)}” (team)</label><label><input type="radio" name="skuScope" value="line" ${scope === "line" ? "checked" : ""}> This line only</label>
             ${cur && cur.how !== "auto" ? `<button type="button" class="tinyBtn" data-sku="reset">↺ Back to automatic</button>` : ""}</div></div>` : ""}
           <input type="search" class="skuSearch" data-sku="q" placeholder="Search SKU #, UPC, or name (e.g. aglaonema, 1014933182)…" value="${escapeHtml(q)}">
@@ -11909,6 +12279,25 @@
         if(e.target === modal) return close();
         const t = e.target;
         const s = t.closest("[data-sku-sec]"); if(s){ secF = s.dataset.skuSec; render(); return; }
+        const mk = t.closest("[data-sku-def]");
+        if(mk){
+          e.stopPropagation();
+          const ent = book().bySku.get(mk.dataset.skuDef); if(!ent) return;
+          const cur = book().entries.find(x => groupKey(x) === groupKey(ent) && isDefault(x));
+          if(!confirm(`Make ${ent.sku} · ${ent.desc} the default SKU for ${ent.grp || ent.sec}?${cur ? `\n(Replaces ${cur.sku} · ${cur.desc}.)` : ""}\n\nEvery ${ent.grp ? ent.grp.toLowerCase() : "matching"} line without its own SKU pick will use it, for the whole team.`)) return;
+          const O = defOverrides(); O[groupKey(ent)] = { sku: ent.sku, by: (getUser() && getUser().name) || "", at: Date.now() }; LS.set(DEF_KEY, O);
+          showToast(`${ent.sku} is now the default for ${ent.grp || ent.sec}`);
+          render(); if(currentPage === "order") renderOrder(); if(currentPage === "checkin") renderCheckIn();
+          return;
+        }
+        const rs = t.closest("[data-sku-defreset]");
+        if(rs){
+          e.stopPropagation();
+          const O = defOverrides(); delete O[rs.dataset.skuDefreset]; LS.set(DEF_KEY, O);
+          showToast("Back to the SKU/Cost file's default");
+          render(); if(currentPage === "order") renderOrder(); if(currentPage === "checkin") renderCheckIn();
+          return;
+        }
         const p = t.closest("[data-sku-pick]");
         if(p){
           const sku = p.dataset.skuPick;
@@ -11940,8 +12329,9 @@
         ctx = null;
         if(lineRef){
           const [tid, v, i] = lineRef.split("|");
-          const it = loadTrucks().find(x => x.id === tid)?.vendorBlocks?.[Number(v)]?.items?.[Number(i)];
-          if(it){ ctx = { tid, v:Number(v), i:Number(i), it }; scope = it.sku ? "line" : "item"; }
+          const tr = loadTrucks().find(x => x.id === tid);
+          const it = tr?.vendorBlocks?.[Number(v)]?.items?.[Number(i)];
+          if(it){ ctx = { tid, v:Number(v), i:Number(i), it, region: tr.region || "" }; scope = (it.sku || NOTES_ONLY.test(ctx.region)) ? "line" : "item"; }
         }
         render();
         modal.classList.add("active"); modal.setAttribute("aria-hidden", "false");
@@ -11949,9 +12339,11 @@
       }
       function close(){ if(modal){ modal.classList.remove("active"); modal.setAttribute("aria-hidden", "true"); } ctx = null; }
       function chip(t, vIdx, iIdx, it){
-        const r = forLine(it);
+        const r = forLine(it, t.region);
         const ref = `${t.id}|${vIdx}|${iIdx}`;
-        if(!r) return `<button type="button" class="skuChip none" data-sku-line="${escapeHtml(ref)}" title="No SKU matched — pick one">+ SKU</button>`;
+        if(!r) return NOTES_ONLY.test(String(t.region || "").trim())
+          ? `<button type="button" class="skuChip quiet" data-sku-line="${escapeHtml(ref)}" title="${escapeHtml(t.region)} orders only use a SKU named in the line's Notes — or pick one">+ SKU</button>`
+          : `<button type="button" class="skuChip none" data-sku-line="${escapeHtml(ref)}" title="No SKU matched — pick one">+ SKU</button>`;
         return `<button type="button" class="skuChip ${r.how}" data-sku-line="${escapeHtml(ref)}" title="${escapeHtml(r.e.desc)} · ${escapeHtml(r.why)} · cost ${money(r.e.cost)} · retail ${money(r.e.retail)} · UPC ${escapeHtml(r.e.upc)} — click to change">${escapeHtml(r.e.sku)}</button>`;
       }
       document.addEventListener("click", (e) => {
@@ -12848,12 +13240,12 @@
       function truckChip(t){
         const s = truckSummary(t);
         if(!s.rows.length) return "";
-        return `<button type="button" class="stChip ${tone(s.st)}" data-st-open="${escapeHtml(t.id)}" title="Projected sell-through for this truck — ${Math.round(s.sales).toLocaleString()} of ${s.qty.toLocaleString()} units${s.estLines ? ` · ${s.estLines} line(s) using category averages` : ""}">📈 ST ${pct(s.st)}${s.estLines ? "<i>*</i>" : ""}</button>`;
+        return `<button type="button" class="stChip ${tone(s.st)}" data-st-open="${escapeHtml(t.id)}" title="Projected sell-through for this truck — ${Math.round(s.sales).toLocaleString()} of ${s.qty.toLocaleString()} units${s.estLines ? ` · ${s.estLines} line(s) using category averages` : ""}">${icon("chart")}ST ${pct(s.st)}${s.estLines ? "<i>*</i>" : ""}</button>`;
       }
       function weekPill(wk){
         const w = weekSummary(wk);
         if(!w.qty) return "";
-        return `<button type="button" class="pillMini stWeekPill ${tone(w.st)}" data-st-open="" title="Projected sell-through for the week — open ST by Truck">📈 Proj. ST: ${pct(w.st)}</button>`;
+        return `<button type="button" class="pillMini stWeekPill ${tone(w.st)}" data-st-open="" title="Projected sell-through for the week — open ST by Truck">${icon("chart")}Proj. ST ${pct(w.st)}</button>`;
       }
 
       /* ---------- modal ---------- */
@@ -13308,6 +13700,102 @@
       return { open, close, truckChip, weekPill, truckSummary, weekSummary, lookup, key, category, importReport, exportWeek, loadImportFile, startImport, parseDelimited, _imp: () => imp };
     })();
     window.STByTruck = STByTruck;
+
+    /*********************************************************
+     * Design helpers (2026 visual refresh)
+     *  • top-bar status pill only shows when it has something to say
+     *  • phone: 5 main tabs; the other pages move into the More sheet
+     *  • Dashboard: 8-week trend cards
+     *********************************************************/
+    (function designHelpers(){
+      // 1) status pill: hide idle words
+      const chip = document.getElementById("statusChip");
+      if(chip){
+        const idle = /^(ready|login|cinematic jungle|)$/i;
+        const sync = () => chip.classList.toggle("isIdle", idle.test(chip.textContent.trim()));
+        new MutationObserver(sync).observe(chip, { childList:true, characterData:true, subtree:true });
+        sync();
+      }
+      // 2) phone nav: primary tabs + "More" pages
+      const PRIMARY = ["dashboard", "order", "checkin", "avail", "issues"];
+      const side = document.querySelector(".side"), footer = side && side.querySelector(".navFooter");
+      document.querySelectorAll(".navList .navBtn[data-page]").forEach(b => b.classList.toggle("navSecondary", !PRIMARY.includes(b.dataset.page)));
+      if(footer && !footer.querySelector(".morePages")){
+        const box = document.createElement("div");
+        box.className = "morePages";
+        box.innerHTML = `<div class="navFooterLabel">Pages</div>` + [...document.querySelectorAll(".navList .navBtn.navSecondary")].map(b =>
+          `<button type="button" class="navBtn morePageBtn" data-more-page="${b.dataset.page}"><span class="navIcon">${b.querySelector(".navIcon")?.innerHTML || ""}</span><span>${escapeHtml(b.getAttribute("aria-label") || b.dataset.page)}</span></button>`).join("");
+        footer.prepend(box);
+        box.addEventListener("click", (e) => {
+          const b = e.target.closest("[data-more-page]"); if(!b) return;
+          e.stopPropagation();
+          showPage(b.dataset.morePage);
+          side.classList.remove("moreOpen");
+          document.getElementById("navMoreBtn")?.classList.remove("active");
+          document.getElementById("navMoreBtn")?.setAttribute("aria-expanded", "false");
+        });
+      }
+    })();
+
+    const DashTrends = (function(){
+      function weekKeysEnding(anchor, n){
+        const out = []; for(let i = n - 1; i >= 0; i--) out.push(weekKeyFromDate(addDays(anchor, -7 * i))); return out;
+      }
+      function series(anchor){
+        const wks = weekKeysEnding(anchor, 8), trucks = loadTrucks(), issues = loadIssues(), cur = weekKeyFromDate(new Date());
+        const plants = wks.map(wk => trucks.filter(t => t.weekKey === wk).reduce((n, t) => n + (t.vendorBlocks || []).reduce((m, vb) => m + (vb.items || []).reduce((q, it) => q + (Number(it.qty) || 0), 0), 0), 0));
+        const st = wks.map(wk => { try { const w = STByTruck.weekSummary(wk); return w.st == null ? null : w.st * 100; } catch(_){ return null; } });
+        const ci = wks.map(wk => {
+          if(wk > cur) return null;
+          const rows = checkinRowsForWeek(wk).concat(homesteadCheckinRowsForWeek(wk)); if(!rows.length) return null;
+          const s = checkinStateForWeek(wk); return rows.filter(r => (s[r.key] || {}).checked).length / rows.length * 100;
+        });
+        const iss = wks.map(wk => issues.filter(i => (i.checkinWeek || (parseDate(i.date) ? weekKeyFromDate(parseDate(i.date)) : "")) === wk).length);
+        return { wks, plants, st, ci, iss };
+      }
+      function svg(vals, kind, tone){
+        const W = 220, H = 56, pad = 4, n = vals.length;
+        const nums = vals.filter(v => v != null);
+        if(!nums.length) return `<svg class="dtSvg" viewBox="0 0 ${W} ${H}"><line x1="0" y1="${H - 1}" x2="${W}" y2="${H - 1}" class="dtBase"/></svg>`;
+        const max = kind === "pct" ? 100 : Math.max(1, ...nums), min = kind === "pct" ? Math.min(50, ...nums) : 0;
+        const x = (i) => pad + i * (W - 2 * pad) / (n - 1), y = (v) => H - 4 - (v - min) / (max - min || 1) * (H - 12);
+        if(kind === "bar"){
+          const bw = (W - 2 * pad) / n * 0.62;
+          return `<svg class="dtSvg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">${vals.map((v, i) => v ? `<rect class="dtBar${i === n - 1 ? " cur" : ""}" x="${(pad + i * (W - 2 * pad) / n + ((W - 2 * pad) / n - bw) / 2).toFixed(1)}" y="${y(v).toFixed(1)}" width="${bw.toFixed(1)}" height="${(H - 4 - y(v)).toFixed(1)}" rx="2"/>` : "").join("")}<line x1="0" y1="${H - 4}" x2="${W}" y2="${H - 4}" class="dtBase"/></svg>`;
+        }
+        const pts = vals.map((v, i) => v == null ? null : [x(i), y(v)]);
+        const segs = []; let curSeg = [];
+        pts.forEach(p => { if(p) curSeg.push(p); else if(curSeg.length){ segs.push(curSeg); curSeg = []; } }); if(curSeg.length) segs.push(curSeg);
+        const last = [...pts].reverse().find(Boolean);
+        return `<svg class="dtSvg ${tone || ""}" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+          ${segs.map(sg => `<polygon class="dtArea" points="${sg[0][0].toFixed(1)},${H - 4} ${sg.map(p => p.map(c => c.toFixed(1)).join(",")).join(" ")} ${sg[sg.length - 1][0].toFixed(1)},${H - 4}"/><polyline class="dtLine" points="${sg.map(p => p.map(c => c.toFixed(1)).join(",")).join(" ")}"/>`).join("")}
+          ${last ? `<circle class="dtDot" cx="${last[0].toFixed(1)}" cy="${last[1].toFixed(1)}" r="3"/>` : ""}</svg>`;
+      }
+      function delta(vals, kind){
+        const a = vals[vals.length - 1], b = vals[vals.length - 2];
+        if(a == null || b == null) return "";
+        const d = kind === "pct" ? a - b : (b ? (a - b) / b * 100 : null);
+        if(d == null || Math.abs(d) < 0.5) return `<span class="dtDelta">± 0 vs last wk</span>`;
+        const up = d > 0;
+        return `<span class="dtDelta ${up ? "up" : "down"}">${up ? "▲" : "▼"} ${Math.abs(d).toFixed(kind === "pct" ? 1 : 0)}${kind === "pct" ? " pts" : "%"} vs last wk</span>`;
+      }
+      function render(){
+        const box = document.getElementById("dashTrends"); if(!box) return;
+        const s = series(dashWeekAnchor);
+        const lastOf = (v) => v[v.length - 1];
+        const fmtPct = (v) => v == null ? "—" : Math.round(v) + "%";
+        const cards = [
+          { t:"Plants ordered", v: lastOf(s.plants).toLocaleString(), svg: svg(s.plants, "bar"), d: delta(s.plants, "num"), go:"order" },
+          { t:"Projected sell-through", v: fmtPct(lastOf(s.st)), svg: svg(s.st, "pct", "tGold"), d: delta(s.st, "pct"), go:"order" },
+          { t:"Check-in done", v: fmtPct(lastOf(s.ci)), svg: svg(s.ci, "pct", "tBlue"), d: delta(s.ci, "pct"), go:"checkin" },
+          { t:"Issues logged", v: String(lastOf(s.iss)), svg: svg(s.iss, "bar"), d: "", go:"issues", bad: true }
+        ];
+        box.innerHTML = `<div class="dtHead"><h3>Last 8 weeks</h3><span class="dtRange">${escapeHtml(weekLabel(dateFromWeekKey(s.wks[0])).split(" · ")[0])} – ${escapeHtml(weekLabel(dateFromWeekKey(s.wks[s.wks.length - 1])).split(" · ")[0])}</span></div>
+          <div class="dtGrid">${cards.map(c => `<button type="button" class="dtCard${c.bad ? " dtBad" : ""}" data-xl-dash="${c.go}"><span class="dtTitle">${c.t}</span><span class="dtVal">${c.v}</span>${c.svg}${c.d || `<span class="dtDelta">this week</span>`}</button>`).join("")}</div>`;
+      }
+      return { render, series };
+    })();
+    window.DashTrends = DashTrends;
 
     /*********************************************************
      * Boot
