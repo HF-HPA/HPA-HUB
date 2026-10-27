@@ -696,6 +696,7 @@
     .avHint .avHlCount{ margin-left:10px; color:var(--ink-2); }
     .avHint .tinyBtn{ margin-left:6px; }
     .avHint .avLinkBtn{ margin-left:auto; }
+    .avScriptNote{ color:var(--state-warn-fg, #9a6a00); font-weight:600; }
     .avHint{ display:flex; flex-wrap:wrap; align-items:center; gap:4px 0; }
     .avLinkBtn.on{ background:rgba(43,212,154,.14); border-color:var(--mint-deep); color:var(--moss); }
     .avLinkCard{ width:min(680px, 96vw); }
@@ -886,6 +887,19 @@
     .stIn input{ width:64px; margin:0; padding:4px 6px; font-size:13px; text-align:right; border-radius:8px; }
     .stIn.est input{ font-style:italic; color:var(--ink-2); border-style:dashed; }
     .stIn.own input{ border-color:var(--mint-deep); font-weight:700; }
+    .it_stCell{ white-space:nowrap; }
+    .it_stCell .stIn input{ width:64px; min-width:64px; padding:10px 8px; font-size:14px; }
+    .itemsTable .it_notes{ min-width:130px; }
+    #truckModal .vendorBlock{ overflow-x:auto; }
+    #truckModal .itemsTable{ min-width:860px; }
+    .it_stCell .stIn input::placeholder{ color:var(--ink-2); opacity:.75; font-style:italic; }
+    .it_stInfo{ display:block; margin-top:3px; font-size:11px; color:var(--ink-2); white-space:nowrap; }
+    .stBuilderChip{ display:inline-flex; align-items:center; gap:6px; padding:6px 12px; border-radius:999px; font-size:13px; font-weight:600; border:1px solid var(--line); background:var(--paper-3); color:var(--ink); }
+    .stBuilderChip[hidden]{ display:none; }
+    .stBuilderChip .iconSvg{ width:15px; height:15px; margin:0; }
+    .stBuilderChip.good{ background:var(--ok-bg, rgba(43,212,154,.14)); border-color:rgba(22,168,119,.45); color:var(--ok-fg, #11704f); }
+    .stBuilderChip.ok{ background:var(--warn-bg, rgba(232,179,57,.16)); border-color:rgba(200,150,30,.45); color:var(--warn-fg, #8a5d00); }
+    .stBuilderChip.low{ background:var(--bad-bg, rgba(224,86,63,.12)); border-color:rgba(224,86,63,.45); color:var(--bad-fg, #a8341f); }
     .stReset{ border:none; background:transparent; color:var(--ink-2); cursor:pointer; font-size:13px; padding:2px 4px; }
     html[data-theme="dark"] .stChip.good, html[data-theme="dark"] .stWeekPill.good, html[data-theme="dark"] .stTot.good{ color:#8fe0a8; }
     html[data-theme="dark"] .stChip.ok, html[data-theme="dark"] .stWeekPill.ok, html[data-theme="dark"] .stTot.ok{ color:#f1d98a; }
@@ -4341,6 +4355,7 @@
         <label><span class="lbl">Truck / Order Notes</span><textarea class="tb_notes" placeholder="General notes for this truck..."></textarea></label>
         <div class="row" style="margin-top:6px; align-items:center;">
           <div class="chip subtle tb_totals" style="background:var(--paper-3); color:var(--moss); border:1px solid var(--line); backdrop-filter:none;">Totals: 0 racks • 0 cases • 0 plants</div>
+          <div class="tb_st stBuilderChip" hidden></div>
           <button class="tinyBtn tb_addVendor" type="button">+ Add Vendor</button>
         </div>
         <div class="tb_vendorWrap" style="margin-top:10px;"></div>
@@ -4416,7 +4431,7 @@
         ? `<th style="width:16%;">Unit / Count</th>`
         : `<th style="width:12%;">CC Rack Count</th>`;
       const shelvesCol = blockUsesShelves(block) ? `<th style="width:10%;">Shelves</th>` : ``;
-      return `<tr><th style="width:32%;">Item</th>${rackCol}${shelvesCol}<th style="width:11%;">Case Count</th><th style="width:11%;">Plant Qty</th><th>Notes</th><th style="width:9%;">Book</th><th style="width:1%;"></th></tr>`;
+      return `<tr><th style="width:32%;">Item</th>${rackCol}${shelvesCol}<th style="width:11%;">Case Count</th><th style="width:11%;">Plant Qty</th><th style="width:9%;" title="Projected sell-through. Blank = the remembered/average ST shown in grey; type a number to set it for this line.">ST %</th><th>Notes</th><th style="width:9%;">Book</th><th style="width:1%;"></th></tr>`;
     }
 
     function addVendorBlock(vendorWrapEl, block, vendorObj = { name:"", po:"", status:"Open", items:[{ item:"", racks:"", cases:"", qty:"", notes:"" }] }){
@@ -4525,6 +4540,7 @@
         ${shelvesCell}
         <td><input class="it_cases" type="number" step="0.25" placeholder="0" value="${escapeHtml(itemObj.cases ?? "")}"></td>
         <td><input class="it_qty" type="number" step="1" placeholder="0" value="${escapeHtml(itemObj.qty ?? "")}"></td>
+        <td class="it_stCell"><label class="stIn"><input class="it_st" type="number" min="0" max="150" step="0.1" inputmode="decimal" aria-label="Sell-through %" value="${itemObj.st != null && itemObj.st !== "" && !isNaN(Number(itemObj.st)) ? escapeHtml(String(Math.round(Number(itemObj.st) * 1000) / 10)) : ""}"><span>%</span></label><small class="it_stInfo"></small></td>
         <td><input class="it_notes" placeholder="Line notes (optional)" value="${escapeHtml(itemObj.notes ?? "")}"></td>
         <td><select class="it_book" title="Reserve this line on the Booking tab">
           <option value="" ${bookType===""?"selected":""}>—</option>
@@ -4586,6 +4602,18 @@
       const casesInputEl = tr.querySelector(".it_cases");
       if(racksInputEl) racksInputEl.addEventListener("input", () => { tr.dataset.racksAuto = "0"; });
       if(casesInputEl) casesInputEl.addEventListener("input", () => { tr.dataset.casesAuto = "0"; });
+      // Sell-through: typing a % sets it for this line (saved with the order and remembered
+      // for this item next time); leaving it blank uses the remembered / category ST.
+      const stInput = tr.querySelector(".it_st");
+      stInput.addEventListener("input", () => {
+        const v = stInput.value.trim();
+        if(v === "" || isNaN(Number(v))) delete tr.dataset.st;
+        else tr.dataset.st = String(Math.round(Math.max(0, Math.min(150, Number(v))) * 10) / 1000);
+      });
+      stInput.addEventListener("change", () => {
+        const name = tr.querySelector(".it_item").value.trim();
+        if(name && tr.dataset.st && window.STByTruck && STByTruck.remember) STByTruck.remember(name, Number(tr.dataset.st));
+      });
       tr.querySelectorAll("input, select").forEach(inp => {
         inp.addEventListener("input", () => { tryAutoCalcRack(); updateAutoPosts(); recalcTotals(block); });
         inp.addEventListener("change", () => { tryAutoCalcRack(); updateAutoPosts(); recalcTotals(block); });
@@ -4593,15 +4621,47 @@
       tbody.appendChild(tr);
     }
 
+    // Live sell-through for one builder line: shows the ST it will use and the projected units sold.
+    function stRowUpdate(tr){
+      const S = window.STByTruck;
+      const inp = tr.querySelector(".it_st"), info = tr.querySelector(".it_stInfo"), lab = inp && inp.closest(".stIn");
+      if(!S || !inp) return null;
+      const item = tr.querySelector(".it_item").value.trim();
+      const qty = Number(tr.querySelector(".it_qty").value || 0);
+      const own = tr.dataset.st !== undefined && tr.dataset.st !== "" && !isNaN(Number(tr.dataset.st));
+      let st = null, est = false, src = "";
+      if(own){ st = Number(tr.dataset.st); src = "Set on this order"; }
+      else if(item){ const l = S.lookup(item); st = l.st; est = l.est; src = l.src; }
+      if(lab){ lab.classList.toggle("own", own); lab.classList.toggle("est", !own && est); }
+      inp.placeholder = (!own && st != null) ? String(Math.round(st * 1000) / 10) : "";
+      inp.title = st != null ? `${src}${est ? " (estimate)" : ""}${own ? "" : " — type a % to set it for this line"}` : "Type the expected sell-through %";
+      if(info){
+        info.textContent = st != null && qty ? `≈ ${Math.round(qty * st).toLocaleString()} sold${!own && est ? " · est." : ""}` : (!own && est && item ? "category est." : "");
+        info.title = src;
+      }
+      return st != null ? { qty, st, est: !own && est } : (qty ? { qty, st: null } : null);
+    }
     function recalcTotals(block){
-      let racks = 0, cases = 0, qty = 0;
+      let racks = 0, cases = 0, qty = 0, stQty = 0, stSales = 0, stEst = 0, stMissing = 0;
       block.querySelectorAll(".vendorBlock").forEach(vb => {
         vb.querySelectorAll("tbody tr").forEach(tr => {
           racks += Number(tr.querySelector(".it_racks")?.value || 0);
           cases += Number(tr.querySelector(".it_cases").value || 0);
           qty   += Number(tr.querySelector(".it_qty").value || 0);
+          const r = stRowUpdate(tr);
+          if(r && r.qty){ if(r.st == null) stMissing++; else { stQty += r.qty; stSales += r.qty * r.st; if(r.est) stEst++; } }
         });
       });
+      const stEl = block.querySelector(".tb_st");
+      if(stEl){
+        if(stQty){
+          const pst = stSales / stQty;
+          stEl.hidden = false;
+          stEl.className = "tb_st stBuilderChip " + (pst >= 0.8 ? "good" : pst >= 0.7 ? "ok" : "low");
+          stEl.innerHTML = `${icon("chart")}<span>Projected ST <b>${(pst * 100).toFixed(1).replace(/\.0$/, "")}%</b> · ${Math.round(stSales).toLocaleString()} of ${stQty.toLocaleString()} sold${stEst ? ` · ${stEst} line${stEst === 1 ? "" : "s"} est.` : ""}${stMissing ? ` · ${stMissing} without ST` : ""}</span>`;
+          stEl.title = "Projected sell-through for this truck, updating as you build. Grey % = remembered or category average; type a % on a line to set it.";
+        } else { stEl.hidden = true; stEl.innerHTML = ""; }
+      }
       const el = block.querySelector(".tb_totals");
       if(el){
         const over = racks > 45;
@@ -9197,6 +9257,7 @@
       }
       function headerDate(v){
         if(v instanceof Date) return ymdUTC(v);
+        if(typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v.trim())) return v.trim();
         const m = String(v ?? "").trim().match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?$/);
         if(!m) return null;
         const now = new Date();
@@ -9259,23 +9320,61 @@
         const dates = [...dateSet].sort();
         return { tabs, items, dates, fetchedAt: Date.now() };
       }
-      async function refresh(force){
+      // The linked Apps Script can hand over the whole sheet (values + cell colors) directly.
+      // That's the most reliable read: it works even if the sheet isn't shared publicly and
+      // isn't subject to the export link's rate limits. Falls back to the export link.
+      let lastFetchAt = 0, scriptNote = "", throttleT = null;
+      function wbFromScript(j){
+        const toVal = (v) => (typeof v === "string" && v.startsWith("@date:")) ? new Date(v.slice(6) + "T00:00:00Z") : (v === "" || v == null ? null : v);
+        return { worksheets: (j.sheets || []).map(sh => {
+          const vals = sh.values || [];
+          const fills = new Map((sh.bg || []).map(([r, c, col]) => [r + "," + c, col]));
+          const mkCell = (r, c) => { const col = fills.get(r + "," + c); return { value: toVal((vals[r - 1] || [])[c - 1]), fill: col ? { type:"pattern", pattern:"solid", fgColor:{ argb: "FF" + String(col).replace("#", "").toUpperCase() } } : undefined }; };
+          return { name: sh.name, eachRow(_opts, fn){
+            vals.forEach((row, i) => {
+              if(!row.some(v => v !== "" && v != null)) return;
+              fn({ getCell: (c) => mkCell(i + 1, c), eachCell(_o, f){ row.forEach((v, j) => { if(v !== "" && v != null) f(mkCell(i + 1, j + 1), j + 1); }); } }, i + 1);
+            });
+          } };
+        }) };
+      }
+      async function readViaScript(){
+        const c = linked(); if(!c) return null;
+        const r = await fetch(c.url + (c.url.includes("?") ? "&" : "?") + "data=1&key=" + encodeURIComponent(c.key), { cache:"no-store" });
+        const j = await r.json();
+        if(j && j.ok && Array.isArray(j.sheets)){ scriptNote = ""; return wbFromScript(j); }
+        scriptNote = j && j.ok === false ? "The linked script's key doesn't match — re-copy the code from 🔗 Linked to Sheet view." : "Update the linked script (🔗 → Copy code → paste → Deploy → Manage deployments → New version) so the app can read the sheet through it.";
+        return null;
+      }
+      async function readViaExport(s, force){
+        const ExcelJS = await loadExcelJS();
+        let res;
+        try { res = await fetch(`https://docs.google.com/spreadsheets/d/${s.id}/export?format=xlsx`, { cache: force ? "no-store" : "default" }); }
+        catch(e){ throw new Error("Google blocked the read — usually the sheet isn't shared as “Anyone with the link can view”, or Google is limiting how often it can be read. Linking the sheet (🔗) avoids both."); }
+        if(!res.ok) throw new Error(res.status === 401 || res.status === 403 ? "The sheet isn't shared as “Anyone with the link can view” — share it that way, or link it (🔗)." : res.status === 429 ? "Google is limiting how often the sheet can be read — try again in a minute, or link it (🔗)." : `Google returned ${res.status}`);
+        const buf = await res.arrayBuffer();
+        const wb = new ExcelJS.Workbook();
+        try { await wb.xlsx.load(buf); }
+        catch(e){ throw new Error("Google sent back a sign-in page instead of the sheet — share it as “Anyone with the link can view”, or link it (🔗)."); }
+        return wb;
+      }
+      async function refresh(force, manual){
         if(loading) return;
+        // automatic re-reads are spaced out so Google doesn't start refusing them
+        const wait = 10000 - (Date.now() - lastFetchAt);
+        if(!manual && wait > 0){ clearTimeout(throttleT); throttleT = setTimeout(() => refresh(force), wait); return; }
         const s = gsCurrent();
-        loading = true; lastErr = ""; render();
+        loading = true; lastErr = ""; lastFetchAt = Date.now(); render();
         try {
-          const ExcelJS = await loadExcelJS();
-          const res = await fetch(`https://docs.google.com/spreadsheets/d/${s.id}/export?format=xlsx`, { cache: force ? "no-store" : "default" });
-          if(!res.ok) throw new Error(res.status === 401 || res.status === 403 ? "The sheet isn't shared as “anyone with the link can view”." : `Google returned ${res.status}`);
-          const buf = await res.arrayBuffer();
-          const wb = new ExcelJS.Workbook();
-          await wb.xlsx.load(buf);
+          let wb = null;
+          if(linked()){ try { wb = await readViaScript(); } catch(e){ scriptNote = "Couldn't reach the linked script — reading the sheet the usual way."; } }
+          if(!wb) wb = await readViaExport(s, force);
           data = parseWorkbook(wb);
           data.sheetId = s.id;
           try { localStorage.setItem(CACHE_KEY, JSON.stringify(data)); } catch(_){}
         } catch(e){
           lastErr = (e && e.message) || String(e);
-          if(/Failed to fetch|NetworkError|Load failed/i.test(lastErr)) lastErr = "Couldn't reach Google Sheets (offline?). Showing the last copy.";
+          if(/Failed to fetch|NetworkError|Load failed/i.test(lastErr)) lastErr = navigator.onLine ? "Couldn't reach Google Sheets. Showing the last copy." : "You're offline. Showing the last copy.";
         } finally {
           loading = false; render();
           if(viewMode() === "smart") gsSetStatus(lastErr ? "err" : "live", lastErr ? "Sheet unreachable · showing last copy" : "Smart view · live from Google Sheets");
@@ -9346,10 +9445,27 @@
 
       /* ---------- link setup (free Google Apps Script web app on the sheet) ---------- */
       function scriptCode(key){
-        return `// HPA HUB — two-way highlights. Paste into the sheet: Extensions → Apps Script.
+        return `/** @OnlyCurrentDoc */
+// HPA HUB — two-way highlights. Paste into the sheet: Extensions → Apps Script.
+// It can only touch THIS spreadsheet. Google shows "hasn't verified this app" for any
+// personal script — click Advanced → Go to (project name) → Allow. That's expected.
 const KEY = "${key}";
 const YELLOW = "#ffff00";
-function doGet(e){ return out({ ok: (e.parameter.key || "") === KEY, sheet: SpreadsheetApp.getActive().getName() }); }
+function doGet(e){
+  const p = e.parameter || {};
+  if((p.key || "") !== KEY) return out({ ok:false });
+  const ss = SpreadsheetApp.getActive();
+  if(!p.data) return out({ ok:true, sheet: ss.getName() });
+  const tz = ss.getSpreadsheetTimeZone();
+  const sheets = ss.getSheets().map(sh => {
+    const r = sh.getDataRange();
+    const values = r.getValues().map(row => row.map(v => v instanceof Date ? "@date:" + Utilities.formatDate(v, tz, "yyyy-MM-dd") : v));
+    const bg = [];
+    r.getBackgrounds().forEach((row, i) => row.forEach((c, j) => { if(c && c.toLowerCase() !== "#ffffff") bg.push([i + 1, j + 1, c]); }));
+    return { name: sh.getName(), values, bg };
+  });
+  return out({ ok:true, sheets });
+}
 function doPost(e){
   const p = JSON.parse((e.postData && e.postData.contents) || "{}");
   if(p.key !== KEY) return out({ ok:false, error:"wrong key" });
@@ -9384,7 +9500,8 @@ function out(o){ return ContentService.createTextOutput(JSON.stringify(o)).setMi
             <li>Open the sheet in Google Sheets → <b>Extensions → Apps Script</b>.</li>
             <li>Delete what's there and paste this code: <button type="button" class="tinyBtn" data-avl="copy">Copy code</button>
               <textarea class="avLinkCode" readonly rows="7">${escapeHtml(scriptCode(key))}</textarea></li>
-            <li>Click <b>Deploy → New deployment</b> → type <b>Web app</b>. Set <b>Execute as: Me</b> and <b>Who has access: Anyone</b> → <b>Deploy</b>, then allow access when Google asks.</li>
+            <li>Click <b>Deploy → New deployment</b> → type <b>Web app</b> (already deployed? use <b>Deploy → Manage deployments → ✏️ edit → Version: New version → Deploy</b> instead, so the link stays the same). Set <b>Execute as: Me</b> and <b>Who has access: Anyone</b> → <b>Deploy</b>, then allow access when Google asks.
+              <div class="note" style="margin-top:6px;">⚠ Google will say <b>"Google hasn't verified this app"</b> — that's normal for any script you write yourself. Click <b>Advanced</b> → <b>Go to (your project name) (unsafe)</b> → <b>Allow</b>. The script only has access to this one spreadsheet.</div></li>
             <li>Copy the <b>Web app URL</b> and paste it here:
               <div class="avLinkRow"><input type="url" data-avl="url" placeholder="https://script.google.com/macros/s/…/exec" value="${escapeHtml(same && cur.url ? cur.url : "")}"><button type="button" class="btn" data-avl="save">Save link</button></div>
               <div class="note" data-avl-msg2></div></li>
@@ -9406,7 +9523,7 @@ function out(o){ return ContentService.createTextOutput(JSON.stringify(o)).setMi
             if(ok === false){ msg.textContent = "The script answered, but the key didn't match — paste the code above again (it has this link's key), redeploy, and retry."; return; }
             LS.set(SCRIPT_KEY, { url, key, sheetId: gsCurrent().id, by: (getUser() && getUser().name) || "", at: Date.now() });
             close(); showToast(ok ? "Linked — highlights now match the Sheet view" : "Saved — highlights will sync with the sheet");
-            refresh(true);
+            refresh(true, true);
           }
           else if(a === "test"){ const out = m.querySelector("[data-avl-msg]"); out.textContent = "Testing…"; const ok = await ping(cur.url, cur.key); out.textContent = ok ? "Working ✓" : ok === false ? "Key doesn't match the script" : "Couldn't confirm (Google may block the check) — try highlighting a cell"; }
           else if(a === "unlink"){ if(!confirm("Unlink highlights from the Google Sheet for everyone?")) return; LS.set(SCRIPT_KEY, null); close(); render(); }
@@ -9433,7 +9550,7 @@ function out(o){ return ContentService.createTextOutput(JSON.stringify(o)).setMi
         const hl = hlAll();
         const status = loading ? `<span class="avSpin"></span> Reading sheet…`
           : lastErr ? `⚠ ${escapeHtml(lastErr)}`
-          : data ? `Synced from Google Sheets · ${escapeHtml(timeAgoShort(data.fetchedAt))}` : "Not loaded yet";
+          : data ? `Synced from Google Sheets · ${escapeHtml(timeAgoShort(data.fetchedAt))}${scriptNote ? ` <span class="avScriptNote">· ${escapeHtml(scriptNote)}</span>` : ""}` : "Not loaded yet";
         if(!data){
           root.innerHTML = `<div class="avTop"><span class="avStatus">${status}</span></div>
             <div class="avEmpty">${loading ? `<div class="avSkel">${Array.from({ length:7 }, (_, i) => `<div class="avSkelRow"><span class="skeleton" style="width:${150 + (i * 37) % 90}px"></span>${Array.from({ length:6 }, (_, j) => `<span class="skeleton" style="opacity:${(i + j) % 3 ? .55 : 1}"></span>`).join("")}</div>`).join("")}<div class="avSkelNote">Reading your availability sheet…</div></div>` : `Couldn't load the sheet yet. ${lastErr ? escapeHtml(lastErr) : ""}<br><button type="button" class="btn" data-av="refresh" style="width:auto;margin-top:12px;">Try again</button>`}</div>`;
@@ -9509,7 +9626,7 @@ function out(o){ return ContentService.createTextOutput(JSON.stringify(o)).setMi
           const tab = t.closest("[data-av-tab]"); if(tab){ filters.tab = tab.dataset.avTab; render(); return; }
           const act = t.closest("[data-av]"); if(!act) return;
           const a = act.dataset.av;
-          if(a === "refresh") refresh(true);
+          if(a === "refresh") refresh(true, true);
           else if(a === "linksetup") openLinkSetup();
           else if(a === "clearhl"){
             const all = hlAll(), on = [];
@@ -9570,7 +9687,7 @@ function out(o){ return ContentService.createTextOutput(JSON.stringify(o)).setMi
         if(was === "sheet" && viewMode() === "smart") refresh(true);   // pick up anything highlighted in the Sheet view
       }));
       // ⟳ in the bar reloads whichever view is showing
-      document.getElementById("gsReloadBtn")?.addEventListener("click", (e) => { if(viewMode() === "smart"){ e.stopImmediatePropagation(); refresh(true); } }, true);
+      document.getElementById("gsReloadBtn")?.addEventListener("click", (e) => { if(viewMode() === "smart"){ e.stopImmediatePropagation(); refresh(true, true); } }, true);
       window.addEventListener("focus", () => { if(typeof currentPage !== "undefined" && currentPage === "avail" && viewMode() === "smart" && data && Date.now() - data.fetchedAt > 60000) refresh(false); });
       return { applyView, refresh, render, get data(){ return data; }, parseWorkbook, HL_KEY, SCRIPT_KEY, openLinkSetup, isYellowHex };
     })();
@@ -13931,7 +14048,11 @@ function out(o){ return ContentService.createTextOutput(JSON.stringify(o)).setMi
         if(b){ e.preventDefault(); e.stopPropagation(); open(b.dataset.stOpen || null); }
       }, true);
       document.getElementById("stByTruckBtn")?.addEventListener("click", () => open(null));
-      return { open, close, truckChip, weekPill, truckSummary, weekSummary, lookup, key, category, importReport, exportWeek, loadImportFile, startImport, parseDelimited, _imp: () => imp };
+      function remember(name, st){
+        if(!name || st == null || isNaN(st)) return;
+        const L = lib(); L[key(name)] = { st: Math.round(st * 1000) / 1000, src:`set by ${(getUser() && getUser().name) || "team"}`, at: Date.now(), label: name }; LS.set(LIB_KEY, L);
+      }
+      return { open, close, truckChip, weekPill, truckSummary, weekSummary, lookup, key, category, remember, importReport, exportWeek, loadImportFile, startImport, parseDelimited, _imp: () => imp };
     })();
     window.STByTruck = STByTruck;
 
