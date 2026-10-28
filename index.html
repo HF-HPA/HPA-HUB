@@ -2133,6 +2133,32 @@
     .smOcrToggle.off{ opacity:.7; }
     .smThumb{ height:54px; max-width:120px; object-fit:cover; border-radius:8px; border:1px solid var(--line); margin-right:4px; }
     .smReading{ display:inline-flex; align-items:center; gap:8px; font-weight:700; }
+
+    /* Export range picker */
+    .exRangeCard{ width:min(560px, 96vw); }
+    #exportRangeModal{ z-index:4000; }
+    .exRangeHead{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px; }
+    .exRangeHead h3{ margin:0; display:flex; align-items:center; gap:8px; font-family:var(--display); }
+    .exRangeLbl{ font-size:11.5px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--ink-2); margin-bottom:8px; }
+    .exRangeChips{ display:flex; flex-wrap:wrap; gap:7px; }
+    .exRangeChip{ padding:8px 13px; border-radius:999px; border:1px solid var(--line); background:var(--paper-2); color:var(--ink); font-weight:600; font-size:13px; cursor:pointer; }
+    .exRangeChip:hover{ border-color:var(--mint-deep); }
+    .exRangeChip.on{ background:var(--moss); border-color:var(--moss); color:#fff; }
+    .exRangeCustom{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:12px; }
+    .exRangeSum{ display:flex; align-items:flex-start; gap:8px; margin-top:16px; padding:12px 14px; border-radius:12px; background:var(--paper-3); border:1px solid var(--line-soft); line-height:1.4; }
+    .exRangeSum .iconSvg{ flex:none; margin-top:2px; }
+    .exRangeNote{ margin-top:8px; }
+    .exRangeActions{ display:flex; justify-content:flex-end; gap:8px; margin-top:16px; }
+    .exRangeActions .btn{ width:auto; }
+    .exRangeActions .btn[disabled]{ opacity:.55; cursor:not-allowed; }
+    @media (max-width:560px){ .exRangeCustom{ grid-template-columns:1fr; } .exRangeActions .btn{ flex:1; } }
+
+    /* UPC sticker tracker: per-type remove / add back */
+    .labelTypeDel{ width:28px; min-width:28px; padding:0 !important; display:inline-flex; align-items:center; justify-content:center; color:var(--ink-2); }
+    .labelTypeDel .iconSvg{ width:14px; height:14px; margin:0; }
+    .labelTypeDel:hover{ color:#a8341f; border-color:rgba(224,86,63,.5); background:rgba(224,86,63,.08); }
+    .labelTypeAddBack{ display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin-top:10px; padding-top:10px; border-top:1px dashed var(--line); font-size:12px; color:var(--ink-2); }
+    .labelTypeAddBack .tinyBtn .iconSvg{ width:12px; height:12px; }
   </style>
 </head>
 <body class="density-comfortable atmos">
@@ -2499,7 +2525,7 @@
                 <option value="Submitted">Submitted</option>
                 <option value="Resolved">Resolved</option>
               </select>
-              <button id="issueExportBtn" class="btnGhost"><span data-icon="download" aria-hidden="true"></span> Export CSV</button>
+              <button id="issueExportBtn" class="btnGhost"><span data-icon="download" aria-hidden="true"></span> Export</button>
             </div>
           </div>
           <table class="table" id="issueTable">
@@ -2881,7 +2907,7 @@
         <button id="labelSettingsCloseBtn" class="closeX">Close</button>
       </div>
       <label><span class="lbl">Full Count (bar's 100%)</span><input id="ls_capacity" type="number" min="1" step="1"/></label>
-      <label><span class="lbl">Low-Stock Alert At</span><input id="ls_reorder" type="number" min="0" step="1"/></label>
+      <label><span class="lbl">Low-Stock Alert At (% of full)</span><input id="ls_reorder" type="number" min="1" max="100" step="1" placeholder="50"/></label>
       <label><span class="lbl">Correct Current Count (optional)</span><input id="ls_current" type="number" min="0" step="1" placeholder="Leave blank to keep as-is"/></label>
       <button id="labelSettingsSaveBtn" class="btn">Save Settings</button>
       <button id="labelDeleteVendorBtn" class="tinyBtn danger" type="button" style="margin-top:10px;">Reset This Sticker Type's Count</button>
@@ -3397,6 +3423,8 @@
       plus: '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
       package: '<path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v9l9 5 9-5V8"/><path d="M12 13v9"/>',
       download: '<path d="M12 3v13"/><polyline points="7,11 12,16 17,11"/><path d="M4 19h16"/>',
+      trash: '<path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M6 7l1 13h10l1-13"/><path d="M10 11v6"/><path d="M14 11v6"/>',
+      calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M8 3v4"/><path d="M16 3v4"/>',
       upload: '<path d="M12 21V8"/><polyline points="7,13 12,8 17,13"/><path d="M4 19h16"/>',
       receipt: '<path d="M6 2h12v20l-2-1.5L14 22l-2-1.5L10 22l-2-1.5L6 22z"/><line x1="9" y1="7" x2="15" y2="7"/><line x1="9" y1="11" x2="15" y2="11"/><line x1="9" y1="15" x2="12" y2="15"/>',
       sun: '<circle cx="12" cy="12" r="4.5"/><path d="M12 2.5v2.5M12 19v2.5M4.4 4.4l1.8 1.8M17.8 17.8l1.8 1.8M2.5 12H5M19 12h2.5M4.4 19.6l1.8-1.8M17.8 6.2l1.8-1.8"/>',
@@ -5792,6 +5820,105 @@
       });
       return _exceljsPromise;
     }
+    /*********************************************************
+     * Export range picker — every export asks which dates to cover:
+     * a week, last/next week, a month, the quarter, year-to-date,
+     * all time, or any custom from–to. Week-based exports get one
+     * tab (or PDF section) per week in a single file.
+     *********************************************************/
+    const EXPORT_RANGE_KEY = "hpa_export_range_v1";   // per device: last choice per export
+    function exportWeeksBetween(from, to){
+      const out = [];
+      for(let d = startOfWeek(from); d <= to; d = addDays(d, 7)) out.push(weekKeyFromDate(d));
+      return out;
+    }
+    function exportRangePresets(allowAll){
+      const a = startOfWeek(weekAnchor), y = a.getFullYear(), m = a.getMonth();
+      const q0 = Math.floor(m / 3) * 3;
+      const wkTxt = (d) => `Wk ${isoWeekNumOf(d)}`;
+      const list = [
+        { id:"week", label:`This week · ${wkTxt(a)}`, from:a, to:addDays(a, 6) },
+        { id:"last", label:`Last week · ${wkTxt(addDays(a, -7))}`, from:addDays(a, -7), to:addDays(a, -1) },
+        { id:"next", label:`Next week · ${wkTxt(addDays(a, 7))}`, from:addDays(a, 7), to:addDays(a, 13) },
+        { id:"4wk", label:"Last 4 weeks", from:addDays(a, -21), to:addDays(a, 6) },
+        { id:"month", label:MONTHS[m] + " " + y, from:new Date(y, m, 1), to:new Date(y, m + 1, 0) },
+        { id:"lastmonth", label:MONTHS[(m + 11) % 12] + " " + (m ? y : y - 1), from:new Date(y, m - 1, 1), to:new Date(y, m, 0) },
+        { id:"quarter", label:`Q${q0 / 3 + 1} ${y}`, from:new Date(y, q0, 1), to:new Date(y, q0 + 3, 0) },
+        { id:"ytd", label:`${y} to date`, from:new Date(y, 0, 1), to:addDays(a, 6) },
+        { id:"year", label:`All of ${y}`, from:new Date(y, 0, 1), to:new Date(y, 11, 31) }
+      ];
+      if(allowAll) list.push({ id:"all", label:"All time", from:new Date(2000, 0, 1), to:new Date(2100, 0, 1) });
+      list.push({ id:"custom", label:"Custom dates…" });
+      return list;
+    }
+    // opts: { kind, title, allowAll, byDate (filter on dates, not order weeks), count(range) → number, unit }
+    function pickExportRange(opts){
+      return new Promise(resolve => {
+        const saved = (() => { try { return (JSON.parse(localStorage.getItem(EXPORT_RANGE_KEY) || "{}") || {})[opts.kind] || null; } catch(_){ return null; } })();
+        const presets = exportRangePresets(!!opts.allowAll);
+        let sel = saved && presets.some(p => p.id === saved.preset) && saved.preset !== "custom" ? saved.preset : (saved && saved.preset === "custom" ? "custom" : "week");
+        let cFrom = saved && saved.from ? saved.from : fmtDate(startOfWeek(weekAnchor)), cTo = saved && saved.to ? saved.to : fmtDate(addDays(startOfWeek(weekAnchor), 6));
+        let m = document.getElementById("exportRangeModal");
+        if(!m){ m = document.createElement("div"); m.id = "exportRangeModal"; m.className = "modal"; m.setAttribute("aria-hidden", "true"); }
+        document.body.appendChild(m);   // always on top, even over another open window (e.g. ST by Truck)
+        const current = () => {
+          if(sel === "custom"){
+            const f = parseDate(cFrom), t = parseDate(cTo);
+            if(!f || !t) return null;
+            const from = f <= t ? f : t, to = f <= t ? t : f;
+            return { id:"custom", from, to, label:`${prettyDay(fmtDate(from))} – ${prettyDay(fmtDate(to))}` };
+          }
+          const p = presets.find(x => x.id === sel);
+          return p ? { id:p.id, from:p.from, to:p.to, label:p.label.replace(/^This week · |^Last week · |^Next week · /, "") } : null;
+        };
+        const build = () => {
+          const r = current();
+          const weeks = r ? (r.id === "all" ? null : exportWeeksBetween(r.from, r.to)) : [];
+          const res = r ? { ...r, weeks } : null;
+          const n = res && opts.count ? opts.count(res) : null;
+          const span = !res ? "Pick both dates" : opts.byDate
+            ? (res.id === "all" ? "Everything on file" : `${prettyDay(fmtDate(res.from))} – ${prettyDay(fmtDate(res.to))}`)
+            : (res.id === "all" ? "Every week on file" : weeks.length === 1 ? weekLabel(dateFromWeekKey(weeks[0])) : `${weeks.length} weeks · Wk ${weeks[0].split("-W")[1]} (${prettyDay(fmtDate(dateFromWeekKey(weeks[0])))}) – Wk ${weeks[weeks.length - 1].split("-W")[1]}`);
+          m.innerHTML = `<div class="modalCard exRangeCard" role="dialog" aria-label="${escapeHtml(opts.title)}">
+            <div class="exRangeHead"><h3>${icon("download")}${escapeHtml(opts.title)}</h3><button type="button" class="btnGhost" data-exr="cancel">Cancel</button></div>
+            <div class="exRangeLbl">Dates to include</div>
+            <div class="exRangeChips">${presets.map(p => `<button type="button" class="exRangeChip ${sel === p.id ? "on" : ""}" data-exr-p="${p.id}">${escapeHtml(p.label)}</button>`).join("")}</div>
+            ${sel === "custom" ? `<div class="exRangeCustom"><label><span class="lbl">From</span><input type="date" data-exr="from" value="${escapeHtml(cFrom)}"></label><label><span class="lbl">To</span><input type="date" data-exr="to" value="${escapeHtml(cTo)}"></label></div>` : ""}
+            <div class="exRangeSum">${icon("calendar")}<span><b>${escapeHtml(span)}</b>${n != null ? ` · ${n.toLocaleString()} ${escapeHtml(opts.unit || "order")}${n === 1 ? "" : "s"}` : ""}</span></div>
+            ${!opts.byDate && res && res.weeks && res.weeks.length > 1 ? `<div class="note exRangeNote">One file, with a separate ${escapeHtml(opts.sectionWord || "tab")} for each week.</div>` : ""}
+            <div class="exRangeActions"><button type="button" class="btnGhost" data-exr="cancel">Cancel</button><button type="button" class="btn" data-exr="go" ${!res || n === 0 ? "disabled" : ""}>${icon("download")}Export${n === 0 ? " — nothing in these dates" : ""}</button></div>
+          </div>`;
+          m._res = res;
+        };
+        const done = (val) => { m.classList.remove("active"); m.setAttribute("aria-hidden", "true"); m.onclick = m.onchange = m.oninput = m.onkeydown = null; resolve(val); };
+        m.onclick = (e) => {
+          if(e.target === m) return done(null);
+          const p = e.target.closest("[data-exr-p]"); if(p){ sel = p.dataset.exrP; build(); return; }
+          const b = e.target.closest("[data-exr]"); if(!b) return;
+          if(b.dataset.exr === "cancel") return done(null);
+          if(b.dataset.exr === "go" && m._res){
+            const r = m._res;
+            try { const all = JSON.parse(localStorage.getItem(EXPORT_RANGE_KEY) || "{}") || {}; all[opts.kind] = { preset: sel, from: cFrom, to: cTo }; localStorage.setItem(EXPORT_RANGE_KEY, JSON.stringify(all)); } catch(_){}
+            const tag = r.id === "all" ? "all" : r.weeks && r.weeks.length === 1 && !opts.byDate ? r.weeks[0] : `${fmtDate(r.from)}_to_${fmtDate(r.to)}`;
+            done({ ...r, tag });
+          }
+        };
+        m.onchange = (e) => { const t = e.target; if(t.dataset.exr === "from"){ cFrom = t.value; build(); } else if(t.dataset.exr === "to"){ cTo = t.value; build(); } };
+        m.onkeydown = (e) => { if(e.key === "Escape") done(null); };
+        build();
+        m.classList.add("active"); m.setAttribute("aria-hidden", "false");
+      });
+    }
+    // Weeks in a picked range that actually have orders (all time = every week with orders).
+    function exportWeeksWithOrders(range, filterFn){
+      const trucks = loadTrucks().filter(t => !filterFn || filterFn(t));
+      const have = new Set(trucks.map(t => t.weekKey).filter(Boolean));
+      const weeks = range.weeks ? range.weeks : [...have];
+      return [...new Set(weeks)].filter(w => have.has(w)).sort();
+    }
+    // "Week 41" per tab; the year is added only when the range crosses into another year
+    const exportSheetName = (wk, base, many, weeks) => !many ? base : `Week ${Number(wk.split("-W")[1])}${weeks && new Set(weeks.map(w => w.slice(0, 4))).size > 1 ? " (" + wk.slice(0, 4) + ")" : ""}`;
+
     async function downloadWorkbook(wb, filename){
       const buf = await wb.xlsx.writeBuffer();
       const blob = new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
@@ -5808,6 +5935,46 @@
       brightYellow:"FFFFFF00", softYellow:"FFFFF2A6", peach:"FFF6D9C4",
       itemGreen:"FFA9D18E", headerGrey:"FFD9D9D9"
     };
+    /* Shared export polish: a clear title block, no gridlines, sensible printing
+       (fit to one page wide, repeated headers, page numbers) and consistent type. */
+    const XS = { brand:"FF1F5C43", brandSoft:"FFE4F0E8", ink:"FF1E2B24", sub:"FF5B6B61", zebra:"FFF6F8F4", line:"FFC9D3CC", font:"Calibri" };
+    function xsExportedLine(){
+      const who = (typeof getUser === "function" && getUser() && getUser().name) || "";
+      return `Exported ${new Date().toLocaleDateString(undefined, { month:"short", day:"numeric", year:"numeric" })}${who ? " by " + who : ""}`;
+    }
+    function xsSheet(ws, o = {}){
+      ws.views = [{ showGridLines:false, ...(o.freezeRow ? { state:"frozen", ySplit:o.freezeRow, xSplit:0 } : {}) }];
+      ws.properties.defaultRowHeight = 18;
+      ws.pageSetup = { paperSize:1, orientation: o.landscape ? "landscape" : "portrait", fitToPage:true, fitToWidth:1, fitToHeight:0, horizontalCentered:true,
+        margins:{ left:0.4, right:0.4, top:0.5, bottom:0.6, header:0.25, footer:0.3 }, ...(o.printTitles ? { printTitlesRow:o.printTitles } : {}) };
+      ws.headerFooter = { oddFooter: `&L&8Hampshire Farms · HPA HUB&C&8Page &P of &N&R&8${xsExportedLine().replace(/&/g, "&&")}` };
+    }
+    // Big title + one-line subtitle across `cols` columns; returns the next free row (leaves a spacer).
+    function xsTitle(ws, r, cols, title, sub){
+      ws.mergeCells(r, 1, r, cols);
+      const t = ws.getCell(r, 1);
+      t.value = title; t.font = { name:XS.font, size:18, bold:true, color:{ argb:XS.brand } }; t.alignment = { vertical:"middle", horizontal:"left" };
+      ws.getRow(r).height = 30;
+      ws.mergeCells(r + 1, 1, r + 1, cols);
+      const st = ws.getCell(r + 1, 1);
+      st.value = sub; st.font = { name:XS.font, size:10, color:{ argb:XS.sub } }; st.alignment = { vertical:"middle", horizontal:"left" };
+      ws.getRow(r + 1).height = 18;
+      for(let c = 1; c <= cols; c++) ws.getCell(r + 1, c).border = { bottom:{ style:"medium", color:{ argb:XS.brand } } };
+      return r + 3;
+    }
+    // Dark-green header row with white bold labels.
+    function xsHead(ws, r, labels, aligns){
+      labels.forEach((h, i) => {
+        const c = ws.getCell(r, i + 1);
+        c.value = h; c.font = { name:XS.font, size:10.5, bold:true, color:{ argb:"FFFFFFFF" } };
+        c.fill = { type:"pattern", pattern:"solid", fgColor:{ argb:XS.brand } };
+        c.alignment = { vertical:"middle", horizontal:(aligns && aligns[i]) || "left", wrapText:true };
+        c.border = { top:{ style:"thin", color:{ argb:XS.brand } }, bottom:{ style:"thin", color:{ argb:XS.brand } }, left:{ style:"thin", color:{ argb:XS.brand } }, right:{ style:"thin", color:{ argb:XS.brand } } };
+      });
+      ws.getRow(r).height = 22;
+    }
+    const xsLine = () => ({ style:"thin", color:{ argb:XS.line } });
+    const xsBox = () => ({ top:xsLine(), bottom:xsLine(), left:xsLine(), right:xsLine() });
     function locationFill(loc){
       const l = (loc||"").toLowerCase();
       if(l.includes("apopka")) return XL.blue;
@@ -5846,16 +6013,21 @@
     const EXPORT_EXCLUDED_REGIONS = ["Canada", "New Jersey"];
     function includedInExports(t){ return !EXPORT_EXCLUDED_REGIONS.includes((t.region||"").trim()); }
 
+    const countTrucksIn = (range, filterFn) => exportWeeksWithOrders(range, filterFn).reduce((n, wk) => n + loadTrucks().filter(t => t.weekKey === wk && (!filterFn || filterFn(t))).length, 0);
     document.getElementById("exportTruckBtn").addEventListener("click", async () => {
-      const wk = weekKeyFromDate(weekAnchor);
-      const trucks = loadTrucks().filter(t => t.weekKey === wk && includedInExports(t));
-      if(!trucks.length){ alert("No Homestead/Apopka orders in this week to export.\n(Canada and New Jersey are excluded from the guides.)"); return; }
+      const range = await pickExportRange({ kind:"truck", title:"Export truck order", allowAll:true, unit:"truck", count: (r) => countTrucksIn(r, includedInExports) });
+      if(!range) return;
+      const weeks = exportWeeksWithOrders(range, includedInExports);
+      if(!weeks.length){ alert(`No Homestead/Apopka orders in ${range.label} to export.\n(Canada and New Jersey are excluded from the guides.)`); return; }
       let ExcelJS;
       try { ExcelJS = await loadExcelJS(); }
       catch(e){ alert(e.message); return; }
       const wb = new ExcelJS.Workbook();
-      const ws = wb.addWorksheet("Truck Order");
-      ws.columns = [ { width: 30 }, { width: 30 }, { width: 16 } ];
+      for(const wk of weeks){
+      const trucks = loadTrucks().filter(t => t.weekKey === wk && includedInExports(t));
+      const ws = wb.addWorksheet(exportSheetName(wk, "Truck Order", weeks.length > 1, weeks));
+      ws.columns = [ { width: 30 }, { width: 38 }, { width: 18 } ];
+      xsSheet(ws);
 
       // Group by trucking company so each carrier's runs are kept together.
       const byTrucking = new Map();
@@ -5866,7 +6038,7 @@
       }
       const truckingNames = Array.from(byTrucking.keys()).sort((a,b) => a.localeCompare(b));
 
-      let r = 1;
+      let r = xsTitle(ws, 1, 3, "Truck Order", `${weekLabel(dateFromWeekKey(wk))}  ·  ${trucks.length} truck${trucks.length === 1 ? "" : "s"}  ·  ${xsExportedLine()}`);
       let truckNum = 0;
       truckingNames.forEach(truckingName => {
         const group = byTrucking.get(truckingName).slice().sort((a,b) => (a.pickupDate||"").localeCompare(b.pickupDate||""));
@@ -5912,7 +6084,8 @@
           r++;
         });
       });
-      await downloadWorkbook(wb, `truck-order_${wk}.xlsx`);
+      }
+      await downloadWorkbook(wb, `truck-order_${range.tag}.xlsx`);
     });
 
     // Floor-stock sizes that get summarized as "X" Tropicals" — anything else
@@ -5966,18 +6139,27 @@
     function styleTruckRow(ws, r){
       const v = ws.getCell(r,1), q = ws.getCell(r,2), p = ws.getCell(r,3);
       v.font = { bold:true }; v.alignment = { horizontal:"center", vertical:"middle" };
-      q.alignment = { horizontal:"center", vertical:"middle" }; q.font = { color:{argb:"FF555555"} };
+      q.alignment = { horizontal:"center", vertical:"middle", wrapText:true }; q.font = { color:{argb:"FF333333"} };
       p.font = { bold:true }; p.alignment = { horizontal:"center", vertical:"middle" };
       [v,q,p].forEach(c => c.border = thinBox());
       ws.getRow(r).height = 20;
     }
 
     document.getElementById("exportCCBtn").addEventListener("click", async () => {
-      const wk = weekKeyFromDate(weekAnchor);
-      const trucks = loadTrucks().filter(t => t.weekKey === wk && includedInExports(t));
-      if(!trucks.length){ alert("No Homestead/Apopka orders in this week to export.\n(Canada and New Jersey are excluded from the guides.)"); return; }
-      const byLocation = new Map();
+      const range = await pickExportRange({ kind:"cc", title:"Export CC order", allowAll:true, unit:"truck", count: (r) => countTrucksIn(r, includedInExports) });
+      if(!range) return;
+      const weeks = exportWeeksWithOrders(range, includedInExports);
+      if(!weeks.length){ alert(`No Homestead/Apopka orders in ${range.label} to export.\n(Canada and New Jersey are excluded from the guides.)`); return; }
+      let ExcelJS;
+      try { ExcelJS = await loadExcelJS(); }
+      catch(e){ alert(e.message); return; }
+      const wb = new ExcelJS.Workbook();
       const unmatched = [];
+      let sheets = 0;
+      for(const wk of weeks){
+      const trucks = loadTrucks().filter(t => t.weekKey === wk && includedInExports(t));
+      const byLocation = new Map();
+      const wkTag = weeks.length > 1 ? `Wk ${wk.split("-W")[1]} • ` : "";
       const CC_EXCLUDED_ORDER_TYPES = ["FLOOR STACK", "PALLETS"];
       for(const t of trucks){
         const orderType = (t.orderType || "").trim().toUpperCase();
@@ -6000,7 +6182,7 @@
               ext     = 0;
             } else {
               const rule = ccRuleFor(it.item);
-              if(!rule){ unmatched.push(`${loc} • ${vendor} • ${(it.item||"(no name)")} (${racks} racks)`); continue; }
+              if(!rule){ unmatched.push(`${wkTag}${loc} • ${vendor} • ${(it.item||"(no name)")} (${racks} racks)`); continue; }
               shelves = racks * rule.shelves;
               posts   = racks * rule.posts;
               ext     = racks * rule.extenders;
@@ -6015,19 +6197,17 @@
         }
       }
       const anyRows = Array.from(byLocation.values()).some(L => L.vendors.size > 0);
-      if(!anyRows){ alert("No CC-rack items found for this week.\n\n(8\"/10\"/12\" foliage and unrecognized lines aren't CC items.)"); return; }
-      let ExcelJS;
-      try { ExcelJS = await loadExcelJS(); }
-      catch(e){ alert(e.message); return; }
-      const wb = new ExcelJS.Workbook();
-      const ws = wb.addWorksheet("CC Order");
-      ws.columns = [ { width: 24 }, { width: 12 }, { width: 12 }, { width: 12 }, { width: 12 } ];
+      if(!anyRows) continue;
+      sheets++;
+      const ws = wb.addWorksheet(exportSheetName(wk, "CC Order", weeks.length > 1, weeks));
+      ws.columns = [ { width: 28 }, { width: 13 }, { width: 13 }, { width: 13 }, { width: 13 } ];
+      xsSheet(ws);
       const prefer = ["Homestead","Apopka","New Jersey","Canada"];
       const locs = Array.from(byLocation.keys()).sort((a,b) => {
         const ai = prefer.indexOf(a), bi = prefer.indexOf(b);
         return (ai===-1?99:ai) - (bi===-1?99:bi) || a.localeCompare(b);
       });
-      let r = 1;
+      let r = xsTitle(ws, 1, 5, "CC Order", `${weekLabel(dateFromWeekKey(wk))}  ·  CC racks, shelves, posts & extenders  ·  ${xsExportedLine()}`);
       for(const loc of locs){
         const L = byLocation.get(loc);
         if(L.vendors.size === 0) continue;
@@ -6086,6 +6266,8 @@
         r++;
         r++;
       }
+      }
+      if(!sheets){ alert(`No CC-rack items found in ${range.label}.\n\n(8"/10"/12" foliage and unrecognized lines aren't CC items.)`); return; }
       if(unmatched.length){
         const ws2 = wb.addWorksheet("Not on CC");
         ws2.columns = [{ width: 60 }];
@@ -6093,7 +6275,7 @@
         ws2.getCell(1,1).font = { bold:true };
         unmatched.forEach((line, i) => { ws2.getCell(i+3, 1).value = line; });
       }
-      await downloadWorkbook(wb, `cc-order_${wk}.xlsx`);
+      await downloadWorkbook(wb, `cc-order_${range.tag}.xlsx`);
       if(unmatched.length){
         statusChip.textContent = `${unmatched.length} line(s) not on CC — see "Not on CC" tab`;
         setTimeout(()=>{ statusChip.textContent = "Ready"; }, 5000);
@@ -6108,7 +6290,17 @@
       return Number(weekKeyFromDate(date).split("-W")[1]);
     }
     document.getElementById("exportBreakdownBtn").addEventListener("click", async () => {
-      const wk = weekKeyFromDate(weekAnchor);
+      const range = await pickExportRange({ kind:"breakdown", title:"Export order breakdown", allowAll:true, unit:"truck", count: (r) => countTrucksIn(r) });
+      if(!range) return;
+      const weeks = exportWeeksWithOrders(range);
+      if(!weeks.length){ alert(`No orders in ${range.label} to export.`); return; }
+      let ExcelJS;
+      try { ExcelJS = await loadExcelJS(); }
+      catch(e){ alert(e.message); return; }
+
+      const wb = new ExcelJS.Workbook();
+      for(const wk of weeks){
+      const weekAnchor = dateFromWeekKey(wk);   // this tab's week (shadows the page's selected week)
       const trucks = loadTrucks().filter(t => t.weekKey === wk)
         .slice().sort((a,b) => {
           const prefer = ["Homestead","Apopka","New Jersey","Canada"];
@@ -6116,15 +6308,10 @@
           if(ai !== bi) return (ai===-1?99:ai) - (bi===-1?99:bi);
           return (a.pickupDate||"").localeCompare(b.pickupDate||"");
         });
-      if(!trucks.length){ alert("No orders in this week to export."); return; }
-      let ExcelJS;
-      try { ExcelJS = await loadExcelJS(); }
-      catch(e){ alert(e.message); return; }
-
-      const wb = new ExcelJS.Workbook();
-      const ws = wb.addWorksheet(`Week ${isoWeekNumOf(weekAnchor)}`);
+      const ws = wb.addWorksheet(`Week ${isoWeekNumOf(weekAnchor)}${weeks.some(w => w !== wk && w.split("-W")[1] === wk.split("-W")[1]) ? " (" + wk.slice(0, 4) + ")" : ""}`);
       const NUM_COLS = 6; // Vendor, Item, CC Rack Count, Plant Qty, Notes, Status
-      ws.columns = [ { width: 20 }, { width: 30 }, { width: 16 }, { width: 14 }, { width: 24 }, { width: 16 } ];
+      ws.columns = [ { width: 22 }, { width: 34 }, { width: 16 }, { width: 14 }, { width: 30 }, { width: 16 } ];
+      xsSheet(ws, { landscape:false });
 
       const centered = { horizontal:"center", vertical:"middle" };
       function fillRow(r, c1, c2, argb){
@@ -6155,7 +6342,7 @@
         const bar = ws.getCell(r,1);
         const left = `${(t.region||"").toUpperCase()} - ${orderTypeLabel(normalizeOrderType(t)).toUpperCase()}`;
         const mid = `${dateBadgePrefix(t.region)} ${weekdayShort(t.pickupDate)}`;
-        const right = `${(t.trucking||"—").toUpperCase()}`;
+        const right = t.trucking ? t.trucking.toUpperCase() : "NO TRUCKING SET";
         bar.value = { richText: [
           { text: left + "   ", font:{ bold:true } },
           { text: mid + "   ", font:{ italic:true } },
@@ -6205,10 +6392,10 @@
             if(anyRacks){
               if(racks) ws.getCell(r,3).value = racks;
               ws.getCell(r,4).value = qty || "";
-              ws.getCell(r,5).value = it.notes || "";
+              ws.getCell(r,5).value = [it.substituted && it.subbedFrom ? `Sub for ${it.subbedFrom}` : "", it.notes].filter(Boolean).join(" · ");
             } else {
               ws.getCell(r,3).value = qty || "";
-              ws.getCell(r,4).value = it.notes || "";
+              ws.getCell(r,4).value = [it.substituted && it.subbedFrom ? `Sub for ${it.subbedFrom}` : "", it.notes].filter(Boolean).join(" · ");
             }
             totalPrimary += anyRacks ? racks : qty;
             const rowFill = it.substituted ? XL.brightYellow : XL.itemGreen;
@@ -6217,6 +6404,7 @@
             ws.getCell(r,2).alignment = { vertical:"middle" };
             ws.getCell(r,3).alignment = centered;
             ws.getCell(r,4).alignment = centered;
+            ws.getCell(r, anyRacks ? 5 : 4).alignment = { vertical:"middle", wrapText:true };
             r++;
           });
         });
@@ -6232,8 +6420,9 @@
         r++;
         r++; // blank spacer between trucks
       });
+      }
 
-      await downloadWorkbook(wb, `order-breakdown_${wk}.xlsx`);
+      await downloadWorkbook(wb, `order-breakdown_${range.tag}.xlsx`);
     });
 
     /*********************************************************
@@ -6308,14 +6497,18 @@
     }
 
     document.getElementById("exportTruckBreakdownBtn").addEventListener("click", async () => {
-      const wk = weekKeyFromDate(weekAnchor);
-      const weekNum = isoWeekNumOf(weekAnchor);
-      const trucks = loadTrucks().filter(t => t.weekKey === wk);
-      if(!trucks.length){ alert("No orders in this week to export."); return; }
+      const range = await pickExportRange({ kind:"truckbreakdown", title:"Export truck breakdown (PDF)", allowAll:true, unit:"truck", sectionWord:"page", count: (r) => countTrucksIn(r) });
+      if(!range) return;
+      const weeks = exportWeeksWithOrders(range);
+      if(!weeks.length){ alert(`No orders in ${range.label} to export.`); return; }
 
       let jsPDFCtor;
       try { jsPDFCtor = await loadJsPDF(); }
       catch(e){ alert(e.message); return; }
+      let doc = null;
+      for(const wk of weeks){
+      const weekNum = Number(wk.split("-W")[1]);
+      const trucks = loadTrucks().filter(t => t.weekKey === wk);
 
       // One group per order/truck (every region, including Canada and New
       // Jersey); its vendor blocks share the merged Arrival Date + Truck
@@ -6337,7 +6530,8 @@
         return at - bt;
       });
 
-      const doc = new jsPDFCtor({ unit:"pt", format:"letter" });
+      if(!doc) doc = new jsPDFCtor({ unit:"pt", format:"letter" });
+      else doc.addPage();                       // each week starts on its own page
       const pageW = doc.internal.pageSize.getWidth();
       const pageBottom = doc.internal.pageSize.getHeight() - 40;
       const marginX = 40;
@@ -6353,35 +6547,40 @@
       const ROW_H = 20;
       const HEADER_H = 22;
 
-      // Title
+      // Title block: "WEEK 41" big, dates + count underneath, a brand-green rule
       doc.setFont("helvetica","bold");
-      doc.setFontSize(22);
-      const title = `WEEK ${weekNum}`;
-      const titleW = doc.getTextWidth(title);
-      let y = 54;
+      doc.setFontSize(24);
+      doc.setTextColor(31,92,67);
+      let y = 56;
+      doc.text(`WEEK ${weekNum}`, marginX, y);
+      doc.setFont("helvetica","normal");
+      doc.setFontSize(11);
+      doc.setTextColor(70,80,74);
+      doc.text(`Truck Breakdown  ·  ${weekLabel(dateFromWeekKey(wk)).replace(/^Week \d+ · /, "")}  ·  ${trucks.length} truck${trucks.length === 1 ? "" : "s"}`, marginX, y + 18);
+      doc.setDrawColor(31,92,67);
+      doc.setLineWidth(1.5);
+      doc.line(marginX, y + 28, marginX + tableW, y + 28);
       doc.setTextColor(0,0,0);
-      doc.text(title, pageW/2, y, { align:"center" });
-      doc.setDrawColor(0,0,0);
-      doc.setLineWidth(1.3);
-      doc.line(pageW/2 - titleW/2 - 2, y+4, pageW/2 + titleW/2 + 2, y+4);
-      y += 24;
+      y += 42;
 
       function drawHeader(){
-        doc.setDrawColor(0,0,0);
+        doc.setDrawColor(31,92,67);
         doc.setLineWidth(0.75);
-        doc.setFillColor(191,191,191);
+        doc.setFillColor(31,92,67);
         doc.rect(marginX, y, tableW, HEADER_H, "F");
+        doc.setDrawColor(0,0,0);
         doc.rect(colX.date, y, colW.date, HEADER_H);
         doc.rect(colX.type, y, colW.type, HEADER_H);
         doc.rect(colX.vendor, y, colW.vendor, HEADER_H);
         doc.rect(colX.po, y, colW.po, HEADER_H);
         doc.setFont("helvetica","bold");
         doc.setFontSize(11);
-        doc.setTextColor(0,0,0);
+        doc.setTextColor(255,255,255);
         doc.text("Arrival Date", colX.date+PAD, y+HEADER_H/2+4);
         doc.text("Truck Type", colX.type+PAD, y+HEADER_H/2+4);
         doc.text("Vendor", colX.vendor+PAD, y+HEADER_H/2+4);
         doc.text("PO number", colX.po+PAD, y+HEADER_H/2+4);
+        doc.setTextColor(0,0,0);
         y += HEADER_H;
       }
       drawHeader();
@@ -6428,8 +6627,19 @@
 
         y += groupH;
       });
+      }
 
-      doc.save(`Truck_Breakdown_WK_${weekNum}.pdf`);
+      // footer on every page: who/when + page numbers
+      const pages = doc.getNumberOfPages(), stamp = xsExportedLine();
+      for(let pi = 1; pi <= pages; pi++){
+        doc.setPage(pi);
+        const ph = doc.internal.pageSize.getHeight(), pw = doc.internal.pageSize.getWidth();
+        doc.setFont("helvetica","normal"); doc.setFontSize(8); doc.setTextColor(110,120,114);
+        doc.text("Hampshire Farms · HPA HUB", 40, ph - 20);
+        doc.text(`Page ${pi} of ${pages}`, pw / 2, ph - 20, { align:"center" });
+        doc.text(stamp, pw - 40, ph - 20, { align:"right" });
+      }
+      doc.save(weeks.length === 1 ? `Truck_Breakdown_WK_${Number(weeks[0].split("-W")[1])}.pdf` : `Truck_Breakdown_${range.tag}.pdf`);
     });
 
     /*********************************************************
@@ -8325,12 +8535,41 @@
     document.getElementById("issueCloseBtn").addEventListener("click", closeIssueModal);
     issueModal.addEventListener("click", (e) => { if(e.target === issueModal) closeIssueModal(); });
     document.getElementById("issueStatusFilter").addEventListener("change", renderIssues);
-    document.getElementById("issueExportBtn").addEventListener("click", () => {
-      const issues = filteredIssues();
-      downloadCSV("issues.csv", issues.map(i => ({
-        Date: i.date, Status: i.status, Vendor: i.vendor, Truck: i.truckLabel, Item: i.item, Type: i.type,
-        Notes: i.notes, HasPhoto: (i.photoDataUrl || i.photoId) ? "YES" : "NO"
-      })), ["Date","Status","Vendor","Truck","Item","Type","Notes","HasPhoto"]);
+    document.getElementById("issueExportBtn").addEventListener("click", async () => {
+      // dates are compared as YYYY-MM-DD strings (the issue's own date)
+      const inRange = (i, r) => r.id === "all" || (i.date && i.date >= fmtDate(r.from) && i.date <= fmtDate(r.to));
+      const range = await pickExportRange({ kind:"issues", title:"Export issues (Excel)", allowAll:true, byDate:true, unit:"issue", count: (r) => filteredIssues().filter(i => inRange(i, r)).length });
+      if(!range) return;
+      const issues = filteredIssues().filter(i => inRange(i, range)).sort((a, b) => (a.date || "").localeCompare(b.date || ""));
+      if(!issues.length){ alert(`No issues in ${range.label} (with the current status filter).`); return; }
+      // A formatted Excel sheet (easier to read and print than the old plain CSV)
+      let ExcelJS;
+      try { ExcelJS = await loadExcelJS(); } catch(e){ alert(e.message); return; }
+      const wb = new ExcelJS.Workbook(), ws = wb.addWorksheet("Issues");
+      ws.columns = [{ width:17 }, { width:12 }, { width:14 }, { width:20 }, { width:28 }, { width:26 }, { width:48 }, { width:9 }, { width:16 }];
+      xsSheet(ws, { landscape:true, freezeRow:4, printTitles:"4:4" });
+      const open = issues.filter(i => i.status !== "Resolved").length;
+      let r = xsTitle(ws, 1, 9, "Issue Report", `${range.id === "all" ? "All dates" : range.label}  ·  ${issues.length} issue${issues.length === 1 ? "" : "s"} (${open} open)  ·  ${xsExportedLine()}`);
+      xsHead(ws, r, ["Date", "Status", "Type", "Vendor", "Item", "Order", "Notes", "Photo", "Logged by"], ["left", "center", "left", "left", "left", "left", "left", "center", "left"]);
+      r++;
+      const STATUS_FILL = { Open:["FFFFF1CC", "FF8A5D00"], Submitted:["FFDCEBFA", "FF1F4E79"], Resolved:["FFE0F2E7", "FF1F6B45"] };
+      issues.forEach((i, n) => {
+        const d = parseDate(i.date);
+        const order = (i.truckLabel || "").replace(/(\d{4}-\d{2}-\d{2})/, (m) => prettyDay(m));
+        const vals = [d || i.date || "", i.status || "", i.type || "", i.vendor || "", i.item || "", order, i.notes || "", (i.photoDataUrl || i.photoId) ? "Yes" : "", ((i.history || [])[0] || {}).user || ""];
+        vals.forEach((v, c) => {
+          const cell = ws.getCell(r, c + 1);
+          cell.value = v; cell.border = xsBox();
+          cell.alignment = { vertical:"top", wrapText: c === 6 || c === 5 || c === 4, horizontal: c === 1 || c === 7 ? "center" : "left" };
+          if(n % 2) cell.fill = { type:"pattern", pattern:"solid", fgColor:{ argb:XS.zebra } };
+        });
+        if(d) ws.getCell(r, 1).numFmt = "mmm d, yyyy";
+        const sf = STATUS_FILL[i.status];
+        if(sf){ const c = ws.getCell(r, 2); c.fill = { type:"pattern", pattern:"solid", fgColor:{ argb:sf[0] } }; c.font = { bold:true, color:{ argb:sf[1] } }; }
+        r++;
+      });
+      ws.autoFilter = { from:{ row:4, column:1 }, to:{ row:r - 1, column:9 } };
+      await downloadWorkbook(wb, `issues_${range.tag}.xlsx`);
     });
 
     function populateIssueTruckOptions(){
@@ -10259,6 +10498,8 @@ function out(o){ return ContentService.createTextOutput(JSON.stringify(o)).setMi
       vendorNames.forEach(name => {
         Object.entries(normalized[name]).forEach(([type, delta]) => {
           if(!delta) return;
+          const vk0 = ensureVendorOnly(state, name);
+          if((state.vendors[vk0].hiddenTypes || []).includes(STICKER_TYPES.includes(type) ? type : STICKER_TYPES[0])) return;   // vendor doesn't use this sticker
           const { vendorKey, typeKey } = ensureVendorLabelState(state, name, type);
           const t = state.vendors[vendorKey].types[typeKey];
           t.remaining = (t.remaining||0) - delta;   // may dip below 0; shown as 0, and edits/deletes credit back exactly
@@ -10390,7 +10631,7 @@ function out(o){ return ContentService.createTextOutput(JSON.stringify(o)).setMi
       const t = state.vendors[vendorKey].types[typeKey];
       document.getElementById("labelSettingsTitle").textContent = `${vendorKey} — ${typeKey} — Label Settings`;
       document.getElementById("ls_capacity").value = t.capacity || 1000;
-      document.getElementById("ls_reorder").value = t.reorderAt || 0;
+      document.getElementById("ls_reorder").value = labelAlertPct(t);
       document.getElementById("ls_current").value = "";
       labelSettingsModal.classList.add("active");
       labelSettingsModal.setAttribute("aria-hidden","false");
@@ -10401,14 +10642,15 @@ function out(o){ return ContentService.createTextOutput(JSON.stringify(o)).setMi
     document.getElementById("labelSettingsSaveBtn").addEventListener("click", () => {
       if(!settingsVendorTarget || !settingsTypeTarget){ closeLabelSettingsModal(); return; }
       const capacity = parseInt(document.getElementById("ls_capacity").value, 10);
-      const reorderAt = parseInt(document.getElementById("ls_reorder").value, 10);
+      const alertPctIn = parseInt(document.getElementById("ls_reorder").value, 10);
       const currentRaw = document.getElementById("ls_current").value;
       if(!(capacity > 0)){ alert("Enter a full count greater than 0."); return; }
       const state = loadLabels();
       const { vendorKey, typeKey } = ensureVendorLabelState(state, settingsVendorTarget, settingsTypeTarget);
       const t = state.vendors[vendorKey].types[typeKey];
       t.capacity = capacity;
-      t.reorderAt = reorderAt >= 0 ? reorderAt : 0;
+      t.alertPct = alertPctIn > 0 && alertPctIn <= 100 ? alertPctIn : 50;
+      t.reorderAt = labelLowAt(t);   // kept in step for anything that still reads the old field
       if(currentRaw !== ""){
         const current = parseInt(currentRaw, 10);
         if(!(current >= 0)){ alert("Corrected count must be 0 or more."); return; }
@@ -10502,17 +10744,44 @@ function out(o){ return ContentService.createTextOutput(JSON.stringify(o)).setMi
       renderLabelTracker();
     }
 
+    // A vendor that never uses a sticker type (e.g. Legacy + Small Vigoro) can drop that counter.
+    // Its count is cleared and order lines stop counting against it; it can be added back any time.
+    // Low-stock point = a % of the bar's "full" count (default 50%), adjustable per sticker type in ⚙ Settings.
+    function labelAlertPct(x){ const p = x && Number(x.alertPct); return p > 0 && p <= 100 ? p : 50; }
+    function labelLowAt(x){ const cap = Math.max(1, Number(x && x.capacity) || 1000); return Math.round(cap * labelAlertPct(x) / 100); }
+    function setLabelTypeUsed(vendorName, type, used){
+      if(!STICKER_TYPES.includes(type)) return;
+      const state = loadLabels();
+      const v = state.vendors && state.vendors[vendorName]; if(!v) return;
+      const cur = v.types && v.types[type];
+      if(!used){
+        const left = cur ? Math.max(0, cur.remaining || 0) : 0;
+        if(!confirm(`Remove the ${type} counter from ${vendorName}?${left ? `\n\n${left.toLocaleString()} stickers on hand will be cleared.` : ""}\n\nYou can add it back later.`)) return;
+        v.hiddenTypes = [...new Set([...(v.hiddenTypes || []), type])];
+        if(v.types) delete v.types[type];
+      } else {
+        v.hiddenTypes = (v.hiddenTypes || []).filter(t => t !== type);
+        ensureVendorLabelState(state, vendorName, type);
+      }
+      state.log = state.log || [];
+      state.log.unshift({ id:cryptoRandomId(), at:new Date().toISOString(), type: used ? "addType" : "removeType", vendor:vendorName, stickerType:type, qty:0, by:(getUser() && getUser().name) || "Unknown" });
+      state.log = state.log.slice(0, 200);
+      saveLabels(state);
+      markTabChanged("dashboard");
+      showToast(used ? `${type} added back for ${vendorName}` : `Removed ${type} from ${vendorName}`);
+      renderLabelTracker();
+    }
     function renderLabelTypeRow(vendorName, type, t){
       const info = t || { capacity:1000, remaining:0, reorderAt:200 };
       const capacity = Math.max(1, info.capacity || 1000);
       const remaining = Math.max(0, info.remaining || 0);
-      const reorderAt = info.reorderAt || 0;
+      const reorderAt = labelLowAt(info), alertPct = labelAlertPct(info);
       const pct = Math.max(0, Math.min(100, Math.round(remaining / capacity * 100)));
       let level = "ok", fillColor = "var(--state-ok-bd)";
       if(remaining <= reorderAt){ level = "low"; fillColor = "var(--state-danger-bd)"; }
-      else if(remaining <= reorderAt * 2 || pct <= 30){ level = "warn"; fillColor = "var(--state-warn-bd)"; }
+      else if(pct <= Math.min(100, alertPct + 15)){ level = "warn"; fillColor = "var(--state-warn-bd)"; }
       const noteText = level === "low"
-        ? `⚠ Time to order more`
+        ? `⚠ Time to order more (≤${alertPct}%)`
         : level === "warn"
           ? `Getting low`
           : `Stock looks good`;
@@ -10526,6 +10795,7 @@ function out(o){ return ContentService.createTextOutput(JSON.stringify(o)).setMi
               <button class="tinyBtn" type="button" data-vendor-action="use" data-vendor="${safeName}" data-type="${safeType}">${icon("plus")} Use</button>
               <button class="tinyBtn" type="button" data-vendor-action="restock" data-vendor="${safeName}" data-type="${safeType}">${icon("upload")} Restock</button>
               <button class="tinyBtn" type="button" data-vendor-action="settings" data-vendor="${safeName}" data-type="${safeType}" aria-label="Settings for ${safeName} ${safeType}" title="Settings">⚙</button>
+              <button class="tinyBtn labelTypeDel" type="button" data-vendor-action="removeType" data-vendor="${safeName}" data-type="${safeType}" aria-label="Remove ${safeType} from ${safeName}" title="${safeName} doesn't use ${safeType} — remove this counter">${icon("trash")}</button>
             </div>
           </div>
           <div class="labelVendorBarTrack">
@@ -10540,8 +10810,14 @@ function out(o){ return ContentService.createTextOutput(JSON.stringify(o)).setMi
 
     function renderLabelVendorCard(name, v){
       const types = (v && v.types) || {};
-      const rowsHtml = STICKER_TYPES.map(type => renderLabelTypeRow(name, type, types[type])).join("");
+      const hidden = (v && Array.isArray(v.hiddenTypes)) ? v.hiddenTypes : [];
+      const shown = STICKER_TYPES.filter(type => !hidden.includes(type));
+      const rowsHtml = shown.map(type => renderLabelTypeRow(name, type, types[type])).join("")
+        || `<div class="labelTrackerEmpty">No sticker types tracked for this vendor.</div>`;
       const safeName = escapeHtml(name);
+      const addBack = hidden.filter(t => STICKER_TYPES.includes(t)).length
+        ? `<div class="labelTypeAddBack"><span>Not used:</span>${hidden.filter(t => STICKER_TYPES.includes(t)).map(t => `<button class="tinyBtn" type="button" data-vendor-action="restoreType" data-vendor="${safeName}" data-type="${escapeHtml(t)}" title="Start tracking ${escapeHtml(t)} for ${safeName} again">${icon("plus")} ${escapeHtml(t)}</button>`).join("")}</div>`
+        : "";
       return `
         <div class="labelVendorCard">
           <div class="labelVendorHead">
@@ -10552,6 +10828,7 @@ function out(o){ return ContentService.createTextOutput(JSON.stringify(o)).setMi
             </div>
           </div>
           <div class="labelTypeGrid">${rowsHtml}</div>
+          ${addBack}
         </div>`;
     }
 
@@ -10590,6 +10867,8 @@ function out(o){ return ContentService.createTextOutput(JSON.stringify(o)).setMi
           else if(action === "settings") openLabelSettingsModal(name, type);
           else if(action === "editVendor") editLabelVendorPrompt(name);
           else if(action === "deleteVendor") deleteLabelVendor(name);
+          else if(action === "removeType") setLabelTypeUsed(name, type, false);
+          else if(action === "restoreType") setLabelTypeUsed(name, type, true);
         });
       });
     }
@@ -12146,7 +12425,7 @@ function out(o){ return ContentService.createTextOutput(JSON.stringify(o)).setMi
             const x = d.labels.types[st]; if(!x) return "";
             const cap = Number(x.capacity) || 0, remn = Number(x.remaining) || 0;
             const pct = cap ? Math.max(0, Math.min(100, Math.round(remn / cap * 100))) : 0;
-            const low = x.reorderAt != null && remn <= Number(x.reorderAt);
+            const low = remn <= labelLowAt(x);
             return `<div class="xlLabelRow${low ? " low" : ""}"><span>${escapeHtml(st)}</span><span class="xlBar"><i style="width:${pct}%"></i></span><b>${remn.toLocaleString()}</b>${low ? `<em>reorder</em>` : ""}</div>`;
           }).join("");
           if(rows) html += section("🏷️ UPC stickers", null, `<button type="button" class="xlLabelCard" ${go({ page:"dashboard" })}>${rows}</button>`);
@@ -13703,9 +13982,10 @@ function out(o){ return ContentService.createTextOutput(JSON.stringify(o)).setMi
         try {
           const lab = loadLabels();
           Object.entries(lab.vendors || {}).forEach(([vendor, v]) => Object.entries((v && v.types) || {}).forEach(([type, x]) => {
-            if(!x || x.reorderAt == null || x.reorderAt === "") return;
-            const rem = Number(x.remaining) || 0, at = Number(x.reorderAt);
-            if(rem <= at) out.push({ id:`stickers:${vendor}:${type}:${Math.floor(rem / 50)}`, kind:"stickers", title:`${vendor} · ${type} stickers low`, sub:`${rem.toLocaleString()} left (reorder at ${at.toLocaleString()})`, target:{ page:"dashboard" } });
+            if(!x) return;
+            if((v.hiddenTypes || []).includes(type)) return;
+            const rem = Number(x.remaining) || 0, at = labelLowAt(x);
+            if(rem <= at) out.push({ id:`stickers:${vendor}:${type}:${Math.floor(rem / Math.max(1, Number(x.capacity) || 1000) * 10)}`, kind:"stickers", title:`${vendor} · ${type} stickers low`, sub:`${rem.toLocaleString()} left — at or under ${labelAlertPct(x)}% of full (${at.toLocaleString()})`, target:{ page:"dashboard" } });
           }));
         } catch(_){}
         [...loadPrebookList("prebook").map(p => ({ ...p, type:"prebook" })), ...loadPrebookList("tag").map(p => ({ ...p, type:"tag" }))].forEach(p => {
@@ -14352,29 +14632,33 @@ function out(o){ return ContentService.createTextOutput(JSON.stringify(o)).setMi
 
       /* ---------- export in the workbook's own layout ---------- */
       async function exportWeek(){
+        const range = await pickExportRange({ kind:"st", title:"Export ST by truck", allowAll:true, unit:"truck", count: (r) => exportWeeksWithOrders(r).reduce((n, wk) => n + weekSummary(wk).trucks.length, 0) });
+        if(!range) return;
+        const weeks = exportWeeksWithOrders(range).filter(wk => weekSummary(wk).trucks.length);
+        if(!weeks.length){ alert(`No orders in ${range.label} to export.`); return; }
         let ExcelJS; try { ExcelJS = await loadExcelJS(); } catch(e){ alert(e.message); return; }
-        const wk = weekKeyFromDate(weekAnchor), w = weekSummary(wk);
-        if(!w.trucks.length){ alert("No orders in this week to export."); return; }
-        const wb = new ExcelJS.Workbook(), ws = wb.addWorksheet("ST by truck");
-        ws.columns = [{ width:30 }, { width:12 }, { width:10 }, { width:10 }, { width:16 }, { width:14 }];
-        const thin = { style:"thin", color:{ argb: XL.border } };
-        const box = (c) => { c.border = { top:thin, left:thin, bottom:thin, right:thin }; };
-        let r = 1;
-        ws.getCell(r, 1).value = `ST by Truck — ${weekLabel(weekAnchor)}`; ws.getCell(r, 1).font = { bold:true, size:13 }; r++;
+        const wb = new ExcelJS.Workbook();
+        for(const wk of weeks){
+        const weekAnchor = dateFromWeekKey(wk), w = weekSummary(wk);   // this tab's week
+        const ws = wb.addWorksheet(weeks.length > 1 ? exportSheetName(wk, "", true, weeks) : "ST by truck");
+        ws.columns = [{ width:34 }, { width:11 }, { width:11 }, { width:10 }, { width:17 }, { width:15 }];
+        xsSheet(ws);
+        const box = (c) => { c.border = xsBox(); };
+        let r = xsTitle(ws, 1, 6, "ST by Truck", `${weekLabel(weekAnchor)}  ·  projected sell-through  ·  ${xsExportedLine()}`) - 1;
         const grand = [];
         w.trucks.forEach((x, n) => {
           r++;
           const t = x.t;
-          ws.getCell(r, 1).value = `Truck ${n + 1} — ${dateBadgePrefix(t.region)} ${t.pickupDate || ""} · ${t.region || ""} · ${[...new Set((t.vendorBlocks || []).map(v => v.name).filter(Boolean))].join(", ")}`;
-          ws.getCell(r, 1).font = { bold:true }; r++;
-          const hdr = ["SKU", "Racks", "QTY", "ST", "Projected Sales", "Projected ST"];
-          hdr.forEach((h, i) => { const c = ws.getCell(r, i + 1); c.value = h; c.font = { bold:true }; c.fill = { type:"pattern", pattern:"solid", fgColor:{ argb: XL.headerGrey } }; box(c); });
+          ws.getCell(r, 1).value = `Truck ${n + 1} — ${dateBadgePrefix(t.region)} ${t.pickupDate ? prettyDay(t.pickupDate) : ""} · ${t.region || ""} · ${[...new Set((t.vendorBlocks || []).map(v => v.name).filter(Boolean))].join(", ")}`;
+          ws.getCell(r, 1).font = { bold:true, size:12, color:{ argb:XS.brand } }; ws.getRow(r).height = 20; r++;
+          xsHead(ws, r, ["SKU", "Racks", "QTY", "ST", "Projected Sales", "Projected ST"], ["left", "right", "right", "right", "right", "right"]);
           r++;
           const first = r;
           x.rows.forEach(row => {
             ws.getCell(r, 1).value = row.sku;
             ws.getCell(r, 2).value = row.racks || null;
-            ws.getCell(r, 3).value = row.qty;
+            ws.getCell(r, 3).value = row.qty; ws.getCell(r, 3).numFmt = "#,##0";
+            if((r - first) % 2 === 1) for(let c = 1; c <= 6; c++) ws.getCell(r, c).fill = { type:"pattern", pattern:"solid", fgColor:{ argb:XS.zebra } };
             ws.getCell(r, 4).value = Math.round(row.st * 1000) / 1000; ws.getCell(r, 4).numFmt = "0.0%";
             if(row.est) ws.getCell(r, 4).font = { italic:true, color:{ argb:"FF7F7F7F" } };
             ws.getCell(r, 5).value = { formula: `C${r}*D${r}`, result: row.sales }; ws.getCell(r, 5).numFmt = "#,##0.0";
@@ -14384,20 +14668,21 @@ function out(o){ return ContentService.createTextOutput(JSON.stringify(o)).setMi
           const last = r - 1;
           ws.getCell(r, 1).value = "Total"; ws.getCell(r, 1).font = { bold:true };
           ws.getCell(r, 2).value = { formula: `SUM(B${first}:B${last})`, result: x.rows.reduce((s, q) => s + q.racks, 0) };
-          ws.getCell(r, 3).value = { formula: `SUM(C${first}:C${last})`, result: x.qty };
+          ws.getCell(r, 3).value = { formula: `SUM(C${first}:C${last})`, result: x.qty }; ws.getCell(r, 3).numFmt = "#,##0";
           ws.getCell(r, 4).value = "-"; ws.getCell(r, 4).alignment = { horizontal:"center" };
           ws.getCell(r, 5).value = { formula: `SUM(E${first}:E${last})`, result: x.sales }; ws.getCell(r, 5).numFmt = "#,##0.0";
           ws.getCell(r, 6).value = { formula: `IFERROR(E${r}/C${r},0)`, result: x.st || 0 }; ws.getCell(r, 6).numFmt = "0.0%";
-          for(let c = 1; c <= 6; c++){ const cell = ws.getCell(r, c); box(cell); cell.fill = { type:"pattern", pattern:"solid", fgColor:{ argb: XL.totals } }; if(c > 1) cell.font = { bold:true }; }
+          for(let c = 1; c <= 6; c++){ const cell = ws.getCell(r, c); box(cell); cell.fill = { type:"pattern", pattern:"solid", fgColor:{ argb: XS.brandSoft } }; cell.font = { bold:true }; }
           grand.push(r);
           r += 2;
         });
         ws.getCell(r, 1).value = "Week total"; ws.getCell(r, 1).font = { bold:true };
-        ws.getCell(r, 3).value = { formula: grand.map(g => `C${g}`).join("+"), result: w.qty };
+        ws.getCell(r, 3).value = { formula: grand.map(g => `C${g}`).join("+"), result: w.qty }; ws.getCell(r, 3).numFmt = "#,##0";
         ws.getCell(r, 5).value = { formula: grand.map(g => `E${g}`).join("+"), result: w.sales }; ws.getCell(r, 5).numFmt = "#,##0.0";
         ws.getCell(r, 6).value = { formula: `IFERROR(E${r}/C${r},0)`, result: w.st || 0 }; ws.getCell(r, 6).numFmt = "0.0%";
         for(let c = 1; c <= 6; c++){ const cell = ws.getCell(r, c); box(cell); cell.font = { bold:true }; cell.fill = { type:"pattern", pattern:"solid", fgColor:{ argb: XL.softYellow } }; }
-        await downloadWorkbook(wb, `ST by Truck WK ${isoWeekNumOf(weekAnchor)}.xlsx`);
+        }
+        await downloadWorkbook(wb, weeks.length === 1 ? `ST by Truck WK ${Number(weeks[0].split("-W")[1])}.xlsx` : `ST by Truck ${range.tag}.xlsx`);
       }
 
       document.addEventListener("click", (e) => {
