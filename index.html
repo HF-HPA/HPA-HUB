@@ -4868,7 +4868,7 @@
         const wk = rd ? weekKeyFromDate(weekAnchorForRequestDate(rd)) : weekKeyFromDate(parseDate(d.pickupDate));
         lastWk = wk;
         const totals = computeTotals(d.vendorBlocks);
-        const labelBreakdown = computeOrderLabelBreakdown(d.vendorBlocks);
+        const labelBreakdown = computeOrderLabelBreakdown(d.vendorBlocks, d.region);
         if(d.id && trucks.findIndex(t => t.id === d.id) < 0){
           if(!confirm("Someone deleted this order while you were editing it.\n\nOK = save your version back as a new order\nCancel = keep editing (nothing saved)")) return;
           delete d.id;
@@ -4964,7 +4964,7 @@
       clone.pickupDate = wasAutoPickupDate ? fmtDate(pickupDateForRequest(rd, t.region)) : fmtDate(addDays(oldPd || rd, daysShift));
       const targetWeek = weekAnchorForRequestDate(rd);
       clone.weekKey = weekKeyFromDate(targetWeek);
-      const dupBreakdown = computeOrderLabelBreakdown(clone.vendorBlocks);
+      const dupBreakdown = computeOrderLabelBreakdown(clone.vendorBlocks, clone.region);
       clone.labelQty = dupBreakdown.total;
       clone.labelQtyByVendor = dupBreakdown.byVendor;
       trucks.push(clone);
@@ -5015,7 +5015,7 @@
       it.notes = it.notes ? `${it.notes} • ${note}` : note;
       const prevLabelQty = t.labelQty || 0;
       const prevLabelQtyByVendor = t.labelQtyByVendor || {};
-      const subBreakdown = computeOrderLabelBreakdown(t.vendorBlocks);
+      const subBreakdown = computeOrderLabelBreakdown(t.vendorBlocks, t.region);
       t.labelQty = subBreakdown.total;
       t.labelQtyByVendor = subBreakdown.byVendor;
       saveTrucks(trucks);
@@ -10394,8 +10394,9 @@ function out(o){ return ContentService.createTextOutput(JSON.stringify(o)).setMi
     // --- Auto-detecting label usage straight from Order Tracker lines ---
     // Order lines are free-typed ("6" MONSTERA", "Vigoro Ivy HB"), not
     // picked from a catalog, so this classifies each line into one of the 4
-    // sticker types straight from its size and genus, per Hampshire's rule:
-    //   - Any Hanging Basket, any size -> Small Vigoro, no exceptions.
+    // sticker types. Lines with a linked SKU use size + retail (classifyStickerType
+    // below); this name-based rule is only the fallback for lines with no SKU:
+    //   - Hanging Basket -> 6" Small Regular, 8"/10" Small Vigoro.
     //   - A 6" line ("Small") is checked against the Small-Regular list
     //     (China Doll, Ferns, Hypoestes, Ivy, Arboricola, Spider Plant) ->
     //     Small Regular if it matches, else Small Vigoro.
@@ -10410,10 +10411,59 @@ function out(o){ return ContentService.createTextOutput(JSON.stringify(o)).setMi
     const SIZE_10IN_RE = /10\s*(in\.?|inch)\b|10\s*"/;
     const SMALL_REGULAR_KEYWORDS = ["china doll", "fern", "hypoestes", "hyposestes", "ivy", "arboricola", "spider plant", "spiderplant"];
     const MEDIUM_REGULAR_KEYWORDS = ["croton", "dracaena", "yucca"];
-    function classifyStickerType(rawText){
+    // Sticker rules, by size + retail (retail comes from each line's linked SKU):
+    //   Small Regular  — 6" Hanging Baskets, and 6" Foliage at $9.98 / $19.98 / $24.98
+    //   Small Vigoro   — 6" Foliage at $12.98 / $14.98, and every 8"/10" Hanging Basket
+    //   Medium Vigoro  — 10" Tropicals at $29.98
+    //   Medium Regular — 10" Tropicals at $14.98 / $19.98 / $24.98
+    // A retail outside those lists goes to the closest group (6": under $12 or $19+ → Regular,
+    // otherwise Vigoro; 10": $29+ → Vigoro, otherwise Regular). A line with no SKU/retail
+    // falls back to the older name-based rule below.
+    const LABEL_RETAIL = {
+      small:  { regular:[9.98, 19.98, 24.98], vigoro:[12.98, 14.98] },
+      medium: { regular:[14.98, 19.98, 24.98], vigoro:[29.98] }
+    };
+    const hasPrice = (list, r) => list.some(v => Math.abs(v - r) < 0.005);
+    function lineStickerFacts(it, region){
+      const text = String((it && it.item) || it || "").toLowerCase();
+      const hit = (it && typeof it === "object" && window.SkuBook) ? (() => { try { return SkuBook.forLine(it, region); } catch(_){ return null; } })() : null;
+      const e = hit && hit.e;
+      let retail = null;
+      if(e){
+        const c = window.ItemCatalog ? ItemCatalog.lookup(e.sku) : null;   // the customer item list = what's printed on the sticker
+        retail = c && String(c.sku) === String(e.sku) && Number(c.retail) > 0 ? Number(c.retail) : (Number(e.retail) > 0 ? Number(e.retail) : null);
+      }
+      const sizeTxt = (s) => { const m = String(s || "").toLowerCase().match(/(\d+(?:\.\d+)?)\s*(?:in(?:ch(?:es)?)?\b|["'”’])/); return m ? Number(m[1]) : null; };
+      const size = (e && e.size) || sizeTxt(text) || null;
+      const isHB = (e && (e.kind === "hb" || /basket/i.test(e.sec || "") || /^fhb/i.test(e.cat || ""))) || HB_LABEL_RE.test(text);
+      return { e, retail, size, isHB, text };
+    }
+    function classifyStickerType(it, region){
+      const f = lineStickerFacts(it, region);
+      if(f.e && (f.isHB || f.size === 6 || f.size === 10)){
+        if(f.isHB){
+          if(f.size && f.size <= 6) return "Small Regular";        // 6" Hanging Baskets
+          return "Small Vigoro";                                   // 8" / 10" Hanging Baskets
+        }
+        if(f.retail != null){
+          if(f.size === 6){
+            if(hasPrice(LABEL_RETAIL.small.regular, f.retail)) return "Small Regular";
+            if(hasPrice(LABEL_RETAIL.small.vigoro, f.retail)) return "Small Vigoro";
+            return (f.retail < 12 || f.retail >= 19) ? "Small Regular" : "Small Vigoro";
+          }
+          if(f.size === 10){
+            if(hasPrice(LABEL_RETAIL.medium.vigoro, f.retail)) return "Medium Vigoro";
+            if(hasPrice(LABEL_RETAIL.medium.regular, f.retail)) return "Medium Regular";
+            return f.retail >= 29 ? "Medium Vigoro" : "Medium Regular";
+          }
+        }
+      }
+      return classifyStickerTypeByName(f.text);
+    }
+    function classifyStickerTypeByName(rawText){
       const t = (rawText||"").toLowerCase().trim();
       if(!t) return null;
-      if(HB_LABEL_RE.test(t)) return "Small Vigoro"; // every Hanging Basket, any size — no exceptions
+      if(HB_LABEL_RE.test(t)) return SIZE_6IN_RE.test(t) ? "Small Regular" : "Small Vigoro"; // 6" HB → Small Regular; 8"/10" HB → Small Vigoro
       if(SIZE_6IN_RE.test(t)){
         return SMALL_REGULAR_KEYWORDS.some(k => t.includes(k)) ? "Small Regular" : "Small Vigoro";
       }
@@ -10426,7 +10476,7 @@ function out(o){ return ContentService.createTextOutput(JSON.stringify(o)).setMi
     // split of it (keyed by the vendor block's name, then by sticker type)
     // — the tracker keeps a running vendor+type tally the same way it keeps
     // each type's own remaining count.
-    function computeOrderLabelBreakdown(vendorBlocks){
+    function computeOrderLabelBreakdown(vendorBlocks, region){
       const byVendor = {}; // { vendorName: { "Small Vigoro": qty, "Medium Regular": qty, ... } }
       let total = 0;
       (vendorBlocks||[]).forEach(vb => {
@@ -10434,7 +10484,7 @@ function out(o){ return ContentService.createTextOutput(JSON.stringify(o)).setMi
         (vb.items||[]).forEach(it => {
           const qty = Number(it.qty || 0);
           if(qty <= 0) return;
-          const stickerType = classifyStickerType(it.item);
+          const stickerType = classifyStickerType(it, region);
           if(!stickerType) return;
           total += qty;
           if(!byVendor[vendorName]) byVendor[vendorName] = {};
