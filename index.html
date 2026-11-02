@@ -3083,6 +3083,7 @@
         try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; }
       },
       set(key, value){
+        try { value = mergeStamp(key, value); } catch(e){ console.warn("[merge] stamp failed", e); }
         try{
           localStorage.setItem(key, JSON.stringify(value));
         } catch (e){
@@ -3249,6 +3250,105 @@
     // intentionally skip LS.set's activity/re-push side effects but should still
     // warn the user consistently if the device is out of storage.
     let _storageWarnedRecently = false;
+    /*********************************************************
+     * Record-level team merge.
+     * Shared lists (orders, issues, bookings, tags) and Check-In lines used to
+     * sync as one big blob: if two people saved at nearly the same time — e.g.
+     * two phones checking in the same truck — the later save replaced the
+     * earlier one and those check-ins were lost. Now every order / issue /
+     * check-in line carries its own "last changed" time, deletions leave a
+     * small marker, and incoming team data is MERGED line-by-line (newest
+     * change wins), so nobody's work gets overwritten — including changes
+     * made offline, which merge in when the device reconnects.
+     *********************************************************/
+    function mergeKind(key){
+      if(key === "hpa_checkin_v1") return "rows";
+      if(key === "hpa_trucks_v3" || key === "hpa_issues_v1" || key === "hpa_prebook_v1" || key === "hpa_tag_v1") return "list";
+      return null;
+    }
+    const MERGE_TOMB_KEY = "hpa_merge_tomb_v1";        // per device: { [key]: { [id or week|row]: deletedAt } }
+    function mergeTombs(){ try { return JSON.parse(localStorage.getItem(MERGE_TOMB_KEY) || "{}") || {}; } catch(_){ return {}; } }
+    function saveMergeTombs(t){
+      const cutoff = Date.now() - 90 * 86400000;     // forget deletions older than 90 days
+      Object.values(t).forEach(m => Object.keys(m || {}).forEach(k => { if(m[k] < cutoff) delete m[k]; }));
+      try { localStorage.setItem(MERGE_TOMB_KEY, JSON.stringify(t)); } catch(_){}
+    }
+    const _sansAt = (o) => { if(!o || typeof o !== "object") return JSON.stringify(o); const { _at, at, ...rest } = o; return JSON.stringify(rest); };
+    // Called on every local save: stamp what changed, remember what was removed.
+    function mergeStamp(key, value){
+      const kind = mergeKind(key);
+      if(!kind || value == null) return value;
+      let prev; try { prev = JSON.parse(localStorage.getItem(key) || "null"); } catch(_){ prev = null; }
+      const now = Date.now(), tombs = mergeTombs(), tk = tombs[key] || (tombs[key] = {});
+      let tombChanged = false;
+      if(kind === "list" && Array.isArray(value)){
+        const before = new Map((Array.isArray(prev) ? prev : []).filter(x => x && x.id != null).map(x => [String(x.id), x]));
+        const seen = new Set();
+        value.forEach(x => {
+          if(!x || x.id == null) return;
+          const id = String(x.id); seen.add(id);
+          const old = before.get(id);
+          if(!old || _sansAt(old) !== _sansAt(x)) x._at = now; else if(old._at && !x._at) x._at = old._at;
+          if(tk[id]){ delete tk[id]; tombChanged = true; }   // re-added
+        });
+        before.forEach((x, id) => { if(!seen.has(id)){ tk[id] = now; tombChanged = true; } });
+      } else if(kind === "rows" && value && typeof value === "object"){
+        const pv = prev && typeof prev === "object" ? prev : {};
+        Object.keys(value).forEach(wk => {
+          const rows = value[wk] || {}, old = pv[wk] || {};
+          Object.keys(rows).forEach(rk => {
+            const e = rows[rk]; if(!e || typeof e !== "object") return;
+            const o = old[rk];
+            if(!o || _sansAt(o) !== _sansAt(e)) e.at = now; else if(o.at && !e.at) e.at = o.at;
+            const path = wk + "|" + rk; if(tk[path]){ delete tk[path]; tombChanged = true; }
+          });
+          Object.keys(old).forEach(rk => { if(!(rk in rows)){ tk[wk + "|" + rk] = now; tombChanged = true; } });
+        });
+        Object.keys(pv).forEach(wk => { if(!(wk in value)) Object.keys(pv[wk] || {}).forEach(rk => { tk[wk + "|" + rk] = now; tombChanged = true; }); });
+      }
+      if(tombChanged) saveMergeTombs(tombs);
+      return value;
+    }
+    // Merge a teammate's copy into ours. Newest change per record wins; a deletion
+    // beats any edit made before it. Returns the merged value.
+    function mergeValues(key, local, remote, remoteTomb){
+      const kind = mergeKind(key);
+      const tombs = mergeTombs(), tk = tombs[key] || (tombs[key] = {});
+      let tChanged = false;
+      Object.entries(remoteTomb || {}).forEach(([k, at]) => { if(!tk[k] || tk[k] < at){ tk[k] = at; tChanged = true; } });
+      if(tChanged) saveMergeTombs(tombs);
+      const stamp = (x, f) => Number(x && x[f]) || 0;
+      if(kind === "list"){
+        const L = Array.isArray(local) ? local : [], Rm = Array.isArray(remote) ? remote : [];
+        const lm = new Map(L.filter(x => x && x.id != null).map(x => [String(x.id), x]));
+        const out = [], used = new Set();
+        const keep = (x) => { const id = String(x.id); return !(tk[id] && tk[id] >= stamp(x, "_at")); };
+        Rm.forEach(r => {
+          if(!r || r.id == null){ out.push(r); return; }
+          const id = String(r.id), l = lm.get(id); used.add(id);
+          const win = l && stamp(l, "_at") > stamp(r, "_at") ? l : r;
+          if(keep(win)) out.push(win);
+        });
+        L.forEach(l => { if(l && l.id != null && !used.has(String(l.id)) && keep(l)) out.push(l); });
+        return out;
+      }
+      if(kind === "rows"){
+        const L = local && typeof local === "object" ? local : {}, Rm = remote && typeof remote === "object" ? remote : {};
+        const out = {};
+        new Set([...Object.keys(L), ...Object.keys(Rm)]).forEach(wk => {
+          const lw = L[wk] || {}, rw = Rm[wk] || {}, ow = {};
+          new Set([...Object.keys(lw), ...Object.keys(rw)]).forEach(rk => {
+            const l = lw[rk], r = rw[rk];
+            const win = l && r ? (stamp(l, "at") > stamp(r, "at") ? l : r) : (l || r);
+            const del = tk[wk + "|" + rk];
+            if(win && !(del && del >= stamp(win, "at"))) ow[rk] = win;
+          });
+          out[wk] = ow;
+        });
+        return out;
+      }
+      return remote;
+    }
     function rawStorageSet(key, value){
       try { localStorage.setItem(key, value); return true; }
       catch(e){
@@ -11041,15 +11141,42 @@ function out(o){ return ContentService.createTextOutput(JSON.stringify(o)).setMi
       setStatus(state, text){
         const el = document.getElementById("syncChip");
         if(!el) return;
+        if(state === "on" && !navigator.onLine){ this.showOfflineChip(); return; }
         const dot = state==="on" ? "🟢 " : state==="connecting" ? "🟡 " : "⚪ ";
         const short = state==="on" ? ("Sync: on · " + this.teamCode()) : (state==="connecting" ? "Sync: connecting…" : "Sync: off");
         el.textContent = dot + short;
         el.title = text || short;           // hover/long-press shows the full detail
         el.dataset.state = state;
       },
+      // Offline support: the app keeps working without a connection — saves land on this device,
+      // and the moment a connection is back we (re)connect and merge them in for the team.
+      _watchConnection(){
+        if(this._watching) return; this._watching = true;
+        const markActive = () => { this._userActive = true; };
+        document.addEventListener("pointerdown", markActive, { capture:true, passive:true });
+        document.addEventListener("keydown", markActive, { capture:true });
+        window.addEventListener("offline", () => this.showOfflineChip());
+        window.addEventListener("online", () => {
+          if(!this.ready && !this.starting && this._lastUser) this.init(this._lastUser);
+          else if(this.ready) this.setStatus("on", "Back online — syncing your changes");
+        });
+        // keep retrying quietly if the first connect failed (e.g. the app was opened with no signal)
+        setInterval(() => { if(!this.ready && !this.starting && this._lastUser && navigator.onLine && location.protocol !== "file:") this.init(this._lastUser); }, 30000);
+      },
+      pendingCount(){ return Object.keys(this._dirty()).length; },
+      showOfflineChip(){
+        const el = document.getElementById("syncChip"); if(!el) return;
+        if(navigator.onLine && this.ready) return;
+        const n = this.pendingCount();
+        el.textContent = `🟠 Offline · ${n ? n + " change" + (n === 1 ? "" : "s") + " saved here" : "saving on this device"}`;
+        el.title = "No connection right now. Everything you do is saved on this device and goes to the team automatically when you're back online.";
+        el.dataset.state = "offline";
+      },
       async init(user){
         if(this.ready || this.starting) return;
         if(user && user.name) this.user = user.name;
+        if(user) this._lastUser = user;
+        this._watchConnection();
         if(location.protocol === "file:"){ this.setStatus("off", "Sync: off — open the hosted https link, not the local file"); return; }
         this.starting = true;
         this.setStatus("connecting", "Sync: connecting…");
@@ -11085,7 +11212,8 @@ function out(o){ return ContentService.createTextOutput(JSON.stringify(o)).setMi
         } catch(err){
           this.ready = false;
           console.error("[HPA sync] connect failed:", err);
-          this.setStatus("off", this.describeErr(err));
+          if(!navigator.onLine || /fetch|network|import|failed to load/i.test(String(err && (err.message || err)))) this.showOfflineChip();
+          else this.setStatus("off", this.describeErr(err));
         } finally { this.starting = false; }
       },
       describeErr(err){
@@ -11102,7 +11230,8 @@ function out(o){ return ContentService.createTextOutput(JSON.stringify(o)).setMi
           const dirty = this._seeded ? null : this._dirty();
           snap.docChanges().forEach(ch => {
             if(ch.type === "removed") return;
-            const at = dirty && dirty[ch.doc.id];
+            const at = dirty && !mergeKind(ch.doc.id) && dirty[ch.doc.id];
+            if(dirty && mergeKind(ch.doc.id)) this._setDirty(ch.doc.id, false);   // merged below instead
             if(at){
               const rd = ch.doc.data() || {};
               if(!rd.updatedAt || rd.updatedAt < at){ this._pushNow(ch.doc.id); return; }   // our offline edit is newer
@@ -11495,6 +11624,16 @@ function out(o){ return ContentService.createTextOutput(JSON.stringify(o)).setMi
         if(key === LS.trucksKey) incoming = this.rehydratePoFiles(incoming, local);
         else if(key === LS.trainingKey) incoming = this.rehydrateTrainingFiles(incoming, local);
         if(local === incoming) return;          // already in sync — no loop
+        let pushBack = false;
+        if(mergeKind(key)){
+          try {
+            let rt = {}; try { rt = data.tomb ? JSON.parse(data.tomb) : {}; } catch(_){}
+            const merged = JSON.stringify(mergeValues(key, local ? JSON.parse(local) : null, JSON.parse(incoming), rt));
+            if(merged === local) return;           // nothing new for us
+            pushBack = merged !== incoming;        // we hold changes the team copy doesn't have yet
+            incoming = merged;
+          } catch(e){ console.warn("[merge] fell back to replace for", key, e); }
+        }
         // Is the person looking at the very thing that just changed under them?
         const editingThis =
           (key === LS.trucksKey     && currentPage === "order")   ||
@@ -11508,6 +11647,7 @@ function out(o){ return ContentService.createTextOutput(JSON.stringify(o)).setMi
           ((key === LS.availKey || key === LS.availOrdersKey || key === LS.availAmountsKey || key === LS.availSpecOverridesKey) && currentPage === "avail");
         if(!rawStorageSet(key, incoming)) return; // direct write: no re-push
         this.lastReceived = Date.now(); this.applies++;
+        if(pushBack) this.push(key);               // send the merged copy back so everyone ends up the same
         this.rerender(key);
         if(key === LS.trainingKey){ this.reconcilePendingTrainingFiles(); }
         if(key === LS.trucksKey){ this.reconcilePendingPoFiles(); }
@@ -11560,7 +11700,7 @@ function out(o){ return ContentService.createTextOutput(JSON.stringify(o)).setMi
       },
       push(key){
         if(SYNC_KEYS.indexOf(key) === -1) return;
-        if(!this.ready){ if(this._wasReady) this._setDirty(key, true); return; }
+        if(!this.ready){ if(this._wasReady || this._userActive) this._setDirty(key, true); this.showOfflineChip(); return; }
         clearTimeout(this._t[key]);
         this._t[key] = setTimeout(() => this._pushNow(key), 600);
       },
@@ -11592,9 +11732,12 @@ function out(o){ return ContentService.createTextOutput(JSON.stringify(o)).setMi
             return;
           }
           const { doc, setDoc } = this.fs;
-          await setDoc(doc(this.col, key), { value: val, updatedAt: Date.now(), by: this.user, client: this.clientId });
+          const tomb = mergeKind(key) ? JSON.stringify(mergeTombs()[key] || {}) : null;
+          await setDoc(doc(this.col, key), { value: val, updatedAt: Date.now(), by: this.user, client: this.clientId, ...(tomb ? { tomb } : {}) });
           this.lastSent = Date.now(); this.pushes++;
           this._setDirty(key, false);
+          const chip = document.getElementById("syncChip");
+          if(chip && chip.dataset.state === "offline" && navigator.onLine && this.ready) this.setStatus("on", "Sync: on · " + this.teamCode());
         } catch(e){ this.lastError = (e && (e.code || e.message)) || String(e); console.error("[HPA sync] push failed for", key, e); }
       },
       rerender(key){
